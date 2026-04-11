@@ -1,0 +1,375 @@
+:root {
+  --bg: #f2efe7;
+  --paper: #fffdf8;
+  --ink: #162035;
+  --muted: #6c7488;
+  --line: #d4d8e2;
+  --accent: #d97706;
+  --accent-2: #b91c1c;
+  --ok: #0f766e;
+  --shadow: 0 20px 38px rgba(28, 33, 45, 0.12);
+  --radius: 18px;
+  --font-head: 'Space Grotesk', 'Segoe UI', sans-serif;
+  --font-body: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(217, 119, 6, 0.18), transparent 35%),
+    radial-gradient(circle at 90% 5%, rgba(15, 118, 110, 0.15), transparent 30%),
+    var(--bg);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: space-between;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.topbar nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.topbar nav a {
+  padding: 7px 10px;
+  border-radius: 10px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.topbar nav a.active {
+  background: #f6ece1;
+  color: #8c4f09;
+}
+
+.brand {
+  font-family: var(--font-head);
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.city-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.section-head h1,
+.onboarding h1,
+.detail-main h1,
+.donation-box h1 {
+  font-family: var(--font-head);
+  font-size: clamp(1.6rem, 2.2vw, 2.3rem);
+}
+
+.section-head p,
+.state-text,
+.onboarding > p,
+.donation-box > p {
+  color: var(--muted);
+}
+
+.post-grid,
+.vendor-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.post-card,
+.vendor-card,
+.onboarding,
+.donation-box,
+.detail-main,
+.detail-side,
+.mini-post {
+  background: var(--paper);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.post-card,
+.vendor-card {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-head,
+.vendor-title-row,
+.meta-row,
+.funding-row,
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.urgency-chip,
+.distance-chip,
+.vendor-badge {
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.urgency-chip.critical {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.urgency-chip.high {
+  background: #ffedd5;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.urgency-chip.moderate {
+  background: #fef9c3;
+  color: #a16207;
+  border-color: #fde68a;
+}
+
+.distance-chip,
+.vendor-badge {
+  background: #ecfeff;
+  color: #0f766e;
+  border-color: #99f6e4;
+}
+
+.location-text,
+.content-preview,
+.vendor-card p,
+.mini-post p {
+  color: var(--muted);
+}
+
+.content-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.progress-shell {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #eceff5;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  transition: width 0.25s ease;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.button.primary {
+  background: linear-gradient(120deg, #b91c1c, #d97706);
+  color: #fff;
+}
+
+.button.secondary {
+  background: #fff;
+  color: #7f1d1d;
+  border-color: #fca5a5;
+}
+
+.button.ghost {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.button.full {
+  width: 100%;
+}
+
+.onboarding,
+.donation-box {
+  max-width: 620px;
+  margin: 30px auto;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.input-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.input-control {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px;
+  font: inherit;
+  background: #fff;
+}
+
+.location-box {
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.error-text {
+  color: #b91c1c;
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 14px;
+}
+
+.detail-main,
+.detail-side {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.map-link {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.mini-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-list li {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+}
+
+.vendor-card.best {
+  border-color: #f59e0b;
+  transform: translateY(-1px);
+}
+
+.vendor-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+}
+
+.mini-post-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.mini-post {
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topbar nav {
+    justify-content: center;
+  }
+
+  .city-pill {
+    align-self: center;
+  }
+}
