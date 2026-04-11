@@ -48,7 +48,7 @@
 ### 4. Dependencies
 - [x] Updated `requirements.txt`
   - [x] `websockets==12.0` (WebSocket server)
-  - [x] `aio-pika==13.3.0` (Async RabbitMQ client)
+  - [x] `aio-pika==9.5.2` (Async RabbitMQ client)
   - [x] `python-dotenv==1.0.0` (Environment configuration)
 
 ### 5. Documentation
