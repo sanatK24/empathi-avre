@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, CheckCircle } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { apiService } from '../services/apiService';
 import Button from './ui/Button';
+import PaymentModal from './PaymentModal';
 
 function DonationModal({ campaign, onClose, onDonationSuccess }) {
   const { profile } = useAppContext();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
   const [amount, setAmount] = useState('');
   const [anonymous, setAnonymous] = useState(false);
   const [message, setMessage] = useState('');
+  const [showPayment, setShowPayment] = useState(false);
 
   const quickAmounts = [100, 500, 1000, 5000];
 
@@ -20,7 +19,7 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
     setAmount(value.toString());
   };
 
-  const handleDonate = async (e) => {
+  const handleProceedToPayment = (e) => {
     e.preventDefault();
 
     if (!amount || parseFloat(amount) <= 0) {
@@ -28,64 +27,25 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
       return;
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      const donationData = {
-        amount: parseFloat(amount),
-        anonymous,
-        message: message || null
-      };
-
-      await apiService.createDonation(profile.accessToken, campaign.id, donationData);
-
-      setSuccess(true);
-      setTimeout(() => {
-        onDonationSuccess?.();
-        onClose();
-      }, 2000);
-    } catch (err) {
-      console.error('Donation failed:', err);
-      setError(err.message || 'Failed to process donation. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    setError(null);
+    setShowPayment(true);
   };
 
-  if (success) {
+  if (showPayment) {
     return (
-      <AnimatePresence>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-        >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center"
-          >
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex justify-center mb-4"
-            >
-              <CheckCircle size={64} className="text-green-500" />
-            </motion.div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Thank You!</h3>
-            <p className="text-slate-600 mb-4">
-              Your donation of ₹{parseFloat(amount).toFixed(2)} has been received
-            </p>
-            <p className="text-sm text-slate-500">
-              Your contribution helps support {campaign.title}
-            </p>
-          </motion.div>
-        </motion.div>
-      </AnimatePresence>
+      <PaymentModal
+        campaign={campaign}
+        amount={parseFloat(amount)}
+        anonymous={anonymous}
+        message={message}
+        onClose={() => {
+          setShowPayment(false);
+          onClose();
+        }}
+        onPaymentSuccess={() => {
+          onDonationSuccess?.();
+        }}
+      />
     );
   }
 
@@ -139,7 +99,7 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleDonate} className="p-6 space-y-6">
+          <form onSubmit={handleProceedToPayment} className="p-6 space-y-6">
             {/* Error Message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -226,23 +186,16 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
               </button>
               <Button
                 type="submit"
-                disabled={loading || !amount}
+                disabled={!amount}
                 className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading ? (
-                  <>
-                    <Loader2 size={18} className="animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  `Donate ₹${parseFloat(amount) || 0}`
-                )}
+                Continue to Payment
               </Button>
             </div>
 
             {/* Info Text */}
             <p className="text-xs text-slate-600 text-center">
-              Your donation will be processed immediately and will help support this campaign.
+              Next, you'll complete the payment securely.
             </p>
           </form>
         </motion.div>
@@ -252,3 +205,4 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
 }
 
 export default DonationModal;
+

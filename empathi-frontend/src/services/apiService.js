@@ -199,4 +199,14 @@ export const apiService = {
         method: 'POST',
         token
     }),
+
+    // Payments (Simulated)
+    processPayment: (token, paymentData) => request('/payments/process', {
+        method: 'POST',
+        token,
+        body: JSON.stringify(paymentData)
+    }),
+    getPaymentMethods: (token) => request('/payments/methods', { token }),
+    getPaymentHistory: (token, limit = 20, offset = 0) => request(`/payments/history?limit=${limit}&offset=${offset}`, { token }),
+    verifyPayment: (token, transactionId) => request(`/payments/verify/${transactionId}`, { token }),
 };
