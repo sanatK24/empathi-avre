@@ -1,135 +1,107 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-import os
-from alembic.config import Config as AlembicConfig
-from alembic import command
-from database import Base, engine
-from routes import auth_routes, vendor_routes, requester_routes, admin_routes
-from realtime import connection_manager
-from event_consumer import start_event_consumer, stop_event_consumer
+from database import engine, Base, get_db
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from routes import auth_routes, vendor_routes, match_routes, admin_routes, requester_routes, campaign_routes, donation_routes
+import models
+from fastapi.responses import JSONResponse
 import logging
+import os
 
-logger = logging.getLogger(__name__)
+# Configure Logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("AVRE")
 
-# Run Alembic migrations
-def run_migrations():
-    """Execute pending Alembic migrations."""
-    try:
-        alembic_cfg = AlembicConfig(
-            os.path.join(os.path.dirname(__file__), 'alembic.ini')
-        )
-        command.upgrade(alembic_cfg, 'head')
-    except Exception as e:
-        print(f"Migration warning: {e}")
-        print("Falling back to table creation...")
-        Base.metadata.create_all(bind=engine)
+# Create tables
+models.Base.metadata.create_all(bind=engine)
 
-# Initialize database with migrations
-run_migrations()
-
-# Initialize app
 app = FastAPI(
     title="AVRE API",
-    description="Adaptive Vendor Relevance Engine",
-    version="1.0.0"
+    description="Adaptive Vendor Relevance Engine Backend",
+    version="1.0.0",
+    debug=True
 )
 
-# CORS middleware
+# CORS - configured from environment
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
+    "http://127.0.0.1:3000",
+]
+# Add origins from environment if present
+env_origins = os.getenv("CORS_ORIGINS")
+if env_origins:
+    ALLOWED_ORIGINS.extend(env_origins.split(","))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
-# ============ STARTUP/SHUTDOWN ============
-@app.on_event("startup")
-async def startup_event():
-    """Initialize real-time services on startup."""
-    logger.info("Initializing real-time services...")
-    try:
-        await start_event_consumer()
-    except Exception as e:
-        logger.error(f"Failed to start event consumer: {e}")
+# Global Error Handlers
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"GLOBAL ERROR: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal Server Error", "detail": str(exc) if app.debug else "hidden"}
+    )
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown."""
-    logger.info("Shutting down real-time services...")
-    try:
-        await stop_event_consumer()
-    except Exception as e:
-        logger.error(f"Error during shutdown: {e}")
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": exc.detail}
+    )
 
-# ============ WEBSOCKET ENDPOINT ============
-@app.websocket("/ws/{user_id}/{room_type}/{room_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str, room_type: str, room_id: str):
-    """
-    WebSocket endpoint for real-time notifications.
-    
-    Rooms:
-    - vendor/{vendor_id}: Vendor notifications (matches, ratings, moderation)
-    - requester/{requester_id}: Requester notifications (vendor responses)
-    - admin: Admin notifications (moderation, flags)
-    
-    Example: ws://localhost:8000/ws/user123/vendor/vendor456
-    """
-    
-    # Validate room format
-    valid_types = ["vendor", "requester", "admin"]
-    if room_type not in valid_types:
-        await websocket.close(code=1008, reason="Invalid room type")
-        return
-    
-    if room_type == "admin" and user_id != "admin":
-        await websocket.close(code=1008, reason="Only admins can join admin room")
-        return
-    
-    # Build room identifier
-    if room_type == "admin":
-        full_room_id = "admins"
-    else:
-        full_room_id = f"{room_type}:{room_id}"
-    
-    # Connect to room
-    connection_id = await connection_manager.connect(websocket, full_room_id)
-    logger.info(f"User {user_id} connected to {full_room_id}")
-    
-    try:
-        while True:
-            # Keep connection alive and receive ping/pong
-            data = await websocket.receive_text()
-            logger.debug(f"Message from {user_id}: {data}")
-    
-    except WebSocketDisconnect:
-        connection_manager.disconnect(full_room_id, connection_id)
-        logger.info(f"User {user_id} disconnected from {full_room_id}")
-    
-    except Exception as e:
-        logger.error(f"WebSocket error for {user_id}: {e}")
-        connection_manager.disconnect(full_room_id, connection_id)
-
-# Include routers
+# Include Routes
 app.include_router(auth_routes.router)
-app.include_router(vendor_routes.router)
 app.include_router(requester_routes.router)
+app.include_router(vendor_routes.router)
+app.include_router(match_routes.router)
 app.include_router(admin_routes.router)
+app.include_router(campaign_routes.router)
+app.include_router(donation_routes.router)
+
+@app.get("/health")
+def health_check(db: Session = Depends(get_db)):
+    try:
+        # Check DB
+        db.execute(text("SELECT 1"))
+        db_status = "Connected"
+    except Exception as e:
+        db_status = f"Error: {str(e)}"
+    
+    # Check Model
+    model_path = "ml/model.pkl"
+    model_status = "Loaded" if os.path.exists(model_path) else "Missing"
+    
+    return {
+        "status": "Healthy" if db_status == "Connected" else "Unhealthy",
+        "database": db_status,
+        "ml_model": model_status,
+        "version": "1.0.0"
+    }
 
 @app.get("/")
 def root():
-    """Health check endpoint."""
     return {
-        "message": "AVRE API is running",
-        "version": "1.0.0",
-        "docs": "/docs"
+        "message": "Welcome to AVRE API",
+        "docs": "/docs",
+        "status": "Healthy"
     }
-
-@app.get("/health")
-def health():
-    """Application health check."""
-    return {"status": "healthy"}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

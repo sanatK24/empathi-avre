@@ -1,243 +1,108 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
-import Layout from './components/Layout'
-import { useAppContext } from './context/AppContext'
-import { canAccessRoute } from './utils/rolePermissions'
-import DonationPage from './pages/DonationPage'
-import FeedPage from './pages/FeedPage'
-import MatchingPage from './pages/MatchingPage'
-import OnboardingPage from './pages/OnboardingPage'
-import PostDetailPage from './pages/PostDetailPage'
-import RecommendationsPage from './pages/RecommendationsPage'
-import CampaignCreationPage from './pages/CampaignCreationPage'
-import CampaignDetailPage from './pages/CampaignDetailPage'
-import CampaignEditPage from './pages/CampaignEditPage'
-import VerificationDashboard from './pages/VerificationDashboard'
-import VerificationDetailPage from './pages/VerificationDetailPage'
-import ResourceDeclarationPage from './pages/ResourceDeclarationPage'
-import ResourceRequestPage from './pages/ResourceRequestPage'
-import ResourceMatchingPage from './pages/ResourceMatchingPage'
-import AdminDashboard from './pages/AdminDashboard'
-import AdminEmergencyPanel from './pages/AdminEmergencyPanel'
-import CrisisDeclarationPage from './pages/CrisisDeclarationPage'
-import EmergencyFundManagement from './pages/EmergencyFundManagement'
-import VendorDashboard from './pages/VendorDashboard'
-import UserProfilePage from './pages/UserProfilePage'
-import NotificationCenter from './pages/NotificationCenter'
-import AuditTrailPage from './pages/AuditTrailPage'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import PublicLayout from './layouts/PublicLayout/PublicLayout';
+import DashboardLayout from './layouts/DashboardLayout/DashboardLayout';
 
-function ProtectedRoute({ children, requiredRole = null }) {
-  const { onboardingDone, profile } = useAppContext()
+// Public Pages
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
-  if (!onboardingDone) {
-    return <Navigate to="/" replace />
-  }
+// Requester Pages
+import RequesterDashboard from './pages/RequesterDashboard';
+import CreateRequest from './pages/CreateRequest';
+import MatchResults from './pages/MatchResults';
+import RequestHistory from './pages/RequestHistory';
 
-  if (requiredRole && !canAccessRoute(profile.userRole, window.location.pathname)) {
-    return (
-      <section>
-        <h1>Access Denied</h1>
-        <p>You don't have permission to access this page.</p>
-        <a href="/feed">Go back to feed</a>
-      </section>
-    )
-  }
+// Campaign Pages
+import CampaignsFeedPage from './pages/CampaignsFeedPage';
+import CampaignCreationPage from './pages/CampaignCreationPage';
 
-  return children
-}
+// Vendor Pages
+import InventoryManagement from './pages/InventoryManagement';
+import IncomingRequests from './pages/IncomingRequests';
+import VendorDashboard from './pages/VendorDashboard';
+import VendorAnalytics from './pages/VendorAnalytics';
+
+// Admin Pages
+import AdminDashboard from './pages/AdminDashboard';
+import UserProfilePage from './pages/UserProfilePage';
+
+import { AppProvider } from './context/AppContext';
+import { EmergencyProvider } from './context/EmergencyContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { ResourceProvider } from './context/ResourceContext';
 
 function App() {
   return (
-    <Layout>
-      <Routes>
-        <Route path="/" element={<OnboardingPage />} />
+    <AppProvider>
+      <EmergencyProvider>
+        <NotificationProvider>
+          <ResourceProvider>
+            <Router>
+              <Routes>
+        {/* Public Routes */}
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+        </Route>
 
-        {/* Existing Routes */}
-        <Route
-          path="/feed"
-          element={
-            <ProtectedRoute>
-              <FeedPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/posts/:id"
-          element={
-            <ProtectedRoute>
-              <PostDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/matching/:requestId?"
-          element={
-            <ProtectedRoute>
-              <MatchingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/donate/:postId"
-          element={
-            <ProtectedRoute>
-              <DonationPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recommendations"
-          element={
-            <ProtectedRoute>
-              <RecommendationsPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Requester Routes */}
+        <Route path="/requester" element={<DashboardLayout role="requester" />}>
+          <Route index element={<Navigate to="dashboard" />} />
+          <Route path="dashboard" element={<RequesterDashboard />} />
+          <Route path="create" element={<CreateRequest />} />
+          <Route path="results" element={<MatchResults />} />
+          <Route path="history" element={<RequestHistory />} />
+          <Route path="profile" element={<UserProfilePage />} />
+        </Route>
 
         {/* Campaign Routes */}
-        <Route
-          path="/campaign/create"
-          element={
-            <ProtectedRoute requiredRole="ngo">
-              <CampaignCreationPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/campaign/:id"
-          element={
-            <ProtectedRoute>
-              <CampaignDetailPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/campaign/:id/edit"
-          element={
-            <ProtectedRoute requiredRole="ngo">
-              <CampaignEditPage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/campaigns" element={<DashboardLayout role="requester" />}>
+          <Route index element={<CampaignsFeedPage />} />
+          <Route path="create" element={<CampaignCreationPage />} />
+        </Route>
 
-        {/* Verification Routes */}
-        <Route
-          path="/verify"
-          element={
-            <ProtectedRoute requiredRole="verifier">
-              <VerificationDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/verify/:postId"
-          element={
-            <ProtectedRoute requiredRole="verifier">
-              <VerificationDetailPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Resource Routes */}
-        <Route
-          path="/resource/declare"
-          element={
-            <ProtectedRoute>
-              <ResourceDeclarationPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/resource/request"
-          element={
-            <ProtectedRoute>
-              <ResourceRequestPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/resource/matches"
-          element={
-            <ProtectedRoute>
-              <ResourceMatchingPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/emergency"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminEmergencyPanel />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/crisis"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <CrisisDeclarationPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/admin/fund"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <EmergencyFundManagement />
-            </ProtectedRoute>
-          }
-        />
 
         {/* Vendor Routes */}
-        <Route
-          path="/vendor/dashboard"
-          element={
-            <ProtectedRoute requiredRole="vendor">
-              <VendorDashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/vendor" element={<DashboardLayout role="vendor" />}>
+          <Route index element={<Navigate to="dashboard" />} />
+          <Route path="dashboard" element={<VendorDashboard />} />
+          <Route path="inventory" element={<InventoryManagement />} />
+          <Route path="orders" element={<IncomingRequests />} />
+          <Route path="analytics" element={<VendorAnalytics />} />
+          <Route path="profile" element={<UserProfilePage />} />
+        </Route>
 
-        {/* User Routes */}
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <UserProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <NotificationCenter />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/audit-trail"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AuditTrailPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Admin Routes */}
+        <Route path="/admin" element={<DashboardLayout role="admin" />}>
+          <Route index element={<Navigate to="dashboard" />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="users" element={<div className="p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-soft">
+            <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">User Management</h2>
+            <p className="text-slate-500 font-medium italic">Security module loading...</p>
+          </div>} />
+          <Route path="vendors" element={<div className="p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-soft">
+            <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Vendor Verification</h2>
+            <p className="text-slate-500 font-medium italic">Compliance module loading...</p>
+          </div>} />
+          <Route path="stats" element={<div className="p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-soft">
+            <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">System Statistics</h2>
+            <p className="text-slate-500 font-medium italic">Server metrics loading...</p>
+          </div>} />
+          <Route path="profile" element={<UserProfilePage />} />
+        </Route>
 
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/feed" replace />} />
+        {/* Catch all */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </Layout>
-  )
+    </Router>
+          </ResourceProvider>
+        </NotificationProvider>
+      </EmergencyProvider>
+    </AppProvider>
+  );
 }
 
-export default App
+export default App;
