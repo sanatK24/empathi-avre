@@ -17,6 +17,7 @@ import RequestHistory from './pages/RequestHistory';
 // Campaign Pages
 import CampaignsFeedPage from './pages/CampaignsFeedPage';
 import CampaignCreationPage from './pages/CampaignCreationPage';
+import CampaignDetailPage from './pages/CampaignDetailPage';
 
 // Vendor Pages
 import InventoryManagement from './pages/InventoryManagement';
@@ -62,6 +63,7 @@ function App() {
         <Route path="/campaigns" element={<DashboardLayout role="requester" />}>
           <Route index element={<CampaignsFeedPage />} />
           <Route path="create" element={<CampaignCreationPage />} />
+          <Route path=":id" element={<CampaignDetailPage />} />
         </Route>
 
 

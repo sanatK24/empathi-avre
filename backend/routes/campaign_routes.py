@@ -246,3 +246,135 @@ def get_campaign_donations(
             donor_city=donor.city if donor else None
         ))
     return result
+
+# ============ CAMPAIGN UPDATES ============
+@router.post("/{campaign_id}/updates", status_code=201)
+def create_campaign_update(
+    campaign_id: int,
+    update_in: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Create a campaign update (creator only)"""
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    if campaign.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Only campaign creator can post updates")
+
+    from models import CampaignUpdate as CampaignUpdateModel
+
+    new_update = CampaignUpdateModel(
+        campaign_id=campaign_id,
+        title=update_in.get('title'),
+        content=update_in.get('content')
+    )
+    db.add(new_update)
+    db.commit()
+    db.refresh(new_update)
+
+    AuditService.log(
+        db,
+        action="campaign_update_created",
+        user_id=current_user.id,
+        resource_type="campaign_update",
+        resource_id=new_update.id,
+        details=f"Campaign: {campaign_id}"
+    )
+
+    return {
+        "id": new_update.id,
+        "campaign_id": new_update.campaign_id,
+        "title": new_update.title,
+        "content": new_update.content,
+        "created_at": new_update.created_at
+    }
+
+@router.get("/{campaign_id}/updates")
+def get_campaign_updates(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0)
+):
+    """Get campaign updates/progress posts"""
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    from models import CampaignUpdate as CampaignUpdateModel
+
+    updates = db.query(CampaignUpdateModel).filter(
+        CampaignUpdateModel.campaign_id == campaign_id
+    ).order_by(CampaignUpdateModel.created_at.desc()).limit(limit).offset(offset).all()
+
+    return [
+        {
+            "id": u.id,
+            "campaign_id": u.campaign_id,
+            "title": u.title,
+            "content": u.content,
+            "created_at": u.created_at
+        }
+        for u in updates
+    ]
+
+@router.delete("/{campaign_id}/updates/{update_id}")
+def delete_campaign_update(
+    campaign_id: int,
+    update_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete campaign update (creator only)"""
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    if campaign.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Only campaign creator can delete updates")
+
+    from models import CampaignUpdate as CampaignUpdateModel
+
+    update = db.query(CampaignUpdateModel).filter(
+        CampaignUpdateModel.id == update_id,
+        CampaignUpdateModel.campaign_id == campaign_id
+    ).first()
+
+    if not update:
+        raise HTTPException(status_code=404, detail="Update not found")
+
+    db.delete(update)
+    db.commit()
+
+    AuditService.log(
+        db,
+        action="campaign_update_deleted",
+        user_id=current_user.id,
+        resource_type="campaign_update",
+        resource_id=update_id
+    )
+
+    return {"detail": "Update deleted"}
+
+# ============ RELATED CAMPAIGNS ============
+@router.get("/{campaign_id}/related")
+def get_related_campaigns(
+    campaign_id: int,
+    db: Session = Depends(get_db),
+    limit: int = Query(4, ge=1, le=20)
+):
+    """Get related campaigns (same category, city, active status)"""
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    related = db.query(Campaign).filter(
+        Campaign.id != campaign_id,
+        Campaign.status == CampaignStatus.ACTIVE,
+        (Campaign.category == campaign.category) | (Campaign.city == campaign.city)
+    ).order_by(Campaign.created_at.desc()).limit(limit).all()
+
+    return related
+
