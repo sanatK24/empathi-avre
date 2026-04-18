@@ -209,4 +209,10 @@ export const apiService = {
     getPaymentMethods: (token) => request('/payments/methods', { token }),
     getPaymentHistory: (token, limit = 20, offset = 0) => request(`/payments/history?limit=${limit}&offset=${offset}`, { token }),
     verifyPayment: (token, transactionId) => request(`/payments/verify/${transactionId}`, { token }),
+
+    // Analytics & Recommendations
+    getPersonalizedRecommendations: (token, limit = 6) => request(`/campaigns/analytics/recommendations/personalized?limit=${limit}`, { token }),
+    getAnalyticsDashboard: (token) => request('/campaigns/analytics/dashboard', { token }),
+    getCampaignPerformance: (token, campaignId) => request(`/campaigns/analytics/${campaignId}/performance`, { token }),
+    getSimilarCampaigns: (token, campaignId, limit = 4) => request(`/campaigns/analytics/${campaignId}/similar?limit=${limit}`, { token }),
 };

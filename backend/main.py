@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine, Base, get_db
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from routes import auth_routes, vendor_routes, match_routes, admin_routes, requester_routes, campaign_routes, donation_routes, payment_routes
+from routes import auth_routes, vendor_routes, match_routes, admin_routes, requester_routes, campaign_routes, donation_routes, payment_routes, analytics_routes
 import models
 from fastapi.responses import JSONResponse
 import logging
@@ -74,6 +74,7 @@ app.include_router(admin_routes.router)
 app.include_router(campaign_routes.router)
 app.include_router(donation_routes.router)
 app.include_router(payment_routes.router)
+app.include_router(analytics_routes.router)
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
