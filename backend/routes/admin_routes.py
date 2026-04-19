@@ -102,7 +102,7 @@ def get_all_campaigns(
 @router.put("/campaigns/{campaign_id}/verify", dependencies=[Depends(check_role([UserRole.ADMIN]))])
 def verify_campaign(
     campaign_id: int,
-    request_body: CampaignVerifyRequest,
+    request_body: CampaignVerifyRequest = Body(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -132,7 +132,7 @@ def verify_campaign(
 @router.put("/campaigns/{campaign_id}/status")
 def update_campaign_status(
     campaign_id: int,
-    request_body: CampaignStatusUpdate,
+    request_body: CampaignStatusUpdate = Body(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     admin_check = Depends(check_role([UserRole.ADMIN]))

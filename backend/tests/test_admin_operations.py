@@ -73,7 +73,7 @@ class TestAdminCampaignManagement:
 
         # Should include all details
         assert 'campaign_id' in data
-        assert 'campaign_title' in data
+        assert 'title' in data
         assert 'creator_name' in data
         assert 'creator_email' in data
         assert 'status' in data

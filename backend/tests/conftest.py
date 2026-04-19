@@ -127,14 +127,13 @@ def api_client():
     return APIClient()
 
 @pytest.fixture
-def authenticated_client():
-    """Fixture for authenticated API client - ensures requester user exists and returns authenticated client"""
-    from database import SessionLocal
+def authenticated_client(test_client):
+    """Fixture for authenticated test client - ensures requester user exists and returns authenticated client"""
     from models import User, UserRole
     from auth import get_password_hash
 
-    # Ensure requester user exists in production database
-    db = SessionLocal()
+    # Ensure requester user exists in test database
+    db = TestingSessionLocal()
     try:
         requester_user = db.query(User).filter(User.email == TEST_USERS['requester']['email']).first()
         if not requester_user:
@@ -153,24 +152,44 @@ def authenticated_client():
     finally:
         db.close()
 
-    # Create API client and login
-    client = APIClient()
-    try:
-        client.login(TEST_USERS['requester']['email'], TEST_USERS['requester']['password'])
-    except Exception as e:
-        print(f"Requester login failed: {e}")
+    # Create authenticated test client
+    class AuthenticatedTestClient:
+        def __init__(self, test_client_instance, token):
+            self.test_client = test_client_instance
+            self.token = token
+            self.headers = {'Authorization': f'Bearer {token}'}
 
-    return client
+        def get(self, endpoint):
+            return self.test_client.get(endpoint, headers=self.headers)
+
+        def post(self, endpoint, json=None, data=None):
+            if json:
+                return self.test_client.post(endpoint, json=json, headers=self.headers)
+            return self.test_client.post(endpoint, data=data, headers=self.headers)
+
+        def put(self, endpoint, json=None):
+            return self.test_client.put(endpoint, json=json, headers=self.headers)
+
+        def delete(self, endpoint):
+            return self.test_client.delete(endpoint, headers=self.headers)
+
+    # Login to get token
+    login_response = test_client.post(
+        '/auth/login',
+        data={'username': TEST_USERS['requester']['email'], 'password': TEST_USERS['requester']['password']}
+    )
+    token = login_response.json()['access_token']
+
+    return AuthenticatedTestClient(test_client, token)
 
 @pytest.fixture
-def admin_client():
-    """Fixture for admin API client - ensures admin user exists and returns authenticated client"""
-    from database import SessionLocal
+def admin_client(test_client):
+    """Fixture for admin test client - logs in as admin for each test"""
     from models import User, UserRole
     from auth import get_password_hash
 
-    # Ensure admin user exists in production database with ADMIN role
-    db = SessionLocal()
+    # Ensure admin user exists in test database
+    db = TestingSessionLocal()
     try:
         admin_user = db.query(User).filter(User.email == TEST_USERS['admin']['email']).first()
         if not admin_user:
@@ -189,14 +208,35 @@ def admin_client():
     finally:
         db.close()
 
-    # Create API client and login
-    client = APIClient()
-    try:
-        client.login(TEST_USERS['admin']['email'], TEST_USERS['admin']['password'])
-    except Exception as e:
-        print(f"Admin login failed: {e}")
+    # Create authenticated test client
+    class AuthenticatedTestClient:
+        def __init__(self, test_client_instance, token):
+            self.test_client = test_client_instance
+            self.token = token
+            self.headers = {'Authorization': f'Bearer {token}'}
 
-    return client
+        def get(self, endpoint):
+            return self.test_client.get(endpoint, headers=self.headers)
+
+        def post(self, endpoint, json=None, data=None):
+            if json:
+                return self.test_client.post(endpoint, json=json, headers=self.headers)
+            return self.test_client.post(endpoint, data=data, headers=self.headers)
+
+        def put(self, endpoint, json=None):
+            return self.test_client.put(endpoint, json=json, headers=self.headers)
+
+        def delete(self, endpoint):
+            return self.test_client.delete(endpoint, headers=self.headers)
+
+    # Login to get token
+    login_response = test_client.post(
+        '/auth/login',
+        data={'username': TEST_USERS['admin']['email'], 'password': TEST_USERS['admin']['password']}
+    )
+    token = login_response.json()['access_token']
+
+    return AuthenticatedTestClient(test_client, token)
 
 @pytest.fixture
 def browser():
