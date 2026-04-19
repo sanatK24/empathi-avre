@@ -182,61 +182,56 @@ async function getGoogleAuthorizationCode() {
   })
 }
 
-async function registerWithGoogle(code) {
-  return apiPost('/register', { code })
-}
-
-async function loginWithGoogle(code) {
-  return apiPost('/login', { code })
-}
-
-async function addRole(token, role) {
-  return apiPut('/add/role', { role }, token)
-}
-
 async function getMe(token) {
-  return apiGet('/me', token)
+  return apiGet('/auth/me', token)
 }
 
-export async function authenticateWithGoogleAndSyncRole(frontendRole) {
-  const code = await getGoogleAuthorizationCode()
+export async function login(email, password) {
+  const formData = new FormData()
+  formData.append('username', email)
+  formData.append('password', password)
 
-  try {
-    await registerWithGoogle(code)
-  } catch (error) {
-    // If account exists, continue with login.
-    if (!String(error.message || '').toLowerCase().includes('already registered')) {
-      throw error
-    }
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    method: 'POST',
+    body: formData,
+  })
+
+  const payload = await response.json()
+  if (!response.ok) {
+    throw new Error(payload.error || 'Login failed')
   }
 
-  const loginResult = await loginWithGoogle(code)
-
-  let accessToken = loginResult.access_token
-  let user = loginResult.user
-  const backendRole = mapFrontendRoleToBackendRole(frontendRole)
-
-  if (user?.role !== backendRole) {
-    const roleResult = await addRole(accessToken, backendRole)
-    accessToken = roleResult.access_token
-    user = roleResult.user
+  const me = await getMe(payload.access_token)
+  
+  // Normalize roles from backend to frontend expectations
+  if (me && me.role) {
+    me.frontendRole = mapBackendRoleToFrontendRole(me.role);
   }
-
-  const me = await getMe(accessToken)
 
   const session = {
-    accessToken,
-    user: me || user,
+    accessToken: payload.access_token,
+    user: me,
   }
 
   saveAuthSession(session)
   return session
 }
 
-export async function updateMyProfile({ name, email, accessToken }) {
+export async function register(userData) {
+  return apiPost('/auth/register', userData)
+}
+
+export async function updateMyProfile({ name, email, phone, organizationName, bio, password, accessToken }) {
   if (!accessToken) {
     throw new Error('Missing access token')
   }
 
-  return apiPut('/me', { name, email }, accessToken)
+  return apiPut('/auth/profile', { 
+    name, 
+    email, 
+    phone, 
+    organization_name: organizationName, 
+    bio,
+    password
+  }, accessToken)
 }

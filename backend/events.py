@@ -2,7 +2,7 @@
 from enum import Enum
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 
 # ============ EVENT TYPES ============
 class EventType(str, Enum):
@@ -72,7 +72,7 @@ class MatchCancelledEvent(BaseModel):
     """Requester cancelled request/match."""
     request_id: int
     requester_id: int
-    affected_vendor_ids: list[int]  # Vendors who lost this opportunity
+    affected_vendor_ids: List[int]  # Vendors who lost this opportunity
     resource_name: str
 
 class VendorFlaggedEvent(BaseModel):

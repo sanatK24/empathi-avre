@@ -16,7 +16,7 @@ import {
   MapPin,
   DollarSign
 } from 'lucide-react';
-import Badge from './ui/Badge';
+import Badge from '../components/ui/Badge';
 
 function CampaignAnalyticsDashboard() {
   const { profile } = useAppContext();

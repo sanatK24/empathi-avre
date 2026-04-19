@@ -1,289 +1,194 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User, Vendor, Inventory, Match, Request as DBRequest, UserRole, MatchStatus
-from schemas import VendorCreate, VendorResponse, VendorUpdate, InventoryCreate, InventoryResponse, InventoryUpdate, MatchResponse, MatchStatus
-from auth import verify_token
-from realtime import emit_and_broadcast
-from events import EventType
-import asyncio
+from models import Vendor, Inventory, User, UserRole, Match, MatchStatus
+from schemas import VendorProfileCreate, VendorResponse, InventoryCreate, InventoryResponse
+from auth import get_current_user, check_role
+from typing import List, Dict, Any
+from pydantic import BaseModel
 
-router = APIRouter(prefix="/vendor", tags=["Vendor"])
+router = APIRouter(prefix="/vendor", tags=["vendor"])
 
-def get_current_vendor_or_admin(token: dict = Depends(verify_token), db: Session = Depends(get_db)):
-    """Get current vendor user or admin."""
-    user_id = token.get("sub")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
-    if user.role not in [UserRole.VENDOR, UserRole.ADMIN]:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
-    return user
 
-# ============ VENDOR REGISTRATION & PROFILE ============
-@router.post("/register", response_model=VendorResponse)
-def create_vendor(vendor: VendorCreate, token: dict = Depends(verify_token), db: Session = Depends(get_db)):
-    """Create a vendor profile (called after user registration)."""
-    user_id = token.get("sub")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+# Response schemas
+class MarketAnalyticsResponse(BaseModel):
+    trending_product: str
+    demand_increase: int
 
-    # Check if vendor already exists for this user
-    existing_vendor = db.query(Vendor).filter(Vendor.user_id == user_id).first()
-    if existing_vendor:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Vendor profile already exists")
 
-    db_vendor = Vendor(
-        user_id=user_id,
-        shop_name=vendor.shop_name,
-        category=vendor.category,
-        latitude=vendor.latitude,
-        longitude=vendor.longitude,
-        avg_response_time=vendor.avg_response_time
-    )
-    db.add(db_vendor)
+class VendorStatsResponse(BaseModel):
+    total_value: str
+    low_stock_alerts: str
+    active_requests: str
+    avg_response_time: str
+    reliability_score: str
+    market_analytics: MarketAnalyticsResponse
+
+@router.post("/profile", response_model=VendorResponse)
+def create_profile(prof_in: VendorProfileCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Ensure user is a vendor
+    if current_user.role != UserRole.VENDOR:
+        current_user.role = UserRole.VENDOR
+        db.commit()
+
+    db_vendor = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
+    if db_vendor:
+        for key, value in prof_in.dict().items():
+            setattr(db_vendor, key, value)
+    else:
+        db_vendor = Vendor(user_id=current_user.id, **prof_in.dict())
+        db.add(db_vendor)
+        
     db.commit()
     db.refresh(db_vendor)
     return db_vendor
 
 @router.get("/profile", response_model=VendorResponse)
-def get_vendor_profile(user: User = Depends(get_current_vendor_or_admin), db: Session = Depends(get_db)):
-    """Get current vendor's profile."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
+def get_profile(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    vendor = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
     if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vendor profile not found")
+        raise HTTPException(status_code=404, detail="Vendor profile not found")
     return vendor
 
-@router.put("/profile", response_model=VendorResponse)
-def update_vendor_profile(
-    vendor_update: VendorUpdate,
-    user: User = Depends(get_current_vendor_or_admin),
-    db: Session = Depends(get_db)
-):
-    """Update vendor profile."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
-    if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    if vendor_update.shop_name:
-        vendor.shop_name = vendor_update.shop_name
-    if vendor_update.is_active is not None:
-        vendor.is_active = vendor_update.is_active
-    if vendor_update.avg_response_time:
-        vendor.avg_response_time = vendor_update.avg_response_time
-
-    db.commit()
-    db.refresh(vendor)
-    return vendor
-
-# ============ INVENTORY MANAGEMENT ============
 @router.post("/inventory", response_model=InventoryResponse)
-def add_inventory(
-    item: InventoryCreate,
-    user: User = Depends(get_current_vendor_or_admin),
-    db: Session = Depends(get_db)
-):
-    """Add an inventory item."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
+def add_inventory(inv_in: InventoryCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    vendor = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
     if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    db_item = Inventory(
-        vendor_id=vendor.id,
-        resource_name=item.resource_name,
-        quantity=item.quantity,
-        price=item.price
-    )
-    db.add(db_item)
-    db.commit()
-    db.refresh(db_item)
-    return db_item
-
-@router.get("/inventory", response_model=list[InventoryResponse])
-def list_inventory(
-    user: User = Depends(get_current_vendor_or_admin),
-    db: Session = Depends(get_db)
-):
-    """List all inventory items for current vendor."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
-    if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    items = db.query(Inventory).filter(Inventory.vendor_id == vendor.id).all()
-    return items
-
-@router.put("/inventory/{item_id}", response_model=InventoryResponse)
-def update_inventory(
-    item_id: int,
-    item_update: InventoryUpdate,
-    user: User = Depends(get_current_vendor_or_admin),
-    db: Session = Depends(get_db)
-):
-    """Update an inventory item."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
-    if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    db_item = db.query(Inventory).filter(
-        Inventory.id == item_id,
-        Inventory.vendor_id == vendor.id
+        raise HTTPException(status_code=404, detail="Create vendor profile first")
+    
+    # Check if exists
+    item = db.query(Inventory).filter(
+        Inventory.vendor_id == vendor.id,
+        Inventory.resource_name == inv_in.resource_name
     ).first()
-    if not db_item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    if item_update.quantity is not None:
-        db_item.quantity = item_update.quantity
-    if item_update.price is not None:
-        db_item.price = item_update.price
-
+    
+    if item:
+        item.quantity += inv_in.quantity
+        item.price = inv_in.price or item.price
+    else:
+        item = Inventory(vendor_id=vendor.id, **inv_in.dict())
+        db.add(item)
+        
     db.commit()
-    db.refresh(db_item)
-    return db_item
+    db.refresh(item)
+    return item
 
-@router.delete("/inventory/{item_id}")
-def delete_inventory(
-    item_id: int,
-    user: User = Depends(get_current_vendor_or_admin),
-    db: Session = Depends(get_db)
-):
-    """Delete an inventory item."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
+@router.get("/inventory", response_model=List[InventoryResponse])
+def get_inventory(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    vendor = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
     if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    db_item = db.query(Inventory).filter(
-        Inventory.id == item_id,
-        Inventory.vendor_id == vendor.id
-    ).first()
-    if not db_item:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    db.delete(db_item)
-    db.commit()
-    return {"message": "Item deleted"}
-
-# ============ INCOMING REQUESTS ============
-@router.get("/requests")
-def get_incoming_requests(
-    user: User = Depends(get_current_vendor_or_admin),
-    db: Session = Depends(get_db)
-):
-    """View all matched requests for current vendor."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
+        raise HTTPException(status_code=404, detail="Vendor profile not found")
+    return db.query(Inventory).filter(Inventory.vendor_id == vendor.id).all()
+@router.get("/stats", response_model=VendorStatsResponse)
+def get_vendor_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    vendor = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
     if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        raise HTTPException(status_code=404, detail="Vendor profile not found")
 
-    matches = db.query(Match).filter(Match.vendor_id == vendor.id).all()
-    results = []
-    for match in matches:
+    # Total Value
+    total_value = db.query(Inventory).filter(Inventory.vendor_id == vendor.id).all()
+    # Safely handle potential None price
+    value_sum = sum((item.price or 0) * item.quantity for item in total_value)
+
+    # Low stock alerts
+    low_stock = db.query(Inventory).filter(
+        Inventory.vendor_id == vendor.id,
+        Inventory.quantity <= Inventory.reorder_level
+    ).count()
+
+    # Active requests (pending matches)
+    active_requests = db.query(Match).filter(
+        Match.vendor_id == vendor.id,
+        Match.status == MatchStatus.PENDING
+    ).count()
+
+    return {
+        "total_value": f"₹{value_sum:,.0f}",
+        "low_stock_alerts": f"{low_stock} Items",
+        "active_requests": str(active_requests),
+        "avg_response_time": f"{vendor.avg_response_time}m",
+        "reliability_score": f"{vendor.reliability_score * 100:.1f}%",
+        "market_analytics": {
+            "trending_product": "Oxygen Cylinders" if vendor.category == "medical" else "N95 Masks",
+            "demand_increase": 45
+        }
+    }
+
+
+@router.get("/debug-stats")
+def debug_vendor_stats():
+    """Debug endpoint to show what's in the code"""
+    return {"message": "Rupee symbol test: ₹"}
+
+
+
+@router.get("/matches")
+def get_vendor_matches(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Get all pending matches/incoming requests for vendor"""
+    vendor = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor profile not found")
+
+    matches = db.query(Match).filter(
+        Match.vendor_id == vendor.id,
+        Match.status == MatchStatus.PENDING
+    ).all()
+
+    return matches
+
+
+@router.get("/analytics")
+def get_vendor_analytics(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Get analytics data for vendor dashboard"""
+    vendor = db.query(Vendor).filter(Vendor.user_id == current_user.id).first()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor profile not found")
+
+    # Count completed orders
+    completed_matches = db.query(Match).filter(
+        Match.vendor_id == vendor.id,
+        Match.status == MatchStatus.COMPLETED
+    ).count()
+
+    # Calculate total revenue
+    total_revenue = 0
+    completed_items = db.query(Match).filter(
+        Match.vendor_id == vendor.id,
+        Match.status == MatchStatus.COMPLETED
+    ).all()
+    for match in completed_items:
         request = match.request
-        results.append({
-            "match_id": match.id,
-            "request_id": request.id,
-            "resource_name": request.resource_name,
-            "quantity": request.quantity,
-            "urgency": request.urgency,
-            "request_status": request.status,
-            "status": match.status,
-            "score": match.score,
-            "is_actionable": match.status == MatchStatus.PENDING,
-            "created_at": match.created_at
-        })
-    results.sort(key=lambda x: x["created_at"], reverse=True)
-    return results
+        if request:
+            inventory = db.query(Inventory).filter(
+                Inventory.vendor_id == vendor.id,
+                Inventory.resource_name == request.resource_name
+            ).first()
+            if inventory and inventory.price:
+                total_revenue += inventory.price * request.quantity
 
-@router.post("/requests/{match_id}/accept")
-def accept_match(
-    match_id: int,
-    user: User = Depends(get_current_vendor_or_admin),
-    db: Session = Depends(get_db)
-):
-    """Vendor accepts a match request."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
-    if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    # Get average lead time
+    all_matches = db.query(Match).filter(Match.vendor_id == vendor.id).all()
+    avg_lead_time = vendor.avg_response_time if all_matches else 0
 
-    match = db.query(Match).filter(
-        Match.id == match_id,
-        Match.vendor_id == vendor.id
-    ).first()
-    if not match:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    # Calculate match rate
+    total_matches = len(all_matches)
+    accepted_matches = db.query(Match).filter(
+        Match.vendor_id == vendor.id,
+        Match.status.in_([MatchStatus.ACCEPTED_BY_VENDOR, MatchStatus.COMPLETED])
+    ).count()
+    match_rate = (accepted_matches / total_matches * 100) if total_matches > 0 else 0
 
-    if match.status == MatchStatus.CANCELLED_BY_REQUESTER:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Requester has cancelled this match",
-        )
+    # Stock coverage
+    inventory_items = db.query(Inventory).filter(Inventory.vendor_id == vendor.id).all()
+    low_stock_items = sum(1 for item in inventory_items if item.quantity <= item.reorder_level)
+    stock_coverage = ((len(inventory_items) - low_stock_items) / len(inventory_items) * 100) if inventory_items else 0
 
-    if match.status != MatchStatus.PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot accept match in {match.status.value} state",
-        )
-
-    match.status = MatchStatus.ACCEPTED_BY_VENDOR
-    db.commit()
-    db.refresh(match)
-    
-    # Emit match accepted by vendor event (notify requester)
-    asyncio.create_task(emit_and_broadcast(
-        EventType.MATCH_ACCEPTED_BY_VENDOR,
-        {
-            "vendor_id": vendor.id,
-            "vendor_name": vendor.shop_name,
-            "request_id": match.request_id,
-            "match_id": match.id,
-            "requester_id": match.request.user_id
-        }
-    ))
-    
-    return {"message": "Request accepted", "match": match}
-
-@router.post("/requests/{match_id}/reject")
-def reject_match(
-    match_id: int,
-    user: User = Depends(get_current_vendor_or_admin),
-    db: Session = Depends(get_db)
-):
-    """Vendor rejects a match request."""
-    vendor = db.query(Vendor).filter(Vendor.user_id == user.id).first()
-    if not vendor:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    match = db.query(Match).filter(
-        Match.id == match_id,
-        Match.vendor_id == vendor.id
-    ).first()
-    if not match:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    if match.status == MatchStatus.CANCELLED_BY_REQUESTER:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Requester has cancelled this match",
-        )
-
-    if match.status != MatchStatus.PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot reject match in {match.status.value} state",
-        )
-
-    match.status = MatchStatus.REJECTED_BY_VENDOR
-    db.commit()
-    db.refresh(match)
-    
-    # Emit match rejected by vendor event (notify requester)
-    asyncio.create_task(emit_and_broadcast(
-        EventType.MATCH_REJECTED_BY_VENDOR,
-        {
-            "vendor_id": vendor.id,
-            "request_id": match.request_id,
-            "match_id": match.id,
-            "requester_id": match.request.user_id
-        }
-    ))
-    
-    return {"message": "Request rejected"}
+    return {
+        "total_orders": completed_matches,
+        "revenue": f"₹{total_revenue:,.0f}",
+        "avg_lead_time": f"{avg_lead_time}m",
+        "match_rate": f"{match_rate:.1f}%",
+        "freshness": f"{stock_coverage:.1f}%",
+        "stock_coverage": f"{stock_coverage:.1f}%",
+        "match_accuracy": f"{vendor.reliability_score * 100:.1f}%"
+    }

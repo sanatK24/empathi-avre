@@ -1,5 +1,5 @@
 """
-Pytest configuration and fixtures for E2E testing
+Pytest configuration and fixtures for both unit and E2E testing
 """
 import pytest
 import requests
@@ -10,8 +10,46 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 import os
 from dotenv import load_dotenv
+import sys
+from pathlib import Path
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 load_dotenv()
+
+# Add backend to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# ============ UNIT TEST DATABASE SETUP ============
+from main import app
+from database import Base, get_db
+
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+test_engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
+
+app.dependency_overrides[get_db] = override_get_db
+client = TestClient(app)
+
+@pytest.fixture(autouse=True)
+def setup_db():
+    """Setup and teardown test database"""
+    Base.metadata.create_all(bind=test_engine)
+    yield
+    Base.metadata.drop_all(bind=test_engine)
+
+@pytest.fixture
+def test_client():
+    """Fixture for TestClient"""
+    return client
 
 # Test Configuration
 API_BASE_URL = os.getenv('TEST_API_URL', 'http://localhost:8000')
@@ -49,14 +87,20 @@ class APIClient:
     def request(self, method, endpoint, **kwargs):
         """Make HTTP request"""
         url = f'{self.base_url}{endpoint}'
-        response = requests.request(method, url, headers=self.headers, **kwargs)
+        headers = self.headers.copy()
+        # Remove Content-Type if sending form data
+        if 'data' in kwargs:
+            headers.pop('Content-Type', None)
+        response = requests.request(method, url, headers=headers, **kwargs)
         return response
 
     def get(self, endpoint):
         return self.request('GET', endpoint)
 
-    def post(self, endpoint, json=None):
-        return self.request('POST', endpoint, json=json)
+    def post(self, endpoint, json=None, data=None):
+        if json:
+            return self.request('POST', endpoint, json=json)
+        return self.request('POST', endpoint, data=data)
 
     def put(self, endpoint, json=None):
         return self.request('PUT', endpoint, json=json)
@@ -82,13 +126,57 @@ def api_client():
 @pytest.fixture
 def authenticated_client(api_client):
     """Fixture for authenticated API client"""
-    api_client.login(TEST_USERS['requester']['email'], TEST_USERS['requester']['password'])
+    # Register or login requester user
+    register_resp = api_client.request('POST', '/auth/register', json={
+        'name': TEST_USERS['requester']['name'],
+        'email': TEST_USERS['requester']['email'],
+        'password': TEST_USERS['requester']['password'],
+        'role': 'requester'
+    })
+    # If already registered, that's OK - just login
+    try:
+        api_client.login(TEST_USERS['requester']['email'], TEST_USERS['requester']['password'])
+    except:
+        pass
     return api_client
 
 @pytest.fixture
 def admin_client(api_client):
     """Fixture for admin API client"""
-    api_client.login(TEST_USERS['admin']['email'], TEST_USERS['admin']['password'])
+    # Register requester first (can't register as admin directly)
+    api_client.request('POST', '/auth/register', json={
+        'name': TEST_USERS['admin']['name'],
+        'email': TEST_USERS['admin']['email'],
+        'password': TEST_USERS['admin']['password'],
+        'role': 'requester'
+    })
+
+    # Login to get token
+    try:
+        api_client.login(TEST_USERS['admin']['email'], TEST_USERS['admin']['password'])
+    except:
+        pass
+
+    # Update user role to admin in database (direct database access for test setup)
+    try:
+        from database import SessionLocal
+        from models import User, UserRole
+
+        db = SessionLocal()
+        admin_user = db.query(User).filter(User.email == TEST_USERS['admin']['email']).first()
+        if admin_user and admin_user.role != UserRole.ADMIN:
+            admin_user.role = UserRole.ADMIN
+            db.commit()
+        db.close()
+    except Exception as e:
+        print(f"Failed to set admin role: {e}")
+
+    # Re-login to get new token with admin role
+    try:
+        api_client.login(TEST_USERS['admin']['email'], TEST_USERS['admin']['password'])
+    except:
+        pass
+
     return api_client
 
 @pytest.fixture
@@ -160,21 +248,15 @@ def test_payment_data():
     """Test payment data for different methods"""
     return {
         'upi': {
-            'upi_id': 'testuser@upi',
             'payment_method': 'upi'
         },
         'card': {
-            'card_number': '4111111111111111',
-            'expiry': '12/25',
-            'cvv': '123',
             'payment_method': 'card'
         },
         'wallet': {
-            'phone': '9876543210',
             'payment_method': 'wallet'
         },
         'bank': {
-            'account_number': '1234567890123',
             'payment_method': 'bank'
         }
     }

@@ -1,7 +1,7 @@
 """Real-time notification service: WebSocket connection manager + RabbitMQ integration."""
 import json
 import logging
-from typing import Dict, Set
+from typing import Dict, Set, List
 from fastapi import WebSocket
 import asyncio
 from datetime import datetime
@@ -60,7 +60,7 @@ class ConnectionManager:
         for connection_id in disconnected:
             self.disconnect(room_id, connection_id)
     
-    async def broadcast_to_rooms(self, room_ids: list[str], payload: dict):
+    async def broadcast_to_rooms(self, room_ids: List[str], payload: dict):
         """Broadcast to multiple rooms."""
         tasks = [self.broadcast_to_room(room_id, payload) for room_id in room_ids]
         await asyncio.gather(*tasks)
@@ -133,7 +133,7 @@ class EventEmitter:
         except Exception as e:
             logger.error(f"Failed to emit event: {e}")
     
-    async def subscribe_to_events(self, routing_keys: list[str], callback):
+    async def subscribe_to_events(self, routing_keys: List[str], callback):
         """Subscribe to events (for background consumer)."""
         if not self.channel:
             logger.warning("RabbitMQ not connected")
@@ -167,7 +167,7 @@ event_emitter = EventEmitter()
 
 
 # ============ EVENT ROUTING ============
-def get_event_rooms(event_type: EventType, event_data: dict) -> list[str]:
+def get_event_rooms(event_type: EventType, event_data: dict) -> List[str]:
     """Determine which rooms should receive an event."""
     rooms = []
     

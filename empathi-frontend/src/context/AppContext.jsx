@@ -65,27 +65,36 @@ export function AppProvider({ children }) {
   }
 
   const logout = () => {
-    logoutSession()
-    const next = {
-      userId: 1,
-      city: '',
-      location: null,
-      userRole: '',
-      isVerified: false,
-      email: '',
-      phone: '',
-      fullName: '',
-      organizationName: '',
-      bio: '',
-      emergencyFundOptIn: true,
-      emergencyFundPercentage: 5,
-      accessToken: '',
-      backendUserId: null,
-      backendRole: '',
-      isAuthenticated: false,
+    try {
+      console.log('Logging out...');
+      logoutSession()
+      const next = {
+        userId: 1,
+        city: '',
+        location: null,
+        userRole: '',
+        isVerified: false,
+        email: '',
+        phone: '',
+        fullName: '',
+        organizationName: '',
+        bio: '',
+        emergencyFundOptIn: true,
+        emergencyFundPercentage: 5,
+        accessToken: '',
+        backendUserId: null,
+        backendRole: '',
+        isAuthenticated: false,
+      }
+      setProfile(next)
+      localStorage.setItem('empathi_profile', JSON.stringify(next))
+      console.log('Profile cleared, redirecting...');
+      window.location.href = '/login'
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Fallback redirect
+      window.location.href = '/login'
     }
-    setProfile(next)
-    localStorage.setItem('empathi_profile', JSON.stringify(next))
   }
 
   useEffect(() => {

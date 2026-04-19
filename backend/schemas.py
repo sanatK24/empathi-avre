@@ -185,6 +185,7 @@ class CampaignCreate(BaseModel):
     urgency_level: UrgencyLevel = UrgencyLevel.MEDIUM
     cover_image: Optional[str] = None
     deadline: Optional[datetime] = None
+    status: Optional[CampaignStatus] = CampaignStatus.ACTIVE
 
 class CampaignUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=5, max_length=200)
@@ -255,3 +256,17 @@ class CampaignUpdateResponse(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+# ============ PAYMENT SCHEMAS ============
+class DonorDetails(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+
+class PaymentProcess(BaseModel):
+    campaign_id: int
+    amount: float = Field(..., gt=0)
+    payment_method: str = Field(..., description="upi|card|wallet|bank")
+    anonymous: bool = False
+    message: Optional[str] = Field(None, max_length=500)
+    donor_details: Optional[DonorDetails] = None

@@ -4,6 +4,7 @@ from database import get_db
 from models import User, Campaign, Donation, DonationStatus
 from auth import get_current_user
 from services.audit import AuditService
+from schemas import PaymentProcess
 from typing import Optional
 from datetime import datetime
 import random
@@ -18,7 +19,7 @@ def generate_transaction_id():
 # ============ SIMULATE PAYMENT FLOW ============
 @router.post("/process")
 def process_payment(
-    payment_data: dict,
+    payment_data: PaymentProcess,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -40,12 +41,11 @@ def process_payment(
     }
     """
     try:
-        campaign_id = payment_data.get('campaign_id')
-        amount = payment_data.get('amount')
-        payment_method = payment_data.get('payment_method', 'upi')
-        anonymous = payment_data.get('anonymous', False)
-        message = payment_data.get('message')
-        donor_details = payment_data.get('donor_details', {})
+        campaign_id = payment_data.campaign_id
+        amount = payment_data.amount
+        payment_method = payment_data.payment_method
+        anonymous = payment_data.anonymous
+        message = payment_data.message
 
         # Validate campaign
         campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()

@@ -23,5 +23,5 @@ def print_test_info():
     print("="*70 + "\n")
     yield
     print("\n" + "="*70)
-    print("✅ Test Session Complete")
+    print("[OK] Test Session Complete")
     print("="*70 + "\n")

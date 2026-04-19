@@ -1,0 +1,9 @@
+--- DATA VALIDATION REPORT ---
+Admins: 2 (Expected: 2)
+Users: 22, Unique Emails: 22
+Vendors outside India bounds: 0 (Expected: 0)
+Broken Match-Request links: 0 (Expected: 0)
+Broken Vendor-User links: 0 (Expected: 0)
+Inventory items with zero/negative price: 0 (Expected: 0)
+-------------------------------
+ALL VALIDATIONS PASSED!

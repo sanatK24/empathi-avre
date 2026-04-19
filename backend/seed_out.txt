@@ -1,0 +1,11 @@
+Clearing existing data...
+Existing data cleared.
+Generating small dataset...
+Inserted 22 users.
+Inserted 8 vendors.
+Inserted 34 inventory items.
+Inserted 30 requests.
+Inserted 31 matches.
+Inserted 60 audit logs.
+Inserted default scoring config.
+Seeding completed successfully!

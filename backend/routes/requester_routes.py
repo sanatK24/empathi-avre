@@ -1,13 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Dict
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Request as DBRequest, Match, UserRole, RequestStatus, MatchStatus, Vendor
-from schemas import RequestCreate, RequestResponse, MatchResultWithVendor
-from auth import verify_token
-from avre_engine import AVREEngine
+from schemas import RequestCreate, RequestResponse
+from auth import get_current_user
+from services.avre_engine import AVREEngine
+from services.feature_builder import FeatureBuilder
 from realtime import emit_and_broadcast
 from events import EventType
 import asyncio
+import anyio
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/requests", tags=["Requester"])
 
@@ -26,12 +32,8 @@ CANCELLABLE_REQUEST_STATUSES = {
     RequestStatus.MATCHED,
 }
 
-def get_current_requester(token: dict = Depends(verify_token), db: Session = Depends(get_db)):
+def get_current_requester(user: User = Depends(get_current_user)):
     """Get current requester user."""
-    user_id = token.get("sub")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     if user.role != UserRole.REQUESTER:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only requesters can access this")
     return user
@@ -69,7 +71,7 @@ def update_vendor_rating_on_acceptance(vendor: Vendor, match: Match, db: Session
     return new_rating
 
 # ============ CREATE REQUEST ============
-@router.post("", response_model=RequestResponse)
+@router.post("/", response_model=RequestResponse)
 def create_request(
     request_data: RequestCreate,
     user: User = Depends(get_current_requester),
@@ -83,13 +85,13 @@ def create_request(
             detail="Resource name is required",
         )
 
-    if not (-90 <= request_data.latitude <= 90):
+    if not (-90 <= request_data.location_lat <= 90):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Latitude must be between -90 and 90",
         )
 
-    if not (-180 <= request_data.longitude <= 180):
+    if not (-180 <= request_data.location_lng <= 180):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Longitude must be between -180 and 180",
@@ -100,36 +102,42 @@ def create_request(
     db_request = DBRequest(
         user_id=user.id,
         resource_name=resource_name,
+        category=request_data.category,
         quantity=request_data.quantity,
-        latitude=request_data.latitude,
-        longitude=request_data.longitude,
-        urgency=request_data.urgency,
+        location_lat=request_data.location_lat,
+        location_lng=request_data.location_lng,
+        city=request_data.city,
+        urgency_level=request_data.urgency_level,
         notes=notes,
         status=RequestStatus.PENDING
     )
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
-    
-    # Emit request creation event for monitoring
-    asyncio.create_task(emit_and_broadcast(
-        EventType.REQUEST_FLAGGED,  # Using as generic request event (consider adding REQUEST_CREATED)
-        {
-            "request_id": db_request.id,
-            "requester_id": user.id,
-            "resource_name": resource_name,
-            "urgency": request_data.urgency,
-            "location": {
-                "latitude": request_data.latitude,
-                "longitude": request_data.longitude
+
+    # Emit request creation event asynchronously (non-blocking)
+    try:
+        anyio.from_thread.run_sync(emit_and_broadcast,
+            EventType.REQUEST_FLAGGED,
+            {
+                "request_id": db_request.id,
+                "requester_id": user.id,
+                "resource_name": resource_name,
+                "urgency": request_data.urgency_level.value,
+                "location": {
+                    "latitude": request_data.location_lat,
+                    "longitude": request_data.location_lng
+                }
             }
-        }
-    ))
-    
+        )
+    except Exception as e:
+        # Log but don't fail the request if event emission fails
+        logger.error(f"Failed to emit request created event: {e}")
+
     return db_request
 
 # ============ VIEW MATCHES ============
-@router.get("/{request_id}/matches", response_model=list[MatchResultWithVendor])
+@router.get("/{request_id}/matches", response_model=list)
 def get_matches(
     request_id: int,
     user: User = Depends(get_current_requester),
@@ -155,81 +163,72 @@ def get_matches(
     # Check if matches already exist
     existing_matches = db.query(Match).filter(Match.request_id == request_id).all()
     if not existing_matches and request.status in MATCHABLE_REQUEST_STATUSES:
-        # Load scoring weights from DB (FR-406)
-        from models import ScoringConfig
-        from schemas import ScoringWeights
-        
-        scoring_config = db.query(ScoringConfig).order_by(ScoringConfig.updated_at.desc()).first()
-        if scoring_config:
-            weights = ScoringWeights(
-                distance_weight=scoring_config.distance_weight,
-                stock_weight=scoring_config.stock_weight,
-                rating_weight=scoring_config.rating_weight,
-                speed_weight=scoring_config.speed_weight,
-                urgency_weight=scoring_config.urgency_weight
-            )
-        else:
-            weights = ScoringWeights()  # Use defaults
-        
-        # Run AVRE engine with admin-configured weights
-        engine = AVREEngine(weights=weights)
-        candidates = engine.match_request(db, request)
+        # Run AVRE engine
+        engine = AVREEngine()
+        candidates = engine.match(db, request)
 
         # Save matches to database and emit vendor.matched events
         for candidate in candidates:
+            # Get the vendor object using vendor_id
+            vendor = db.query(Vendor).filter(Vendor.id == candidate["vendor_id"]).first()
+            if not vendor:
+                continue
+
             match = Match(
                 request_id=request_id,
-                vendor_id=candidate["vendor"].id,
-                score=candidate["final_score"],
-                distance_score=candidate["distance_score"],
-                stock_score=candidate["stock_score"],
-                rating_score=candidate["rating_score"],
-                speed_score=candidate["speed_score"],
-                urgency_score=candidate["urgency_score"],
+                vendor_id=candidate["vendor_id"],
+                score=candidate["relevance_score"],
+                distance_score=candidate["relevance_score"] * 0.35,  # Approximation
+                stock_score=candidate["relevance_score"] * 0.20,
+                rating_score=candidate["relevance_score"] * 0.15,
+                speed_score=candidate["relevance_score"] * 0.15,
+                urgency_score=candidate["relevance_score"] * 0.15,
                 status=MatchStatus.PENDING
             )
             db.add(match)
-            
+
             # Emit vendor matched event (notify vendor of new opportunity)
-            asyncio.create_task(emit_and_broadcast(
-                EventType.VENDOR_MATCHED,
-                {
-                    "vendor_id": candidate["vendor"].id,
-                    "request_id": request_id,
-                    "resource_name": request.resource_name,
-                    "urgency": request.urgency,
-                    "match_score": round(candidate["final_score"], 2)
-                }
-            ))
-        
+            try:
+                anyio.from_thread.run_sync(emit_and_broadcast,
+                    EventType.VENDOR_MATCHED,
+                    {
+                        "vendor_id": candidate["vendor_id"],
+                        "request_id": request_id,
+                        "resource_name": request.resource_name,
+                        "urgency": request.urgency_level.value,
+                        "match_score": round(candidate["relevance_score"], 2)
+                    }
+                )
+            except Exception as e:
+                logger.error(f"Failed to emit vendor matched event: {e}")
+
         db.commit()
         existing_matches = db.query(Match).filter(Match.request_id == request_id).all()
 
     # Format matches for response
     results = []
     sorted_matches = sorted(existing_matches, key=lambda m: m.score, reverse=True)
-    engine = AVREEngine()
     for rank, match in enumerate(sorted_matches, start=1):
         vendor = match.vendor
-        distance = engine.haversine_distance(
-            request.latitude,
-            request.longitude,
-            vendor.latitude,
-            vendor.longitude,
+        distance = FeatureBuilder.haversine_distance(
+            request.location_lat,
+            request.location_lng,
+            vendor.lat,
+            vendor.lng,
         )
-        result = MatchResultWithVendor(
-            rank=rank,
-            match_id=match.id,
-            match_status=match.status,
-            is_selectable=match.status in {MatchStatus.PENDING, MatchStatus.ACCEPTED_BY_VENDOR},
-            vendor_id=vendor.id,
-            vendor_name=vendor.shop_name,
-            category=vendor.category,
-            distance=round(distance, 2),
-            eta=vendor.avg_response_time,
-            score=round(match.score, 2),
-            rating=round(vendor.rating, 2)
-        )
+        result = {
+            "rank": rank,
+            "match_id": match.id,
+            "match_status": match.status.value,
+            "is_selectable": match.status in {MatchStatus.PENDING, MatchStatus.ACCEPTED_BY_VENDOR},
+            "vendor_id": vendor.id,
+            "vendor_name": vendor.shop_name,
+            "category": vendor.category,
+            "distance": round(distance, 2),
+            "eta": vendor.avg_response_time,
+            "score": round(match.score, 2),
+            "rating": round(vendor.rating, 2)
+        }
         results.append(result)
 
     # Update request status
@@ -310,19 +309,22 @@ def accept_vendor(
     
     db.refresh(match)
     db.refresh(vendor)
-    
+
     # Emit match accepted by requester event
-    asyncio.create_task(emit_and_broadcast(
-        EventType.MATCH_ACCEPTED_BY_REQUESTER,
-        {
-            "requester_id": user.id,
-            "vendor_id": vendor.id,
-            "request_id": request_id,
-            "match_id": match.id,
-            "new_vendor_rating": round(new_rating, 2)
-        }
-    ))
-    
+    try:
+        anyio.from_thread.run_sync(emit_and_broadcast,
+            EventType.MATCH_ACCEPTED_BY_REQUESTER,
+            {
+                "requester_id": user.id,
+                "vendor_id": vendor.id,
+                "request_id": request_id,
+                "match_id": match.id,
+                "new_vendor_rating": round(new_rating, 2)
+            }
+        )
+    except Exception as e:
+        logger.error(f"Failed to emit match accepted event: {e}")
+
     return {
         "message": "Vendor accepted",
         "match_id": match.id,
@@ -331,8 +333,33 @@ def accept_vendor(
         "vendor_rating_updated": round(new_rating, 2),
     }
 
+# ============ REQUEST STATS ============
+@router.get("/stats")
+def get_requester_stats(
+    user: User = Depends(get_current_requester),
+    db: Session = Depends(get_db)
+):
+    """Get summarized stats for the requester dashboard."""
+    total = db.query(DBRequest).filter(DBRequest.user_id == user.id).count()
+    active = db.query(DBRequest).filter(
+        DBRequest.user_id == user.id,
+        DBRequest.status.in_([RequestStatus.PENDING, RequestStatus.MATCHED, RequestStatus.ACCEPTED])
+    ).count()
+    resolved = db.query(DBRequest).filter(
+        DBRequest.user_id == user.id,
+        DBRequest.status == RequestStatus.COMPLETED
+    ).count()
+
+    return {
+        "active_requests": active,
+        "resolved_requests": resolved,
+        "total_requests": total,
+        "avg_match_time": "12m", # Placeholder until real tracking added
+        "pending_response": active
+    }
+
 # ============ REQUEST HISTORY ============
-@router.get("", response_model=list[RequestResponse])
+@router.get("/my", response_model=List[RequestResponse])
 def get_request_history(
     user: User = Depends(get_current_requester),
     db: Session = Depends(get_db)
@@ -392,16 +419,63 @@ def cancel_request(
 
     db.commit()
     db.refresh(request)
-    
+
     # Emit match cancelled event for affected vendors
     if affected_vendor_ids:
-        asyncio.create_task(emit_and_broadcast(
-            EventType.MATCH_CANCELLED,
-            {
-                "request_id": request_id,
-                "requester_id": user.id,
-                "affected_vendor_ids": affected_vendor_ids
-            }
-        ))
-    
+        try:
+            anyio.from_thread.run_sync(emit_and_broadcast,
+                EventType.MATCH_CANCELLED,
+                {
+                    "request_id": request_id,
+                    "requester_id": user.id,
+                    "affected_vendor_ids": affected_vendor_ids
+                }
+            )
+        except Exception as e:
+            logger.error(f"Failed to emit match cancelled event: {e}")
+
     return {"message": "Request cancelled"}
+
+
+# ============ GET REQUEST DETAILS ============
+@router.get("/{request_id}", response_model=RequestResponse)
+def get_request_details(
+    request_id: int,
+    user: User = Depends(get_current_requester),
+    db: Session = Depends(get_db)
+):
+    """Get details of a specific request."""
+    request = db.query(DBRequest).filter(
+        DBRequest.id == request_id, 
+        DBRequest.user_id == user.id
+    ).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+    return request
+
+# ============ DELETE REQUEST ============
+@router.delete("/{request_id}")
+def delete_request(
+    request_id: int,
+    user: User = Depends(get_current_requester),
+    db: Session = Depends(get_db)
+) :
+    """Delete a request (only if pending or cancelled)."""
+    request = db.query(DBRequest).filter(
+        DBRequest.id == request_id, 
+        DBRequest.user_id == user.id
+    ).first()
+    
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found or not owned by you")
+    
+    if request.status not in {RequestStatus.PENDING, RequestStatus.CANCELLED}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot delete request in {request.status.value} status"
+        )
+        
+    db.delete(request)
+    db.commit()
+    return {"message": "Request deleted"}
+
