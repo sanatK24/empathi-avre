@@ -127,61 +127,76 @@ def api_client():
     return APIClient()
 
 @pytest.fixture
-def authenticated_client(api_client):
-    """Fixture for authenticated API client"""
-    # Register or login requester user
-    register_resp = api_client.request('POST', '/auth/register', json={
-        'name': TEST_USERS['requester']['name'],
-        'email': TEST_USERS['requester']['email'],
-        'password': TEST_USERS['requester']['password'],
-        'role': 'requester'
-    })
-    # If already registered, that's OK - just login
+def authenticated_client():
+    """Fixture for authenticated API client - ensures requester user exists and returns authenticated client"""
+    from database import SessionLocal
+    from models import User, UserRole
+    from auth import get_password_hash
+
+    # Ensure requester user exists in production database
+    db = SessionLocal()
     try:
-        api_client.login(TEST_USERS['requester']['email'], TEST_USERS['requester']['password'])
+        requester_user = db.query(User).filter(User.email == TEST_USERS['requester']['email']).first()
+        if not requester_user:
+            requester_user = User(
+                name=TEST_USERS['requester']['name'],
+                email=TEST_USERS['requester']['email'],
+                password_hash=get_password_hash(TEST_USERS['requester']['password']),
+                role=UserRole.REQUESTER,
+                is_active=True
+            )
+            db.add(requester_user)
+            db.commit()
+        elif requester_user.role != UserRole.REQUESTER:
+            requester_user.role = UserRole.REQUESTER
+            db.commit()
+    finally:
+        db.close()
+
+    # Create API client and login
+    client = APIClient()
+    try:
+        client.login(TEST_USERS['requester']['email'], TEST_USERS['requester']['password'])
     except Exception as e:
-        print(f"Login attempt after registration: {e}")
-        pass
-    return api_client
+        print(f"Requester login failed: {e}")
+
+    return client
 
 @pytest.fixture
-def admin_client(api_client):
-    """Fixture for admin API client"""
-    # Register requester first (can't register as admin directly)
-    api_client.request('POST', '/auth/register', json={
-        'name': TEST_USERS['admin']['name'],
-        'email': TEST_USERS['admin']['email'],
-        'password': TEST_USERS['admin']['password'],
-        'role': 'requester'
-    })
+def admin_client():
+    """Fixture for admin API client - ensures admin user exists and returns authenticated client"""
+    from database import SessionLocal
+    from models import User, UserRole
+    from auth import get_password_hash
 
-    # Login to get token
+    # Ensure admin user exists in production database with ADMIN role
+    db = SessionLocal()
     try:
-        api_client.login(TEST_USERS['admin']['email'], TEST_USERS['admin']['password'])
-    except:
-        pass
-
-    # Update user role to admin in the PRODUCTION database used by the server
-    try:
-        from database import SessionLocal
-        from models import User, UserRole
-
-        db = SessionLocal()
         admin_user = db.query(User).filter(User.email == TEST_USERS['admin']['email']).first()
-        if admin_user and admin_user.role != UserRole.ADMIN:
+        if not admin_user:
+            admin_user = User(
+                name=TEST_USERS['admin']['name'],
+                email=TEST_USERS['admin']['email'],
+                password_hash=get_password_hash(TEST_USERS['admin']['password']),
+                role=UserRole.ADMIN,
+                is_active=True
+            )
+            db.add(admin_user)
+            db.commit()
+        elif admin_user.role != UserRole.ADMIN:
             admin_user.role = UserRole.ADMIN
             db.commit()
+    finally:
         db.close()
-    except Exception as e:
-        print(f"Failed to set admin role in production database: {e}")
 
-    # Re-login to get new token with admin role
+    # Create API client and login
+    client = APIClient()
     try:
-        api_client.login(TEST_USERS['admin']['email'], TEST_USERS['admin']['password'])
-    except:
-        pass
+        client.login(TEST_USERS['admin']['email'], TEST_USERS['admin']['password'])
+    except Exception as e:
+        print(f"Admin login failed: {e}")
 
-    return api_client
+    return client
 
 @pytest.fixture
 def browser():
