@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from database import get_db
 from models import User, Vendor, Request, Match, ScoringConfig, UserRole, Campaign, CampaignStatus
-from schemas import AdminStats, ScoringWeightsUpdate
+from schemas import AdminStats, ScoringWeightsUpdate, CampaignVerifyRequest, CampaignStatusUpdate
 from auth import get_current_user, check_role
 from services.audit import AuditService
 
@@ -53,15 +53,19 @@ def get_stats(db: Session = Depends(get_db)):
     }
 
 @router.put("/weights", dependencies=[Depends(check_role([UserRole.ADMIN]))])
-def update_weights(weights: ScoringWeightsUpdate, db: Session = Depends(get_db)):
+def update_weights(
+    weights: ScoringWeightsUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     config = db.query(ScoringConfig).first()
     if not config:
         config = ScoringConfig()
         db.add(config)
-    
+
     for key, value in weights.dict().items():
         setattr(config, key, value)
-        
+
     db.commit()
     AuditService.log(db, "admin_changed_weights", user_id=current_user.id, resource_type="config", details=str(weights.dict()))
     return {"message": "Weights updated successfully"}
@@ -98,7 +102,7 @@ def get_all_campaigns(
 @router.put("/campaigns/{campaign_id}/verify", dependencies=[Depends(check_role([UserRole.ADMIN]))])
 def verify_campaign(
     campaign_id: int,
-    verified: bool,
+    request_body: CampaignVerifyRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -107,6 +111,7 @@ def verify_campaign(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
+    verified = request_body.verified
     campaign.verified = verified
     db.commit()
 
@@ -127,7 +132,7 @@ def verify_campaign(
 @router.put("/campaigns/{campaign_id}/status")
 def update_campaign_status(
     campaign_id: int,
-    status: str,
+    request_body: CampaignStatusUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     admin_check = Depends(check_role([UserRole.ADMIN]))
@@ -137,10 +142,7 @@ def update_campaign_status(
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
 
-    valid_statuses = [s.value for s in CampaignStatus]
-    if status not in valid_statuses:
-        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
-
+    status = request_body.status
     campaign.status = status
     db.commit()
 

@@ -139,7 +139,8 @@ def authenticated_client(api_client):
     # If already registered, that's OK - just login
     try:
         api_client.login(TEST_USERS['requester']['email'], TEST_USERS['requester']['password'])
-    except:
+    except Exception as e:
+        print(f"Login attempt after registration: {e}")
         pass
     return api_client
 
@@ -160,7 +161,7 @@ def admin_client(api_client):
     except:
         pass
 
-    # Update user role to admin in database (direct database access for test setup)
+    # Update user role to admin in the PRODUCTION database used by the server
     try:
         from database import SessionLocal
         from models import User, UserRole
@@ -172,7 +173,7 @@ def admin_client(api_client):
             db.commit()
         db.close()
     except Exception as e:
-        print(f"Failed to set admin role: {e}")
+        print(f"Failed to set admin role in production database: {e}")
 
     # Re-login to get new token with admin role
     try:

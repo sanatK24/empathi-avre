@@ -257,6 +257,13 @@ class CampaignUpdateResponse(BaseModel):
     class Config:
         from_attributes = True
 
+# ============ ADMIN SCHEMAS ============
+class CampaignVerifyRequest(BaseModel):
+    verified: bool
+
+class CampaignStatusUpdate(BaseModel):
+    status: CampaignStatus
+
 # ============ PAYMENT SCHEMAS ============
 class DonorDetails(BaseModel):
     full_name: Optional[str] = None
