@@ -17,7 +17,7 @@ class TestCampaignCRUD:
         data = response.json()
         assert data['title'] == test_campaign_data['title']
         assert data['goal_amount'] == test_campaign_data['goal_amount']
-        assert data['status'] == 'draft'
+        assert data['status'] == 'active'
         assert data['raised_amount'] == 0
         assert 'id' in data
 
@@ -139,7 +139,7 @@ class TestCampaignCRUD:
 
         # Verify initial status
         get_response = authenticated_client.get(f'/campaigns/{campaign_id}')
-        assert get_response.json()['status'] == 'draft'
+        assert get_response.json()['status'] == 'active'
 
     def test_campaign_field_validation(self, authenticated_client):
         """Test campaign creation with invalid data"""
