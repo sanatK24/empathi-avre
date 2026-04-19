@@ -42,9 +42,12 @@ client = TestClient(app)
 @pytest.fixture(autouse=True)
 def setup_db():
     """Setup and teardown test database"""
-    Base.metadata.create_all(bind=test_engine)
+    # Ensure all tables are created
+    from models import Base as ModelBase
+    ModelBase.metadata.drop_all(bind=test_engine)
+    ModelBase.metadata.create_all(bind=test_engine)
     yield
-    Base.metadata.drop_all(bind=test_engine)
+    ModelBase.metadata.drop_all(bind=test_engine)
 
 @pytest.fixture
 def test_client():
