@@ -104,9 +104,11 @@ Example events:
 |  |- realtime.py
 |  |- event_consumer.py
 |  |- events.py
-|- empathi-frontend/
+|- frontend/
 |  |- src/
 |  |- package.json
+|- docker-compose.yml
+|- .env.example
 |- render.yaml
 ```
 
@@ -127,7 +129,64 @@ ML/Data:
 - scikit-learn
 - pandas / numpy
 
-## Local Development
+## 🐳 Containerized Development (Recommended)
+
+The entire EmpathI environment is dockerized for seamless portability across Windows, macOS, and Linux. This setup includes the FastAPI backend, React frontend, PostgreSQL database, and RabbitMQ messaging.
+
+### 1. Setup
+
+1.  **Install Docker Desktop**: [Download here](https://www.docker.com/products/docker-desktop/)
+2.  **Clone the Repo**:
+    ```bash
+    git clone https://github.com/sanatK24/empathi-avre.git
+    cd empathi-avre
+    ```
+3.  **Configure Environment**:
+    ```bash
+    cp .env.example .env
+    ```
+    *Note: If you are accessing the dev environment from a different device on the same network, change `VITE_API_URL` in `.env` to `http://<your-host-ip>:8000`.*
+
+### 2. Launching
+
+Run the entire stack with a single command:
+
+```bash
+docker compose up --build
+```
+
+**Services will be available at:**
+- 🟢 Frontend: [http://localhost:5173](http://localhost:5173)
+- 🔵 Backend API: [http://localhost:8000](http://localhost:8000)
+- 🟡 Swagger Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- 🟣 RabbitMQ Management: [http://localhost:15672](http://localhost:15672) (guest/guest)
+- 🐘 PostgreSQL: `localhost:5432`
+
+### 3. Database Migrations
+
+Since we use PostgreSQL in Docker by default, run migrations after the containers are up:
+
+```bash
+# Run migrations to latest state
+docker compose exec backend alembic upgrade head
+
+# Seed with initial data (small/medium/large)
+docker compose exec backend python seed_db.py --scale medium
+
+# Create a new migration after model changes
+docker compose exec backend alembic revision --autogenerate -m "description"
+```
+
+### 4. Development Workflow
+
+- **Hot Reload**: Both Frontend (Vite) and Backend (Uvicorn) have hot-reload enabled. Changes to your local files will reflect instantly inside the containers.
+- **Node Modules**: `node_modules` are managed inside the container via anonymous volumes to avoid platform conflicts.
+- **Logs**: View logs with `docker compose logs -f [service_name]`.
+- **Cleanup**: Stop everything with `docker compose down`. To remove volumes (reset DB), use `docker compose down -v`.
+
+---
+
+## 🛠️ Manual (Legacy) Setup
 
 ### Backend Setup
 
@@ -146,10 +205,10 @@ Backend URLs:
 - API base: http://localhost:8000
 - Swagger docs: http://localhost:8000/docs
 
-### Frontend Setup
+### Frontend Setup (Manual)
 
 ```bash
-cd empathi-frontend
+cd frontend
 npm install
 npm run dev
 ```

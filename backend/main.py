@@ -1,26 +1,31 @@
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, Base, get_db
+from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
-from sqlalchemy import text
-from routes import auth_routes, vendor_routes, match_routes, admin_routes, requester_routes, campaign_routes, donation_routes, payment_routes, analytics_routes
-import models
-from fastapi.responses import JSONResponse
-import logging
+from database import get_db
+from api.v1.router import api_router
+from core.logging import logger
+from event_consumer import start_event_consumer, stop_event_consumer
+from config import settings
 import os
 
-# Configure Logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-logger = logging.getLogger("AVRE")
-
-# Create tables
-models.Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start event consumer if RabbitMQ is enabled
+    if settings.ENABLE_RABBITMQ:
+        await start_event_consumer()
+    
+    yield
+    
+    # Shutdown: Stop event consumer
+    if settings.ENABLE_RABBITMQ:
+        await stop_event_consumer()
 
 app = FastAPI(
-    title="AVRE API",
-    description="Adaptive Vendor Relevance Engine Backend",
-    version="1.0.0",
-    debug=True
+    title="EmpathI API",
+    description="EmpathI Coordination & Matching Engine (Production-Grade)",
+    version="1.1.0",
+    lifespan=lifespan
 )
 
 # CORS - configured from environment
@@ -33,8 +38,8 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://127.0.0.1:5175",
     "http://127.0.0.1:3000",
+    "http://localhost:8000",
 ]
-# Add origins from environment if present
 env_origins = os.getenv("CORS_ORIGINS")
 if env_origins:
     ALLOWED_ORIGINS.extend(env_origins.split(","))
@@ -43,66 +48,27 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=3600,
 )
 
-# Global Error Handlers
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.error(f"GLOBAL ERROR: {str(exc)}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={"error": "Internal Server Error", "detail": str(exc) if app.debug else "hidden"}
-    )
+# Include API Router
+# We mount it without a prefix to maintain compatibility with existing frontend URLs 
+# (e.g., /auth/login instead of /api/v1/auth/login)
+app.include_router(api_router)
 
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"error": exc.detail}
-    )
-
-# Include Routes
-app.include_router(auth_routes.router)
-app.include_router(requester_routes.router)
-app.include_router(vendor_routes.router)
-app.include_router(match_routes.router)
-app.include_router(admin_routes.router)
-app.include_router(campaign_routes.router)
+# Legacy Route Compatibility (for modules not yet refactored)
+from routes import donation_routes, payment_routes
 app.include_router(donation_routes.router)
 app.include_router(payment_routes.router)
-app.include_router(analytics_routes.router)
 
 @app.get("/health")
-def health_check(db: Session = Depends(get_db)):
-    try:
-        # Check DB
-        db.execute(text("SELECT 1"))
-        db_status = "Connected"
-    except Exception as e:
-        db_status = f"Error: {str(e)}"
-    
-    # Check Model
-    model_path = "ml/model.pkl"
-    model_status = "Loaded" if os.path.exists(model_path) else "Missing"
-    
-    return {
-        "status": "Healthy" if db_status == "Connected" else "Unhealthy",
-        "database": db_status,
-        "ml_model": model_status,
-        "version": "1.0.0"
-    }
+def health_check():
+    return {"status": "Healthy", "version": "1.1.0"}
 
 @app.get("/")
 def root():
-    return {
-        "message": "Welcome to AVRE API",
-        "docs": "/docs",
-        "status": "Healthy"
-    }
+    return {"message": "Welcome to EmpathI Production API"}
 
 if __name__ == "__main__":
     import uvicorn

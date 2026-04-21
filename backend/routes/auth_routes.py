@@ -2,12 +2,96 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, UserRole
-from schemas import UserCreate, UserResponse, Token, UserUpdate
+from schemas import UserCreate, UserResponse, Token, UserUpdate, SocialAuthRequest
 from auth import get_password_hash, verify_password, create_access_token, get_current_user
 from fastapi.security import OAuth2PasswordRequestForm
 from services.audit import AuditService
+from config import settings
+import secrets
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+@router.post("/social", response_model=Token)
+def social_login(auth_data: SocialAuthRequest, db: Session = Depends(get_db)):
+    email = None
+    name = None
+    social_id = None
+    avatar_url = None
+    
+    if auth_data.provider == "google":
+        try:
+            # Try to get user info from Google using the token
+            import requests as py_requests
+            userinfo_response = py_requests.get(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                headers={"Authorization": f"Bearer {auth_data.token}"}
+            )
+            
+            if userinfo_response.ok:
+                idinfo = userinfo_response.json()
+                email = idinfo['email']
+                name = idinfo.get('name', email.split('@')[0])
+                social_id = idinfo.get('sub') # Google user ID
+                avatar_url = idinfo.get('picture')
+            else:
+                # Fallback to ID token verification if it was actually an ID token
+                try:
+                    idinfo = id_token.verify_oauth2_token(
+                        auth_data.token, 
+                        google_requests.Request(), 
+                        settings.GOOGLE_CLIENT_ID
+                    )
+                    email = idinfo['email']
+                    name = idinfo.get('name', email.split('@')[0])
+                    social_id = idinfo.get('sub')
+                    avatar_url = idinfo.get('picture')
+                except Exception:
+                    raise HTTPException(status_code=401, detail="Invalid Google token (Access Token or ID Token)")
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Google authentication failed: {str(e)}")
+
+
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported provider")
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Could not retrieve email from provider")
+
+    # Check if user exists by social_id or email
+    user = db.query(User).filter((User.social_id == social_id) | (User.email == email)).first()
+    
+    if not user:
+        # Create new user for social signup
+        user = User(
+            name=name,
+            email=email,
+            social_provider=auth_data.provider,
+            social_id=social_id,
+            avatar_url=avatar_url,
+            role=auth_data.role or UserRole.REQUESTER,
+            is_active=True
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        AuditService.log(db, "social_signup", user_id=user.id, resource_type="user", details=f"Provider: {auth_data.provider}")
+    else:
+        # Update social ID and avatar if not set
+        user.avatar_url = avatar_url # Always keep avatar fresh
+        if not user.social_id:
+            user.social_id = social_id
+            user.social_provider = auth_data.provider
+        db.commit()
+        AuditService.log(db, "social_login", user_id=user.id, resource_type="user", details=f"Provider: {auth_data.provider}")
+
+
+
+    # Generate access token
+    access_token = create_access_token(data={"sub": user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
 
 @router.post("/register", response_model=UserResponse)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):

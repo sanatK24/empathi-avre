@@ -12,7 +12,15 @@ class UserBase(BaseModel):
     city: Optional[str] = None
     organization_name: Optional[str] = None
     bio: Optional[str] = None
+    avatar_url: Optional[str] = None
     is_active: bool = True
+    blood_group: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    preferred_hospital: Optional[str] = None
+    saved_addresses: Optional[str] = None
+    accessibility_needs: Optional[str] = None
+    personal_categories: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -25,7 +33,13 @@ class UserUpdate(BaseModel):
     organization_name: Optional[str] = None
     bio: Optional[str] = None
     password: Optional[str] = None
-
+    blood_group: Optional[str] = None
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    preferred_hospital: Optional[str] = None
+    saved_addresses: Optional[str] = None
+    accessibility_needs: Optional[str] = None
+    personal_categories: Optional[str] = None
 
 class UserResponse(UserBase):
     id: int
@@ -36,6 +50,26 @@ class UserResponse(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class SocialAuthRequest(BaseModel):
+    token: str
+    provider: str
+    role: Optional[UserRole] = UserRole.REQUESTER
+
+class UserEmergencyContactBase(BaseModel):
+    name: str
+    phone: str
+    category: str
+
+class UserEmergencyContactResponse(UserEmergencyContactBase):
+    id: int
+    class Config:
+        from_attributes = True
+
+class UserProfileResponse(UserResponse):
+    emergency_contacts: List[UserEmergencyContactResponse] = []
+    class Config:
+        from_attributes = True
 
 # ============ REQUEST SCHEMAS ============
 class RequestCreate(BaseModel):
@@ -80,8 +114,12 @@ class VendorProfileCreate(BaseModel):
     lng: float
     city: str
     service_radius: float = 10.0
+    service_areas: Optional[str] = None
+    registration_id: Optional[str] = None
     opening_hours: Optional[str] = "09:00-21:00"
+    lead_time: Optional[str] = None
     avg_response_time: int = 15
+    is_active: Optional[bool] = True
 
 class VendorResponse(BaseModel):
     id: int
@@ -95,6 +133,9 @@ class VendorResponse(BaseModel):
     reliability_score: float
     avg_response_time: int
     service_radius: float
+    service_areas: Optional[str]
+    registration_id: Optional[str]
+    lead_time: Optional[str]
     verification_status: VerificationStatus
     opening_hours: Optional[str]
     is_active: bool
@@ -201,6 +242,8 @@ class CampaignUpdate(BaseModel):
 class CampaignResponse(BaseModel):
     id: int
     created_by: int
+    creator_name: Optional[str] = None
+    creator_avatar: Optional[str] = None
     title: str
     description: str
     category: str
@@ -211,6 +254,7 @@ class CampaignResponse(BaseModel):
     cover_image: Optional[str]
     status: CampaignStatus
     verified: bool
+    is_flagged: bool = False
     deadline: Optional[datetime]
     created_at: datetime
     class Config:
@@ -277,3 +321,31 @@ class PaymentProcess(BaseModel):
     anonymous: bool = False
     message: Optional[str] = Field(None, max_length=500)
     donor_details: Optional[DonorDetails] = None
+
+# ============ EMERGENCY DIRECTORY SCHEMAS ============
+class EmergencyContactResponse(BaseModel):
+    id: int
+    name: str
+    phone: str
+    category: str
+    description: Optional[str]
+    city: str
+    is_pinned: bool
+    class Config:
+        from_attributes = True
+
+class PublicFacilityResponse(BaseModel):
+    id: int
+    name: str
+    facility_type: str
+    address: str
+    city: str
+    phone: Optional[str]
+    lat: float
+    lng: float
+    is_verified: bool
+    operating_hours: str
+    rating: float
+    distance_km: Optional[float] = None
+    class Config:
+        from_attributes = True

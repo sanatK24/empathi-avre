@@ -6,48 +6,48 @@ import enum
 from datetime import datetime
 
 class UserRole(str, enum.Enum):
-    REQUESTER = "requester"
-    VENDOR = "vendor"
-    ADMIN = "admin"
+    REQUESTER = "REQUESTER"
+    VENDOR = "VENDOR"
+    ADMIN = "ADMIN"
 
 class UrgencyLevel(str, enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 class RequestStatus(str, enum.Enum):
-    PENDING = "pending"
-    MATCHED = "matched"
-    ACCEPTED = "accepted"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+    PENDING = "PENDING"
+    MATCHED = "MATCHED"
+    ACCEPTED = "ACCEPTED"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 class MatchStatus(str, enum.Enum):
-    PENDING = "pending"
-    ACCEPTED_BY_VENDOR = "accepted_by_vendor"
-    REJECTED_BY_VENDOR = "rejected_by_vendor"
-    ACCEPTED_BY_REQUESTER = "accepted_by_requester"
-    CANCELLED_BY_REQUESTER = "cancelled_by_requester"
-    COMPLETED = "completed"
+    PENDING = "PENDING"
+    ACCEPTED_BY_VENDOR = "ACCEPTED_BY_VENDOR"
+    REJECTED_BY_VENDOR = "REJECTED_BY_VENDOR"
+    ACCEPTED_BY_REQUESTER = "ACCEPTED_BY_REQUESTER"
+    CANCELLED_BY_REQUESTER = "CANCELLED_BY_REQUESTER"
+    COMPLETED = "COMPLETED"
 
 class VerificationStatus(str, enum.Enum):
-    UNVERIFIED = "unverified"
-    PENDING = "pending"
-    VERIFIED = "verified"
-    REJECTED = "rejected"
+    UNVERIFIED = "UNVERIFIED"
+    PENDING = "PENDING"
+    VERIFIED = "VERIFIED"
+    REJECTED = "REJECTED"
 
 class CampaignStatus(str, enum.Enum):
-    ACTIVE = "active"
-    DRAFT = "draft"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+    ACTIVE = "ACTIVE"
+    DRAFT = "DRAFT"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 class DonationStatus(str, enum.Enum):
-    PENDING = "pending"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    REFUNDED = "refunded"
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    REFUNDED = "REFUNDED"
 
 # ============ USERS TABLE ============
 class User(Base):
@@ -56,20 +56,35 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
-    password_hash = Column(String, nullable=False)
+    password_hash = Column(String, nullable=True) # Nullable for social users
+    social_provider = Column(String, nullable=True) # e.g., 'google'
+    social_id = Column(String, nullable=True) # provider-specific user ID
+    avatar_url = Column(String, nullable=True) # profile picture URL
     role = Column(Enum(UserRole), default=UserRole.REQUESTER)
     phone = Column(String, nullable=True)
     city = Column(String, index=True, nullable=True)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
     organization_name = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
+
+    # Emergency-related fields
+    blood_group = Column(String, nullable=True)
+    emergency_contact_name = Column(String, nullable=True)
+    emergency_contact_phone = Column(String, nullable=True)
+    preferred_hospital = Column(String, nullable=True)
+    saved_addresses = Column(Text, nullable=True) # JSON or Comma separated
+    accessibility_needs = Column(Text, nullable=True)
+    personal_categories = Column(Text, nullable=True) # Comma separated custom categories
 
     requests = relationship("Request", back_populates="requester")
     vendor = relationship("Vendor", uselist=False, back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="actor")
     campaigns = relationship("Campaign", back_populates="creator")
     donations = relationship("Donation", back_populates="donor")
+    emergency_contacts = relationship("UserEmergencyContact", back_populates="user", cascade="all, delete-orphan")
 
 # ============ VENDORS TABLE ============
 class Vendor(Base):
@@ -86,6 +101,9 @@ class Vendor(Base):
     reliability_score = Column(Float, default=1.0) # 0.0 to 1.0
     avg_response_time = Column(Integer, default=15)  # minutes
     service_radius = Column(Float, default=10.0) # km
+    service_areas = Column(Text, nullable=True) # comma separated
+    registration_id = Column(String, nullable=True) # GST or license
+    lead_time = Column(String, nullable=True) # e.g. "2 hours"
     verification_status = Column(Enum(VerificationStatus), default=VerificationStatus.UNVERIFIED)
     opening_hours = Column(String, nullable=True) # e.g. "09:00-21:00"
     is_active = Column(Boolean, default=True)
@@ -200,6 +218,8 @@ class Campaign(Base):
     description = Column(Text)
     category = Column(String, index=True)  # e.g., "medical", "food", "shelter"
     city = Column(String, index=True)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
     goal_amount = Column(Float)
     raised_amount = Column(Float, default=0.0)
     urgency_level = Column(Enum(UrgencyLevel), default=UrgencyLevel.MEDIUM)
@@ -207,11 +227,22 @@ class Campaign(Base):
     status = Column(Enum(CampaignStatus), default=CampaignStatus.DRAFT)
     verified = Column(Boolean, default=False)
     deadline = Column(DateTime, nullable=True)
+    is_flagged = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
 
-    creator = relationship("User", back_populates="campaigns")
+    # Relationships
+    creator = relationship("User", backref="campaign_list")
     donations = relationship("Donation", back_populates="campaign", cascade="all, delete-orphan")
     updates = relationship("CampaignUpdate", back_populates="campaign", cascade="all, delete-orphan")
+
+    @property
+    def creator_name(self):
+        return self.creator.name if self.creator else "Unknown User"
+
+    @property
+    def creator_avatar(self):
+        return self.creator.avatar_url if self.creator else None
+
 
 # ============ DONATIONS TABLE ============
 class Donation(Base):
@@ -240,5 +271,46 @@ class CampaignUpdate(Base):
     created_at = Column(DateTime, default=func.now())
 
     campaign = relationship("Campaign", back_populates="updates")
+
+# ============ EMERGENCY DIRECTORY ============
+class EmergencyContact(Base):
+    __tablename__ = "emergency_contacts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    phone = Column(String)
+    category = Column(String) # Police, Medical, Fire, Women, Child, etc.
+    description = Column(String, nullable=True)
+    city = Column(String, default="National") # National or specific city
+    is_pinned = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=func.now())
+
+class PublicFacility(Base):
+    __tablename__ = "public_facilities"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    facility_type = Column(String) # Hospital, Clinic, Trauma Center, Blood Bank
+    address = Column(String)
+    city = Column(String, index=True)
+    phone = Column(String, nullable=True)
+    lat = Column(Float)
+    lng = Column(Float)
+    is_verified = Column(Boolean, default=True)
+    operating_hours = Column(String, default="24/7")
+    rating = Column(Float, default=4.0)
+    created_at = Column(DateTime, default=func.now())
+
+class UserEmergencyContact(Base):
+    __tablename__ = "user_emergency_contacts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    name = Column(String)
+    phone = Column(String)
+    category = Column(String) # Family, Doctor, Neighbor, etc.
+    created_at = Column(DateTime, default=func.now())
+
+    user = relationship("User", back_populates="emergency_contacts")
 
 

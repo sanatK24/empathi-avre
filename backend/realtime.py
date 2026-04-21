@@ -6,6 +6,7 @@ from fastapi import WebSocket
 import asyncio
 from datetime import datetime
 from events import EventType, EventPayload
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +79,8 @@ connection_manager = ConnectionManager()
 class EventEmitter:
     """Emits events to RabbitMQ for distributed notification delivery."""
     
-    def __init__(self, rabbitmq_url: str = "amqp://guest:guest@localhost/"):
-        self.rabbitmq_url = rabbitmq_url
+    def __init__(self, rabbitmq_url: str = None):
+        self.rabbitmq_url = rabbitmq_url or settings.RABBITMQ_URL
         self.connection = None
         self.channel = None
         self.exchange_name = "avre_events"
@@ -232,3 +233,11 @@ async def emit_and_broadcast(event_type: EventType, event_data: dict):
         "data": event_data
     }
     await connection_manager.broadcast_to_rooms(rooms, message)
+
+def emit_and_broadcast_sync(event_type: EventType, event_data: dict):
+    """Synchronous wrapper for emit_and_broadcast (useful for service layer)."""
+    try:
+        import anyio
+        anyio.from_thread.run_async_as_sync(emit_and_broadcast, event_type, event_data)
+    except Exception as e:
+        logger.error(f"Failed to emit event from sync context: {e}")

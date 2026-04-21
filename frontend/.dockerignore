@@ -1,0 +1,16 @@
+node_modules
+dist
+.env
+.env.local
+.env.production
+.git
+.gitignore
+README.md
+build_error.txt
+.vscode
+.claude
+.gemini
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache

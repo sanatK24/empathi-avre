@@ -5,9 +5,9 @@ from database import get_db
 from models import User, Request as DBRequest, Match, UserRole, RequestStatus, MatchStatus, Vendor
 from schemas import RequestCreate, RequestResponse
 from auth import get_current_user
-from services.avre_engine import AVREEngine
+from services.empathi_engine import EmpathIEngine
 from services.feature_builder import FeatureBuilder
-from realtime import emit_and_broadcast
+from realtime import emit_and_broadcast_sync
 from events import EventType
 import asyncio
 import anyio
@@ -42,7 +42,7 @@ def update_vendor_rating_on_acceptance(vendor: Vendor, match: Match, db: Session
     """
     Update vendor rating using rolling average when requester accepts them.
     
-    Uses AVRE match score (combination of distance/stock/rating/speed/urgency) as input.
+    Uses EmpathI match score (combination of distance/stock/rating/speed/urgency) as input.
     Formula: new_rating = (old_rating * count + match_score) / (count + 1)
     where count = number of previously accepted matches from this vendor
     
@@ -117,8 +117,8 @@ def create_request(
 
     # Emit request creation event asynchronously (non-blocking)
     try:
-        anyio.from_thread.run_sync(emit_and_broadcast,
-            EventType.REQUEST_FLAGGED,
+        emit_and_broadcast_sync(
+            EventType.REQUEST_FLAGGED, # Should probably be REQUEST_CREATED if it existed, but using what's available
             {
                 "request_id": db_request.id,
                 "requester_id": user.id,
@@ -145,7 +145,7 @@ def get_matches(
 ):
     """
     Get ranked vendor matches for a request.
-    Triggers AVRE engine if no matches exist yet.
+    Triggers EmpathI engine if no matches exist yet.
     """
     request = db.query(DBRequest).filter(
         DBRequest.id == request_id,
@@ -163,8 +163,8 @@ def get_matches(
     # Check if matches already exist
     existing_matches = db.query(Match).filter(Match.request_id == request_id).all()
     if not existing_matches and request.status in MATCHABLE_REQUEST_STATUSES:
-        # Run AVRE engine
-        engine = AVREEngine()
+        # Run EmpathI engine
+        engine = EmpathIEngine()
         candidates = engine.match(db, request)
 
         # Save matches to database and emit vendor.matched events
@@ -189,7 +189,7 @@ def get_matches(
 
             # Emit vendor matched event (notify vendor of new opportunity)
             try:
-                anyio.from_thread.run_sync(emit_and_broadcast,
+                emit_and_broadcast_sync(
                     EventType.VENDOR_MATCHED,
                     {
                         "vendor_id": candidate["vendor_id"],
@@ -312,7 +312,7 @@ def accept_vendor(
 
     # Emit match accepted by requester event
     try:
-        anyio.from_thread.run_sync(emit_and_broadcast,
+        emit_and_broadcast_sync(
             EventType.MATCH_ACCEPTED_BY_REQUESTER,
             {
                 "requester_id": user.id,
@@ -423,7 +423,7 @@ def cancel_request(
     # Emit match cancelled event for affected vendors
     if affected_vendor_ids:
         try:
-            anyio.from_thread.run_sync(emit_and_broadcast,
+            emit_and_broadcast_sync(
                 EventType.MATCH_CANCELLED,
                 {
                     "request_id": request_id,

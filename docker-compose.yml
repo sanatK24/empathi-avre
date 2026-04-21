@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  # --- Database Service (PostgreSQL) ---
+  db:
+    image: postgres:15-alpine
+    container_name: empathi-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-empathi_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-empathi_password}
+      POSTGRES_DB: ${POSTGRES_DB:-empathi_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U empathi_user -d empathi_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - empathi-network
+
+  # --- Messaging Service (RabbitMQ) ---
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: empathi-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - empathi-network
+
+  # --- Backend Service (FastAPI) ---
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: empathi-backend
+    restart: always
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-empathi_user}:${POSTGRES_PASSWORD:-empathi_password}@db:5432/${POSTGRES_DB:-empathi_db}
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - SECRET_KEY=${SECRET_KEY:-DEVELOPMENT_ONLY_INSECURE_KEY}
+      - DEBUG=${DEBUG:-True}
+      - ENABLE_RABBITMQ=True
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - empathi-network
+
+  # --- Frontend Service (Vite + React) ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: empathi-frontend
+    restart: always
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+      - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
+    depends_on:
+      - backend
+    networks:
+      - empathi-network
+
+volumes:
+  postgres_data:
+
+networks:
+  empathi-network:
+    driver: bridge
