@@ -154,12 +154,20 @@ const RecommendationsPage = () => {
                     <div className="space-y-3">
                       <div className="flex justify-between items-end">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Progress</span>
-                        <span className="text-xs font-black text-slate-900">{Math.round((campaign.raised_amount / campaign.goal_amount) * 100)}%</span>
+                        <span className="text-xs font-black text-slate-900">
+                          {campaign.goal_amount > 0 
+                            ? Math.round((campaign.raised_amount / campaign.goal_amount) * 100) 
+                            : (campaign.progress || 0)}%
+                        </span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                         <div 
                           className="h-full bg-primary-500 rounded-full transition-all duration-1000 group-hover:bg-primary-600" 
-                          style={{ width: `${Math.min(100, (campaign.raised_amount / campaign.goal_amount) * 100)}%` }}
+                          style={{ 
+                            width: `${Math.min(100, campaign.goal_amount > 0 
+                              ? (campaign.raised_amount / campaign.goal_amount) * 100 
+                              : (campaign.progress || 0))}%` 
+                          }}
                         ></div>
                       </div>
                     </div>

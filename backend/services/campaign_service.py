@@ -83,7 +83,9 @@ class CampaignService:
                 "progress": round((campaign.raised_amount / campaign.goal_amount * 100) if campaign.goal_amount > 0 else 0, 1),
                 "category": campaign.category,
                 "city": campaign.city,
-                "urgency_level": campaign.urgency_level
+                "urgency_level": campaign.urgency_level,
+                "goal_amount": campaign.goal_amount,
+                "raised_amount": campaign.raised_amount
             })
             
         return final_recommendations

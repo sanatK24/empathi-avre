@@ -80,10 +80,26 @@ def get_campaign_donations(
 
 @router.get("/{campaign_id}/stats")
 def get_campaign_stats(campaign_id: int, db: Session = Depends(get_db)):
-    total = donation_repo.get_total_raised(db, campaign_id)
     from models import Donation, DonationStatus
-    count = db.query(Donation).filter(Donation.campaign_id == campaign_id, Donation.status == DonationStatus.COMPLETED).count()
-    return {"total_raised": total, "donor_count": count}
+    from sqlalchemy import func
+    
+    # Get all completed donations for this campaign
+    donations = db.query(Donation).filter(
+        Donation.campaign_id == campaign_id, 
+        Donation.status == DonationStatus.COMPLETED
+    ).all()
+    
+    total_amount = sum(d.amount for d in donations)
+    total_count = len(donations)
+    unique_donors = len(set(d.user_id for d in donations))
+    avg_donation = total_amount / total_count if total_count > 0 else 0
+    
+    return {
+        "total_donations": total_count,
+        "average_donation": avg_donation,
+        "unique_donors": unique_donors,
+        "total_raised": total_amount
+    }
 
 @router.get("/{campaign_id}/related", response_model=List[CampaignResponse])
 def get_related_campaigns(campaign_id: int, db: Session = Depends(get_db)):
