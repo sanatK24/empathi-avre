@@ -45,7 +45,19 @@ async function request(path, options = {}) {
         }
 
         if (!response.ok) {
-            const errorMessage = data?.detail || data?.error || data?.message || `API error (${response.status})`;
+            // Handle validation errors (422) with detailed field info
+            let errorMessage = data?.detail || data?.error || data?.message || `API error (${response.status})`;
+            
+            if (response.status === 422 && data?.detail && Array.isArray(data.detail)) {
+                // Pydantic validation error format
+                const fieldErrors = data.detail.map(err => {
+                    const field = err.loc?.join('.') || 'unknown field';
+                    const msg = err.msg || err.message || 'validation failed';
+                    return `${field}: ${msg}`;
+                }).join('; ');
+                errorMessage = fieldErrors || errorMessage;
+            }
+            
             const error = new Error(errorMessage);
             error.status = response.status;
             error.data = data;
@@ -196,6 +208,8 @@ export const apiService = {
         method: 'POST',
         token
     }),
+    getMyCreatedCampaigns: (token) => request('/campaigns/my', { token }),
+    getDonationHistory: (token) => request('/campaigns/my-donations', { token }),
 
     // Emergency Flow
     getActiveEmergencies: () => request('/emergency/active'),

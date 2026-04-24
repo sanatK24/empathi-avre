@@ -5,8 +5,6 @@ from models import Request, Vendor, Inventory, Match, MatchStatus, RequestStatus
 from repositories.match_repo import match_repo
 from services.empathi_engine import EmpathIEngine
 from services.ranking_service import RankingService
-from realtime import emit_and_broadcast_sync
-from events import EventType
 from core.logging import logger
 
 class MatchingService:
@@ -40,8 +38,8 @@ class MatchingService:
                 db.add(match)
                 matches.append(match)
                 
-                # Notify Vendor (Side effect)
-                MatchingService._notify_vendor_matched(candidate["vendor_id"], request, candidate["relevance_score"])
+                # No notification side-effect for now (RabbitMQ removed)
+                pass 
             
             db.commit()
             
@@ -79,38 +77,8 @@ class MatchingService:
         
         db.commit()
         
-        # 4. Side Effects (Events)
-        MatchingService._notify_match_accepted(request, match)
+        # No side effects for now (RabbitMQ removed)
+        pass
         
         return match
 
-    @staticmethod
-    def _notify_vendor_matched(vendor_id: int, request: Request, score: float):
-        try:
-            emit_and_broadcast_sync(
-                EventType.VENDOR_MATCHED,
-                {
-                    "vendor_id": vendor_id,
-                    "request_id": request.id,
-                    "resource_name": request.resource_name,
-                    "urgency": request.urgency_level.value,
-                    "match_score": round(score, 2)
-                }
-            )
-        except Exception as e:
-            logger.error(f"Event emission failed: {e}")
-
-    @staticmethod
-    def _notify_match_accepted(request: Request, match: Match):
-        try:
-            emit_and_broadcast_sync(
-                EventType.MATCH_ACCEPTED_BY_REQUESTER,
-                {
-                    "requester_id": request.user_id,
-                    "vendor_id": match.vendor_id,
-                    "request_id": request.id,
-                    "match_id": match.id
-                }
-            )
-        except Exception as e:
-            logger.error(f"Event emission failed: {e}")

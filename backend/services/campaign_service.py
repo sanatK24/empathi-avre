@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from sqlalchemy.orm import Session
-from models import User, Campaign, CampaignStatus, Donation
+from models import User, Campaign, CampaignStatus, Donation, DonationStatus
 from repositories.campaign_repo import campaign_repo
 from repositories.donation_repo import donation_repo
 from services.ranking_service import RankingService
@@ -99,7 +99,7 @@ class CampaignService:
             user_id=user.id,
             amount=amount,
             anonymous=anonymous,
-            status="completed"
+            status=DonationStatus.COMPLETED
         )
         db.add(donation)
         

@@ -2,8 +2,11 @@ import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import { Activity } from 'lucide-react';
+import { cn } from '../../utils/cn';
+import { useAppContext } from '../../context/AppContext';
 
 const PublicLayout = () => {
+  const { profile } = useAppContext();
   const location = useLocation();
   const isLoginPage = location.pathname === '/login';
   const isRegisterPage = location.pathname === '/register';
@@ -23,13 +26,30 @@ const PublicLayout = () => {
           <div className="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-600">
             <a href="/#features" className="hover:text-primary-500 transition-colors">Features</a>
             <a href="/#how-it-works" className="hover:text-primary-500 transition-colors">How it Works</a>
+            <Link to="/campaigns" className={cn("hover:text-primary-500 transition-colors", location.pathname === '/campaigns' && "text-primary-600")}>Campaigns</Link>
             
-            {!isLoginPage && (
-              <Link to="/login" className="hover:text-primary-500 transition-colors">Login</Link>
-            )}
-            
-            {(!isRegisterPage && !isLoginPage) && (
-              <Button size="md" onClick={() => window.location.href='/register'}>Get Started</Button>
+            {profile.isAuthenticated ? (
+              <div className="flex items-center space-x-6 pl-4 border-l border-slate-100">
+                <Link to={profile.userRole === 'vendor' ? '/vendor/dashboard' : (profile.userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard')}>
+                  <Button size="sm" variant="outline" className="border-primary-100 text-primary-600 bg-primary-50 hover:bg-primary-100">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+                <Link to={profile.userRole === 'vendor' ? '/vendor/profile' : (profile.userRole === 'admin' ? '/admin/profile' : '/user/profile')} className="flex items-center space-x-3 group">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold shadow-md group-hover:scale-105 transition-transform">
+                    {profile.fullName ? profile.fullName.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                </Link>
+              </div>
+            ) : (
+              <>
+                {!isLoginPage && (
+                  <Link to="/login" className="hover:text-primary-500 transition-colors">Login</Link>
+                )}
+                {(!isRegisterPage && !isLoginPage) && (
+                  <Button size="md" onClick={() => window.location.href='/register'}>Get Started</Button>
+                )}
+              </>
             )}
           </div>
         </div>

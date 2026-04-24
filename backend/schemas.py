@@ -1,7 +1,13 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from models import UserRole, UrgencyLevel, RequestStatus, MatchStatus, VerificationStatus, CampaignStatus, DonationStatus
+
+# Utility for case-insensitive Enums
+def to_upper(v):
+    if isinstance(v, str):
+        return v.upper()
+    return v
 
 # ============ USER SCHEMAS ============
 class UserBase(BaseModel):
@@ -14,6 +20,7 @@ class UserBase(BaseModel):
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
     is_active: bool = True
+    can_switch_role: bool = False
     blood_group: Optional[str] = None
     emergency_contact_name: Optional[str] = None
     emergency_contact_phone: Optional[str] = None
@@ -21,6 +28,11 @@ class UserBase(BaseModel):
     saved_addresses: Optional[str] = None
     accessibility_needs: Optional[str] = None
     personal_categories: Optional[str] = None
+
+    @field_validator('role', mode='before')
+    @classmethod
+    def validate_role(cls, v):
+        return to_upper(v)
 
 class UserCreate(UserBase):
     password: str
@@ -56,6 +68,11 @@ class SocialAuthRequest(BaseModel):
     provider: str
     role: Optional[UserRole] = UserRole.REQUESTER
 
+    @field_validator('role', mode='before')
+    @classmethod
+    def validate_role(cls, v):
+        return to_upper(v)
+
 class UserEmergencyContactBase(BaseModel):
     name: str
     phone: str
@@ -68,6 +85,7 @@ class UserEmergencyContactResponse(UserEmergencyContactBase):
 
 class UserProfileResponse(UserResponse):
     emergency_contacts: List[UserEmergencyContactResponse] = []
+    is_vendor: bool = False
     class Config:
         from_attributes = True
 
@@ -84,6 +102,11 @@ class RequestCreate(BaseModel):
     notes: Optional[str] = Field(None, max_length=500)
     special_instructions: Optional[str] = Field(None, max_length=500)
     payment_mode: str = "cod"
+
+    @field_validator('urgency_level', mode='before')
+    @classmethod
+    def validate_urgency(cls, v):
+        return to_upper(v)
 
 class RequestResponse(BaseModel):
     id: int
@@ -228,6 +251,11 @@ class CampaignCreate(BaseModel):
     deadline: Optional[datetime] = None
     status: Optional[CampaignStatus] = CampaignStatus.ACTIVE
 
+    @field_validator('urgency_level', 'status', mode='before')
+    @classmethod
+    def validate_enums(cls, v):
+        return to_upper(v)
+
 class CampaignUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=5, max_length=200)
     description: Optional[str] = Field(None, min_length=10, max_length=5000)
@@ -238,6 +266,11 @@ class CampaignUpdate(BaseModel):
     cover_image: Optional[str] = None
     deadline: Optional[datetime] = None
     status: Optional[CampaignStatus] = None
+
+    @field_validator('urgency_level', 'status', mode='before')
+    @classmethod
+    def validate_enums(cls, v):
+        return to_upper(v)
 
 class CampaignResponse(BaseModel):
     id: int
@@ -287,6 +320,9 @@ class DonationWithDonorResponse(DonationResponse):
     donor_name: Optional[str] = None
     donor_city: Optional[str] = None
 
+class DonationHistoryResponse(DonationResponse):
+    campaign_title: Optional[str] = None
+
 # ============ CAMPAIGN UPDATE SCHEMAS ============
 class CampaignUpdateCreate(BaseModel):
     title: str = Field(..., min_length=3, max_length=200)
@@ -307,6 +343,11 @@ class CampaignVerifyRequest(BaseModel):
 
 class CampaignStatusUpdate(BaseModel):
     status: CampaignStatus
+
+    @field_validator('status', mode='before')
+    @classmethod
+    def validate_status(cls, v):
+        return to_upper(v)
 
 # ============ PAYMENT SCHEMAS ============
 class DonorDetails(BaseModel):

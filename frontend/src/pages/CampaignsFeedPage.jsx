@@ -19,9 +19,10 @@ function CampaignsFeedPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     category: '',
-    city: profile?.city || '',
+    city: '',
     urgency: '',
     sort_by: 'created_at'
+
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -95,7 +96,17 @@ function CampaignsFeedPage() {
   };
 
   const handleViewDetails = (campaign) => {
-    navigate(`/campaigns/${campaign.id}`);
+    // Navigate relatively if in a dashboard context, or globally if public
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/user/')) {
+      navigate(`/user/campaigns/${campaign.id}`);
+    } else if (currentPath.includes('/vendor/')) {
+      navigate(`/vendor/campaigns/${campaign.id}`);
+    } else if (currentPath.includes('/admin/')) {
+      navigate(`/admin/campaigns/${campaign.id}`);
+    } else {
+      navigate(`/campaigns/${campaign.id}`);
+    }
   };
 
   const categories = ['Medical', 'Food', 'Shelter', 'Education', 'Infrastructure', 'Other'];
@@ -122,14 +133,24 @@ function CampaignsFeedPage() {
             <h1 className="text-3xl font-bold text-slate-900">Campaigns</h1>
             <p className="text-slate-600 mt-2">Support communities and causes that need help</p>
           </div>
-          {profile?.role === 'requester' && (
-            <Button
-              onClick={() => navigate('/campaigns/create')}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700"
-            >
-              <Plus size={20} />
-              Create Campaign
-            </Button>
+          {profile?.isAuthenticated && (
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate('/user/campaigns/my')}
+                className="flex items-center gap-2 border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-5"
+              >
+                <Heart className="w-4 h-4 text-rose-500 fill-rose-500/10" />
+                My Campaigns
+              </Button>
+              <Button
+                onClick={() => navigate('/user/campaigns/create')}
+                className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-bold px-6 shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                Create Campaign
+              </Button>
+            </div>
           )}
         </div>
 
@@ -143,7 +164,7 @@ function CampaignsFeedPage() {
                 placeholder="Search campaigns by title or city..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
           </form>
@@ -212,7 +233,7 @@ function CampaignsFeedPage() {
               <div className="flex items-end gap-2">
                 <Button
                   onClick={applyFilters}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
                 >
                   Apply
                 </Button>
@@ -256,7 +277,7 @@ function CampaignsFeedPage() {
                     className="w-full h-40 object-cover"
                   />
                 ) : (
-                  <div className="w-full h-40 bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center">
+                  <div className="w-full h-40 bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                     <Heart size={32} className="text-white opacity-50" />
                   </div>
                 )}
@@ -299,7 +320,7 @@ function CampaignsFeedPage() {
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-gradient-to-r from-indigo-500 to-indigo-600 h-full transition-all"
+                        className="bg-gradient-to-r from-primary-500 to-primary-600 h-full transition-all"
                         style={{ width: `${progress}%` }}
                       />
                     </div>
@@ -317,7 +338,7 @@ function CampaignsFeedPage() {
                     </Button>
                     <Button
                       onClick={() => handleViewDetails(campaign)}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
                     >
                       Details
                     </Button>

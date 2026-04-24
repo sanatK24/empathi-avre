@@ -10,18 +10,39 @@ import { useAppContext } from '../context/AppContext';
 import { useGoogleLogin } from '@react-oauth/google';
 import { saveAuthSession } from '../services/authService';
 
+const GoogleSignInButton = ({ onSocialLogin, loading }) => {
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: (codeResponse) => onSocialLogin(codeResponse.access_token, 'google'),
+    onError: (error) => console.log('Google Login Failed:', error)
+  });
+
+  return (
+    <Button
+      variant="secondary"
+      className="w-full h-12 shadow-none border-slate-200"
+      onClick={() => loginWithGoogle()}
+      disabled={loading}
+    >
+      <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
+      Sign in with Google
+    </Button>
+  );
+};
+
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { updateProfile } = useAppContext();
   const navigate = useNavigate();
+  const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     
-    const email = e.target[0].value;
-    const password = e.target[1].value;
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email');
+    const password = formData.get('password');
 
     try {
       // 1. Authenticate and get token
@@ -38,21 +59,26 @@ const LoginPage = () => {
       updateProfile({
         fullName: userProfile.name,
         email: userProfile.email,
-        userRole: userProfile.role,
+        backendRole: userProfile.role, // Essential for ProtectedRoute
+        userRole: userProfile.role?.toLowerCase() === 'requester' ? 'donor' : userProfile.role?.toLowerCase(),
         isAuthenticated: true,
         accessToken: token,
         backendUserId: userProfile.id,
-        isVerified: userProfile.is_active // Or use actual verification status if available
+        isVerified: userProfile.is_active
       });
 
 
       // 4. Redirect based on role
-      if (userProfile.role === 'vendor') {
+      const role = userProfile.role?.toLowerCase();
+      if (role === 'vendor') {
         navigate('/vendor/dashboard');
-      } else if (userProfile.role === 'requester') {
+      } else if (role === 'requester' || role === 'donor' || role === 'user') {
         navigate('/user/dashboard');
-      } else if (userProfile.role === 'admin') {
+      } else if (role === 'admin') {
         navigate('/admin/dashboard');
+      } else {
+        // Fallback to user dashboard if role is unknown but authenticated
+        navigate('/user/dashboard');
       }
     } catch (error) {
       console.error('Login failed:', error);
@@ -61,6 +87,7 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
 
   const handleSocialLogin = async (token, provider) => {
     setLoading(true);
@@ -75,7 +102,8 @@ const LoginPage = () => {
       updateProfile({
         fullName: userProfile.name,
         email: userProfile.email,
-        userRole: userProfile.role,
+        backendRole: userProfile.role,
+        userRole: userProfile.role?.toLowerCase() === 'requester' ? 'donor' : userProfile.role?.toLowerCase(),
         isAuthenticated: true,
         accessToken: accessToken,
         backendUserId: userProfile.id,
@@ -83,13 +111,19 @@ const LoginPage = () => {
         isVerified: userProfile.is_active
       });
 
-      if (userProfile.role === 'vendor') {
+
+      // 5. Redirect based on role
+      const role = userProfile.role?.toLowerCase();
+      if (role === 'vendor') {
         navigate('/vendor/dashboard');
-      } else if (userProfile.role === 'requester') {
+      } else if (role === 'requester' || role === 'donor' || role === 'user') {
         navigate('/user/dashboard');
-      } else if (userProfile.role === 'admin') {
+      } else if (role === 'admin') {
         navigate('/admin/dashboard');
+      } else {
+        navigate('/user/dashboard');
       }
+
     } catch (error) {
       console.error(`${provider} login failed:`, error);
       alert(error.message || `${provider} login failed.`);
@@ -97,11 +131,6 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
-
-  const loginWithGoogle = useGoogleLogin({
-    onSuccess: (codeResponse) => handleSocialLogin(codeResponse.access_token, 'google'),
-    onError: (error) => console.log('Google Login Failed:', error)
-  });
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex">
@@ -120,18 +149,23 @@ const LoginPage = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <Input 
               label="Email Address"
+              name="email"
               placeholder="name@company.com"
               type="email"
+              autoComplete="email"
               required
             />
             
             <div className="relative">
               <Input 
                 label="Password"
+                name="password"
                 placeholder="••••••••"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 required
               />
+
               <button 
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -162,15 +196,17 @@ const LoginPage = () => {
           </div>
 
           <div className="mt-8">
-             <Button 
-                variant="secondary" 
+            {hasGoogleClientId ? (
+              <GoogleSignInButton onSocialLogin={handleSocialLogin} loading={loading} />
+            ) : (
+              <Button
+                variant="secondary"
                 className="w-full h-12 shadow-none border-slate-200"
-                onClick={() => loginWithGoogle()}
-                disabled={loading}
-             >
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
-                Sign in with Google
-             </Button>
+                disabled
+              >
+                Google Sign-In unavailable
+              </Button>
+            )}
           </div>
 
 

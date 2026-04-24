@@ -7,8 +7,6 @@ from schemas import RequestCreate, RequestResponse
 from auth import get_current_user
 from services.empathi_engine import EmpathIEngine
 from services.feature_builder import FeatureBuilder
-from realtime import emit_and_broadcast_sync
-from events import EventType
 import asyncio
 import anyio
 import logging
@@ -115,24 +113,6 @@ def create_request(
     db.commit()
     db.refresh(db_request)
 
-    # Emit request creation event asynchronously (non-blocking)
-    try:
-        emit_and_broadcast_sync(
-            EventType.REQUEST_FLAGGED, # Should probably be REQUEST_CREATED if it existed, but using what's available
-            {
-                "request_id": db_request.id,
-                "requester_id": user.id,
-                "resource_name": resource_name,
-                "urgency": request_data.urgency_level.value,
-                "location": {
-                    "latitude": request_data.location_lat,
-                    "longitude": request_data.location_lng
-                }
-            }
-        )
-    except Exception as e:
-        # Log but don't fail the request if event emission fails
-        logger.error(f"Failed to emit request created event: {e}")
 
     return db_request
 
@@ -187,20 +167,6 @@ def get_matches(
             )
             db.add(match)
 
-            # Emit vendor matched event (notify vendor of new opportunity)
-            try:
-                emit_and_broadcast_sync(
-                    EventType.VENDOR_MATCHED,
-                    {
-                        "vendor_id": candidate["vendor_id"],
-                        "request_id": request_id,
-                        "resource_name": request.resource_name,
-                        "urgency": request.urgency_level.value,
-                        "match_score": round(candidate["relevance_score"], 2)
-                    }
-                )
-            except Exception as e:
-                logger.error(f"Failed to emit vendor matched event: {e}")
 
         db.commit()
         existing_matches = db.query(Match).filter(Match.request_id == request_id).all()
@@ -310,20 +276,6 @@ def accept_vendor(
     db.refresh(match)
     db.refresh(vendor)
 
-    # Emit match accepted by requester event
-    try:
-        emit_and_broadcast_sync(
-            EventType.MATCH_ACCEPTED_BY_REQUESTER,
-            {
-                "requester_id": user.id,
-                "vendor_id": vendor.id,
-                "request_id": request_id,
-                "match_id": match.id,
-                "new_vendor_rating": round(new_rating, 2)
-            }
-        )
-    except Exception as e:
-        logger.error(f"Failed to emit match accepted event: {e}")
 
     return {
         "message": "Vendor accepted",
@@ -420,19 +372,6 @@ def cancel_request(
     db.commit()
     db.refresh(request)
 
-    # Emit match cancelled event for affected vendors
-    if affected_vendor_ids:
-        try:
-            emit_and_broadcast_sync(
-                EventType.MATCH_CANCELLED,
-                {
-                    "request_id": request_id,
-                    "requester_id": user.id,
-                    "affected_vendor_ids": affected_vendor_ids
-                }
-            )
-        except Exception as e:
-            logger.error(f"Failed to emit match cancelled event: {e}")
 
     return {"message": "Request cancelled"}
 

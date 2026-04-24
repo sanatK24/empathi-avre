@@ -13,6 +13,7 @@ import UserDashboard from './pages/UserDashboard';
 import CreateRequest from './pages/CreateRequest';
 import MatchResults from './pages/MatchResults';
 import RequestHistory from './pages/RequestHistory';
+import ResourceHubPage from './pages/ResourceHubPage';
 
 // Campaign Pages
 import CampaignsFeedPage from './pages/CampaignsFeedPage';
@@ -56,11 +57,16 @@ const ProtectedRoute = ({ children, allowedRole = null }) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Cross-role protection (optional, but keeps architecture clean)
-  if (allowedRole && profile.backendRole !== allowedRole) {
-    const target = profile.backendRole === 'REQUESTER' ? '/user' : `/${profile.backendRole.toLowerCase()}`;
+  // Cross-role protection
+  // Active role in session (can be switched by user if dual-role)
+  const activeRole = profile.userRole?.toLowerCase();
+  const requiredRole = allowedRole?.toLowerCase() === 'requester' ? 'donor' : allowedRole?.toLowerCase();
+
+  if (requiredRole && activeRole !== requiredRole) {
+    const target = activeRole === 'donor' ? '/user' : `/${activeRole || 'user'}`;
     return <Navigate to={`${target}/dashboard`} replace />;
   }
+
 
   return children;
 };
@@ -74,6 +80,8 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/campaigns" element={<CampaignsFeedPage />} />
+          <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
         </Route>
 
         {/* User Routes (Formerly Requester) */}
@@ -81,12 +89,13 @@ function App() {
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="create" element={<CreateRequest />} />
+          <Route path="resources" element={<ResourceHubPage />} />
           <Route path="results" element={<MatchResults />} />
           <Route path="history" element={<RequestHistory />} />
           <Route path="matches" element={<MatchResults />} />
           <Route path="campaigns" element={<CampaignsFeedPage />} />
-          <Route path="campaigns/create" element={<CampaignCreationPage />} />
           <Route path="campaigns/:id" element={<CampaignDetailPage />} />
+          <Route path="campaigns/create" element={<CampaignCreationPage />} />
           <Route path="campaigns/my" element={<CampaignAnalyticsDashboard />} />
           <Route path="donations" element={<DonationPage />} />
           <Route path="emergency" element={<EmergencyHub />} />

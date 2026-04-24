@@ -3,8 +3,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from models import User, Vendor, Request, Match, Campaign, CampaignStatus, VerificationStatus, UserRole
 from repositories.audit_repo import audit_repo
-from realtime import emit_and_broadcast_sync
-from events import EventType
 
 class AdminService:
     @staticmethod
@@ -66,16 +64,8 @@ class AdminService:
             resource_id=vendor_id
         )
         
-        # Emit Real-time Event
-        event_type = EventType.VENDOR_VERIFIED if status == VerificationStatus.VERIFIED else EventType.VENDOR_REJECTED
-        emit_and_broadcast_sync(
-            event_type,
-            {
-                "vendor_id": vendor_id,
-                "vendor_name": vendor.shop_name,
-                "status": status
-            }
-        )
+        # No notification side-effect for now
+        pass
         
         return vendor
 

@@ -55,10 +55,16 @@ def social_login(auth_data: SocialAuthRequest, db: Session = Depends(get_db)):
 
 @router.post("/register", response_model=UserResponse)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
+    """
+    Standard user registration.
+    """
     return AuthService.register_user(db, user_in)
 
 @router.post("/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """
+    OAuth2 compatible token login.
+    """
     user = AuthService.authenticate(db, form_data.username, form_data.password)
     return AuthService.create_token_response(user)
 
@@ -67,7 +73,16 @@ def get_me(current_user: User = Depends(get_active_user)):
     return current_user
 
 @router.get("/profile", response_model=UserProfileResponse)
-def get_profile(current_user: User = Depends(get_active_user)):
+def get_profile(
+    current_user: User = Depends(get_active_user),
+    db: Session = Depends(get_db)
+):
+    from repositories.vendor_repo import vendor_repo
+    vendor = vendor_repo.get_by_user_id(db, current_user.id)
+    
+    # We convert to a dict to add the is_vendor field if it's not a real column
+    # but Pydantic's from_attributes handles it if we add it as an attribute
+    current_user.is_vendor = vendor is not None
     return current_user
 
 @router.put("/profile", response_model=UserProfileResponse)

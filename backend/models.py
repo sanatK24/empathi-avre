@@ -68,6 +68,7 @@ class User(Base):
     organization_name = Column(String, nullable=True)
     bio = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
+    can_switch_role = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
 
     # Emergency-related fields
@@ -231,7 +232,7 @@ class Campaign(Base):
     created_at = Column(DateTime, default=func.now())
 
     # Relationships
-    creator = relationship("User", backref="campaign_list")
+    creator = relationship("User", back_populates="campaigns")
     donations = relationship("Donation", back_populates="campaign", cascade="all, delete-orphan")
     updates = relationship("CampaignUpdate", back_populates="campaign", cascade="all, delete-orphan")
 

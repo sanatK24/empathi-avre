@@ -120,6 +120,8 @@ export function AppProvider({ children }) {
           personal_categories: session.user.personal_categories || '',
           bloodGroup: session.user.blood_group,
           preferredHospital: session.user.preferred_hospital,
+          canSwitchRole: session.user.can_switch_role,
+          isVendor: session.user.is_vendor,
           isAuthenticated: true,
         }
         setProfile(next)
@@ -148,12 +150,20 @@ export function AppProvider({ children }) {
 
   const permissions = ROLE_PERMISSIONS[profile.userRole] || []
 
+  const switchRole = (newRole) => {
+    updateProfile({ userRole: newRole })
+    // Refresh to update layouts if necessary, or just rely on state
+    const dashboardPath = `/${newRole === 'donor' ? 'user' : (newRole === 'admin' ? 'admin' : (newRole === 'vendor' ? 'vendor' : 'user'))}/dashboard`
+    window.location.href = dashboardPath
+  }
+
   const value = useMemo(
     () => ({
       profile,
       onboardingDone: Boolean(profile.city && profile.userRole),
       updateProfile,
       setUserRole,
+      switchRole,
       setVerified,
       logout,
       authInitialized,

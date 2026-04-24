@@ -2,33 +2,22 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from sqlalchemy.orm import Session
-from database import get_db
+from database import get_db, engine, Base
 from api.v1.router import api_router
-from core.logging import logger
-from event_consumer import start_event_consumer, stop_event_consumer
 from config import settings
 import os
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup: Start event consumer if RabbitMQ is enabled
-    if settings.ENABLE_RABBITMQ:
-        await start_event_consumer()
-    
-    yield
-    
-    # Shutdown: Stop event consumer
-    if settings.ENABLE_RABBITMQ:
-        await stop_event_consumer()
+# Create tables on startup
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
+
     title="EmpathI API",
-    description="EmpathI Coordination & Matching Engine (Production-Grade)",
-    version="1.1.0",
-    lifespan=lifespan
+    description="EmpathI API (Simplified)",
+    version="1.1.0"
 )
 
-# CORS - configured from environment
+# Essential CORS
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -38,11 +27,7 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:5174",
     "http://127.0.0.1:5175",
     "http://127.0.0.1:3000",
-    "http://localhost:8000",
 ]
-env_origins = os.getenv("CORS_ORIGINS")
-if env_origins:
-    ALLOWED_ORIGINS.extend(env_origins.split(","))
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,24 +37,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API Router
-# We mount it without a prefix to maintain compatibility with existing frontend URLs 
-# (e.g., /auth/login instead of /api/v1/auth/login)
+# Standard API Router
 app.include_router(api_router)
-
-# Legacy Route Compatibility (for modules not yet refactored)
-from routes import donation_routes, payment_routes
-app.include_router(donation_routes.router)
-app.include_router(payment_routes.router)
 
 @app.get("/health")
 def health_check():
-    return {"status": "Healthy", "version": "1.1.0"}
+    return {"status": "Healthy"}
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to EmpathI Production API"}
+    return {"message": "EmpathI API is running"}
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    # Use standard host and port
+    uvicorn.run(
+        "main:app", 
+        host="0.0.0.0", 
+        port=8000, 
+        reload=True,
+        reload_excludes=["*.db", "*.db-journal", "*.db-shm", "*.db-wal"]
+    )

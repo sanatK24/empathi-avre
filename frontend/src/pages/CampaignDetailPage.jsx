@@ -128,6 +128,22 @@ function CampaignDetailPage() {
     }
   };
 
+  const getBackPath = () => {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/user/')) return '/user/campaigns';
+    if (currentPath.includes('/vendor/')) return '/vendor/dashboard';
+    if (currentPath.includes('/admin/')) return '/admin/campaigns';
+    return '/campaigns';
+  };
+
+  const handleRelatedClick = (relatedId) => {
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/user/')) navigate(`/user/campaigns/${relatedId}`);
+    else if (currentPath.includes('/vendor/')) navigate(`/vendor/campaigns/${relatedId}`);
+    else if (currentPath.includes('/admin/')) navigate(`/admin/campaigns/${relatedId}`);
+    else navigate(`/campaigns/${relatedId}`);
+  };
+
   if (loading) {
     return (
       <section className="p-6 max-w-6xl mx-auto">
@@ -143,7 +159,7 @@ function CampaignDetailPage() {
     return (
       <section className="p-6 max-w-6xl mx-auto">
         <button
-          onClick={() => navigate('/campaigns')}
+          onClick={() => navigate(getBackPath())}
           className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4"
         >
           <ArrowLeft size={20} />
@@ -177,7 +193,7 @@ function CampaignDetailPage() {
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <button
-            onClick={() => navigate('/campaigns')}
+            onClick={() => navigate(getBackPath())}
             className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium"
           >
             <ArrowLeft size={20} />
@@ -520,7 +536,7 @@ function CampaignDetailPage() {
                   {relatedCampaigns.map((related) => (
                     <motion.button
                       key={related.id}
-                      onClick={() => navigate(`/campaigns/${related.id}`)}
+                      onClick={() => handleRelatedClick(related.id)}
                       whileHover={{ scale: 1.02 }}
                       className="w-full text-left p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
                     >

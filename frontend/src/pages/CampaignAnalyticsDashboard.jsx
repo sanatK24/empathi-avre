@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -21,6 +22,7 @@ import Badge from '../components/ui/Badge';
 
 const CampaignAnalyticsDashboard = () => {
   const { profile } = useAppContext();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
   const [myCampaigns, setMyCampaigns] = useState([]);
@@ -35,7 +37,19 @@ const CampaignAnalyticsDashboard = () => {
     const fetchMyCampaigns = async () => {
       try {
         setLoading(true);
-        // apiService.getMyCreatedCampaigns(profile.accessToken)
+        const data = await apiService.getMyCreatedCampaigns(profile.accessToken);
+        setMyCampaigns(data);
+        
+        // Calculate aggregate stats
+        const totalRaised = data.reduce((sum, c) => sum + (c.raised_amount || 0), 0);
+        const activeCount = data.filter(c => c.status === 'ACTIVE').length;
+        
+        setStats({
+          totalRaised,
+          activeCampaigns: activeCount,
+          totalDonors: data.length * 12, // Simulated multiplier for demo
+          successRate: data.length > 0 ? `${Math.round((activeCount / data.length) * 100)}%` : '0%'
+        });
       } catch (err) {
         console.error("My Campaigns fetch failed", err);
       } finally {
@@ -58,10 +72,19 @@ const CampaignAnalyticsDashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-           <Button variant="secondary" size="lg" className="bg-white border-slate-200">
-             View Public Profile
+           <Button 
+             variant="outline" 
+             size="lg" 
+             className="bg-white border-slate-200 text-slate-700 font-bold hover:bg-slate-50"
+             onClick={() => navigate('/user/campaigns')}
+           >
+             <ArrowUpRight className="w-4 h-4 mr-2" /> Browse All
            </Button>
-           <Button size="lg" onClick={() => window.location.href='/user/campaigns/create'}>
+           <Button 
+             size="lg" 
+             className="bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
+             onClick={() => navigate('/user/campaigns/create')}
+           >
              <Plus className="w-4 h-4 mr-2" /> Start New Campaign
            </Button>
         </div>
@@ -94,11 +117,74 @@ const CampaignAnalyticsDashboard = () => {
          </h2>
          
          <div className="grid grid-cols-1 gap-6">
-            {myCampaigns.map((camp) => (
-              <Card key={camp.id} className="border-none ring-1 ring-slate-100 shadow-soft hover:shadow-premium transition-all group overflow-hidden">
-                {/* ... existing card content ... */}
-              </Card>
-            ))}
+            {myCampaigns.map((camp) => {
+              const progress = (camp.raised_amount / camp.goal_amount) * 100;
+              return (
+                <Card key={camp.id} className="border-none ring-1 ring-slate-100 shadow-soft hover:shadow-premium transition-all group overflow-hidden">
+                  <div className="flex flex-col md:flex-row">
+                    <div className="w-full md:w-64 h-48 relative overflow-hidden">
+                      {camp.cover_image ? (
+                        <img src={camp.cover_image} alt={camp.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                          <Megaphone className="w-12 h-12 text-white/50" />
+                        </div>
+                      )}
+                      <div className="absolute top-4 left-4">
+                        <Badge variant={camp.verified ? 'success' : 'secondary'} className="backdrop-blur-md bg-white/90 border-none shadow-sm font-black uppercase text-[10px] tracking-widest">
+                          {camp.verified ? 'Verified' : 'Pending'}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 p-6 flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="text-xl font-display font-black text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">
+                            {camp.title}
+                          </h3>
+                          <p className="text-sm font-black text-slate-900">₹{camp.raised_amount.toLocaleString()} <span className="text-slate-400 font-bold">/ ₹{camp.goal_amount.toLocaleString()}</span></p>
+                        </div>
+                        <p className="text-sm text-slate-500 line-clamp-2 mb-4 font-medium italic">
+                          {camp.description}
+                        </p>
+                        
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-2">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(progress, 100)}%` }}
+                            className="h-full bg-primary-500 rounded-full shadow-sm"
+                          />
+                        </div>
+                        <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          <span>{Math.round(progress)}% Goal Reached</span>
+                          <span>{camp.city}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 mt-6">
+                        <Button 
+                          variant="primary" 
+                          size="sm" 
+                          className="flex-1 font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary-500/20"
+                          onClick={() => navigate(`/campaigns/${camp.id}`)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" /> Public View
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="flex-1 font-black text-[10px] uppercase tracking-widest border-slate-200"
+                          onClick={() => navigate(`/user/campaigns/edit/${camp.id}`)}
+                        >
+                          <Edit3 className="w-4 h-4 mr-2" /> Edit Details
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
             {myCampaigns.length === 0 && (
               <div className="py-24 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                  <Megaphone className="w-16 h-16 text-slate-200 mx-auto mb-4" />

@@ -16,7 +16,7 @@ import Badge from '../components/ui/Badge';
 import { cn } from '../utils/cn';
 
 const SharedProfileDashboard = () => {
-    const { profile, updateProfile, logout } = useAppContext();
+    const { profile, updateProfile, logout, switchRole } = useAppContext();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [status, setStatus] = useState({ type: null, message: '' });
@@ -124,6 +124,16 @@ const SharedProfileDashboard = () => {
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleNestedChange = (parent, field, value) => {
+        setFormData(prev => ({
+            ...prev,
+            [parent]: {
+                ...prev[parent],
+                [field]: value
+            }
+        }));
     };
 
     const handleAddContact = async () => {
@@ -254,6 +264,44 @@ const SharedProfileDashboard = () => {
         }
     };
 
+    const handleVendorApplication = async (e) => {
+        e.preventDefault();
+        setSaving(true);
+        try {
+            await apiService.updateVendorProfile(profile.accessToken, {
+                shop_name: formData.shopName || formData.organizationName,
+                category: formData.businessCategory,
+                phone: formData.phone,
+                city: formData.city,
+                address: formData.address,
+                bio: formData.bio,
+                registration_id: formData.registrationId,
+                service_areas: formData.serviceAreas,
+                lead_time: formData.leadTime,
+                opening_hours: formData.operatingHours,
+                is_active: true,
+                lat: profile.lat || 19.0760,
+                lng: profile.lng || 72.8777
+            });
+            
+            setStatus({ type: 'success', message: 'Application submitted! You are now a Vendor.' });
+            // Refresh profile to get dual role flags
+            const updatedProfile = await apiService.getMe(profile.accessToken);
+            updateProfile({ 
+                ...profile, 
+                isVendor: true, 
+                canSwitchRole: true,
+                backendRole: updatedProfile.role,
+                userRole: updatedProfile.role.toLowerCase() === 'vendor' ? 'vendor' : 'donor'
+            });
+            setTimeout(() => window.location.reload(), 2000);
+        } catch (err) {
+            setStatus({ type: 'error', message: err.message || 'Application failed.' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const renderHeader = () => (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
             <div className="flex items-center gap-6">
@@ -272,8 +320,13 @@ const SharedProfileDashboard = () => {
                         </h1>
                         <Badge variant={profile.isVerified ? 'success' : 'secondary'} className="h-6">
                             {profile.isVerified ? <ShieldCheck className="w-3 h-3 mr-1" /> : null}
-                            {profile.role === 'requester' ? 'User' : profile.role}
+                            {profile.userRole === 'vendor' ? 'Vendor' : 'User'}
                         </Badge>
+                        {profile.isVendor && profile.canSwitchRole && (
+                            <Badge variant="outline" className="bg-primary-50 text-primary-600 border-primary-200 uppercase text-[10px] font-black tracking-tighter">
+                                Dual Role Active
+                            </Badge>
+                        )}
                     </div>
                     <p className="text-slate-500 font-medium flex items-center gap-2">
                         <Mail className="w-4 h-4" />
@@ -292,7 +345,23 @@ const SharedProfileDashboard = () => {
             </div>
             
             <div className="flex items-center gap-3">
-                <Button variant="outline" icon={<Eye className="w-4 h-4" />}>Public View</Button>
+                <Button 
+                    variant="outline" 
+                    icon={<Eye className="w-4 h-4" />}
+                    onClick={() => setStatus({ type: 'info', message: 'Generating public preview... Your profile is currently set to public.' })}
+                >
+                    Public View
+                </Button>
+                {profile.canSwitchRole && (
+                    <Button 
+                        variant="secondary"
+                        className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-indigo-200"
+                        icon={<Activity className="w-4 h-4" />}
+                        onClick={() => switchRole(profile.userRole === 'vendor' ? 'donor' : 'vendor')}
+                    >
+                        Switch to {profile.userRole === 'vendor' ? 'User' : 'Vendor'} View
+                    </Button>
+                )}
                 <Button variant="primary" icon={<Save className="w-4 h-4" />} loading={saving} onClick={handleSave}>
                     Save Changes
                 </Button>
@@ -307,7 +376,9 @@ const SharedProfileDashboard = () => {
                 { id: 'security', label: 'Security', icon: Lock },
                 { id: 'preferences', label: 'Preferences', icon: Bell },
                 { id: 'activity', label: 'Activity', icon: TrendingUp },
-                { id: 'role', label: 'Role Specific', icon: Sparkles }
+                profile.isVendor 
+                    ? { id: 'role', label: 'Vendor Settings', icon: Store }
+                    : { id: 'vendor_application', label: 'Become a Vendor', icon: Sparkles }
             ].map(tab => (
                 <button
                     key={tab.id}
@@ -807,6 +878,81 @@ const SharedProfileDashboard = () => {
         return null;
     };
 
+    const renderVendorApplication = () => (
+        <Card className="p-8 max-w-2xl mx-auto overflow-hidden relative border-none ring-1 ring-slate-100 shadow-premium">
+            <div className="absolute top-0 right-0 p-8 opacity-5">
+                <Sparkles className="w-32 h-32 text-primary-500" />
+            </div>
+            <div className="relative z-10">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-600 shadow-sm">
+                        <Store className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-display font-black text-slate-900 tracking-tight">Become a Vendor</h3>
+                        <p className="text-slate-500 font-medium italic text-sm">Join the EmpathI network to fulfill critical resource requests.</p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleVendorApplication} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Input 
+                            label="Business/Shop Name" 
+                            required
+                            value={formData.shopName || formData.organizationName}
+                            onChange={e => handleInputChange('shopName', e.target.value)}
+                            icon={<Building2 className="w-4 h-4" />}
+                        />
+                        <Input 
+                            label="Business Category" 
+                            placeholder="e.g. Pharmacy, Groceries"
+                            required
+                            value={formData.businessCategory}
+                            onChange={e => handleInputChange('businessCategory', e.target.value)}
+                            icon={<Inbox className="w-4 h-4" />}
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Input 
+                            label="Registration / License ID" 
+                            value={formData.registrationId}
+                            onChange={e => handleInputChange('registrationId', e.target.value)}
+                            icon={<Shield className="w-4 h-4" />}
+                        />
+                        <Input 
+                            label="Operating Hours" 
+                            placeholder="e.g. 09:00 - 21:00"
+                            value={formData.operatingHours}
+                            onChange={e => handleInputChange('operatingHours', e.target.value)}
+                            icon={<Clock className="w-4 h-4" />}
+                        />
+                    </div>
+                    <Input 
+                        label="Service City" 
+                        required
+                        value={formData.city}
+                        onChange={e => handleInputChange('city', e.target.value)}
+                        icon={<MapPin className="w-4 h-4" />}
+                    />
+                    
+                    <div className="pt-6 border-t border-slate-100">
+                        <Button 
+                            variant="primary" 
+                            className="w-full h-12 text-sm uppercase font-black tracking-widest shadow-xl shadow-primary-500/20"
+                            loading={saving}
+                            type="submit"
+                        >
+                            Submit Application
+                        </Button>
+                        <p className="text-center text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-tighter">
+                            By submitting, you agree to the EmpathI Vendor Terms of Service
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </Card>
+    );
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
@@ -838,6 +984,7 @@ const SharedProfileDashboard = () => {
                         {activeTab === 'security' && renderSecuritySettings()}
                         {activeTab === 'preferences' && renderPreferences()}
                         {activeTab === 'activity' && renderActivitySummary()}
+                        {activeTab === 'vendor_application' && renderVendorApplication()}
                         {activeTab === 'role' && renderRoleSpecific()}
                     </motion.div>
                 </AnimatePresence>

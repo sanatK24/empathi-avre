@@ -87,7 +87,7 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
             </div>
             <div className="w-full bg-slate-200 rounded-full h-2">
               <div
-                className="bg-indigo-600 h-full rounded-full transition-all"
+                className="bg-primary-600 h-full rounded-full transition-all"
                 style={{
                   width: `${Math.min(
                     (campaign.raised_amount / campaign.goal_amount) * 100,
@@ -121,7 +121,7 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="Enter amount"
-                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full pl-8 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -134,7 +134,7 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
                     onClick={() => handleQuickAmount(quickAmount)}
                     className={`py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                       amount === quickAmount.toString()
-                        ? 'bg-indigo-600 text-white ring-2 ring-indigo-300'
+                        ? 'bg-primary-600 text-white ring-2 ring-primary-300'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
@@ -151,7 +151,7 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
                   type="checkbox"
                   checked={anonymous}
                   onChange={(e) => setAnonymous(e.target.checked)}
-                  className="w-4 h-4 rounded border-slate-300 text-indigo-600"
+                  className="w-4 h-4 rounded border-slate-300 text-primary-600"
                 />
                 <span className="text-sm text-slate-700">Donate anonymously</span>
               </label>
@@ -168,7 +168,7 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
                 placeholder="Share a message of support..."
                 maxLength="500"
                 rows="3"
-                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
               />
               <p className="text-xs text-slate-500 mt-1">
                 {message.length}/500 characters
@@ -187,7 +187,7 @@ function DonationModal({ campaign, onClose, onDonationSuccess }) {
               <Button
                 type="submit"
                 disabled={!amount}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 Continue to Payment
               </Button>

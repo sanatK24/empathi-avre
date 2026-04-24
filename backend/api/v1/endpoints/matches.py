@@ -6,8 +6,6 @@ from models import User, Vendor, Match, MatchStatus
 from api.deps import get_active_user
 from repositories.match_repo import match_repo
 from core.exceptions import NotFoundException
-from realtime import emit_and_broadcast_sync
-from events import EventType
 
 router = APIRouter()
 
@@ -58,17 +56,7 @@ def vendor_accept_match(
     match.status = MatchStatus.ACCEPTED_BY_VENDOR
     db.commit()
     
-    # Emit Real-time Event (Notify Requester)
-    emit_and_broadcast_sync(
-        EventType.MATCH_ACCEPTED_BY_VENDOR,
-        {
-            "vendor_id": vendor.id,
-            "vendor_name": vendor.shop_name,
-            "match_id": match.id,
-            "request_id": match.request_id,
-            "requester_id": match.request.user_id,
-            "resource_name": match.request.resource_name
-        }
-    )
+    # No notification side-effect for now
+    pass
     
     return {"message": "Match accepted by vendor"}

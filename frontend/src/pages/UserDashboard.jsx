@@ -42,9 +42,10 @@ const UserDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [statsData, histData] = await Promise.all([
+        const [statsData, histData, donationData] = await Promise.all([
           apiService.getRequesterStats(profile.accessToken).catch(() => ({})),
-          apiService.getRequestHistory(profile.accessToken).catch(() => [])
+          apiService.getRequestHistory(profile.accessToken).catch(() => []),
+          apiService.getDonationHistory(profile.accessToken).catch(() => [])
         ]);
 
         setStats({
@@ -57,14 +58,29 @@ const UserDashboard = () => {
         });
 
         // Transform history to activity format
-        const recent = (histData || []).slice(0, 5).map(item => ({
-          type: item.type || 'request',
+        const requests = (histData || []).map(item => ({
+          type: 'request',
           title: item.resource_name || item.name || 'Resource Request',
           status: item.status || 'Pending',
-          time: item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent',
+          date: new Date(item.created_at),
+          time: new Date(item.created_at).toLocaleDateString(),
           level: (item.urgency_level || 'low').toLowerCase()
         }));
-        setActivities(recent);
+
+        const donations = (donationData || []).map(item => ({
+          type: 'donation',
+          title: `Donated to ${item.campaign_title}`,
+          status: `₹${item.amount.toLocaleString()}`,
+          date: new Date(item.created_at),
+          time: new Date(item.created_at).toLocaleDateString(),
+          level: 'medium'
+        }));
+
+        const combined = [...requests, ...donations]
+          .sort((a, b) => b.date - a.date)
+          .slice(0, 5);
+
+        setActivities(combined);
 
       } catch (err) {
         console.error("Dashboard fetch failed", err);
@@ -82,7 +98,7 @@ const UserDashboard = () => {
     { label: 'Active Requests', value: stats.active_requests, icon: Zap, color: 'text-primary-500', bg: 'bg-primary-50' },
     { label: 'Matched Vendors', value: stats.matched_vendors, icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { label: 'Active Campaigns', value: stats.active_campaigns, icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { label: 'Donations Made', value: `$${stats.donations_made}`, icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { label: 'Donations Made', value: `₹${stats.donations_made.toLocaleString()}`, icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
     { label: 'Emergencies', value: stats.emergency_requests, icon: Siren, color: 'text-red-500', bg: 'bg-red-50' },
     { label: 'Recommendations', value: stats.recommendations_available, icon: Sparkles, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];

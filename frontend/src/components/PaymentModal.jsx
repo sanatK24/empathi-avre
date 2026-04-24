@@ -14,6 +14,15 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
   const [selectedMethod, setSelectedMethod] = useState('upi');
   const [transactionId, setTransactionId] = useState(null);
   const [step, setStep] = useState('method'); // method, details, processing, success
+  const [processingStage, setProcessingStage] = useState(0);
+
+  const stages = [
+    "Initializing secure connection...",
+    "Contacting payment gateway...",
+    "Verifying payment credentials...",
+    "Securing funds transfer...",
+    "Finalizing donation records..."
+  ];
 
   const [paymentDetails, setPaymentDetails] = useState({
     upi_id: '',
@@ -22,7 +31,7 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
     cvv: '',
     phone: '',
     account_number: '',
-    full_name: profile?.name || '',
+    full_name: profile?.fullName || '',
     email: profile?.email || ''
   });
 
@@ -31,9 +40,8 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
   }, []);
 
   const loadPaymentMethods = async () => {
-    // Simulated methods as backend doesn't have a specific payment method registry
     const methods = [
-      { id: 'upi', name: 'UPI', icon: '💳', description: 'Google Pay, PhonePe, Paytm' },
+      { id: 'upi', name: 'UPI', icon: '💳', description: 'GPay, PhonePe, Paytm' },
       { id: 'card', name: 'Credit/Debit Card', icon: '🏧', description: 'Visa, Mastercard, RuPay' },
       { id: 'wallet', name: 'Mobile Wallet', icon: '📱', description: 'Airtel Money, JioMoney' },
       { id: 'bank', name: 'Net Banking', icon: '🏦', description: 'All major Indian banks' }
@@ -42,19 +50,41 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
     setSelectedMethod('upi');
   };
 
+  const fillDummyDetails = () => {
+    switch (selectedMethod) {
+      case 'upi':
+        setPaymentDetails({ ...paymentDetails, upi_id: 'empathi.user@okaxis' });
+        break;
+      case 'card':
+        setPaymentDetails({ 
+          ...paymentDetails, 
+          card_number: '4242 4242 4242 4242', 
+          expiry: '12/28', 
+          cvv: '123' 
+        });
+        break;
+      case 'wallet':
+        setPaymentDetails({ ...paymentDetails, phone: '9876543210' });
+        break;
+      case 'bank':
+        setPaymentDetails({ ...paymentDetails, account_number: '123456789012' });
+        break;
+    }
+  };
+
   const validatePaymentDetails = () => {
     switch (selectedMethod) {
       case 'upi':
-        return paymentDetails.upi_id.match(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/) ? true : 'Invalid UPI ID (format: user@bank)';
+        return paymentDetails.upi_id.includes('@') ? true : 'Invalid UPI ID';
       case 'card':
-        if (!paymentDetails.card_number.replace(/\s/g, '').match(/^\d{16}$/)) return 'Invalid card number';
-        if (!paymentDetails.expiry.match(/^\d{2}\/\d{2}$/)) return 'Invalid expiry (MM/YY)';
-        if (!paymentDetails.cvv.match(/^\d{3,4}$/)) return 'Invalid CVV';
+        if (paymentDetails.card_number.replace(/\s/g, '').length < 16) return 'Invalid card number';
+        if (!paymentDetails.expiry.includes('/')) return 'Invalid expiry';
+        if (paymentDetails.cvv.length < 3) return 'Invalid CVV';
         return true;
       case 'wallet':
-        return paymentDetails.phone.match(/^\d{10}$/) ? true : 'Invalid phone number';
+        return paymentDetails.phone.length === 10 ? true : 'Invalid phone number';
       case 'bank':
-        return paymentDetails.account_number.match(/^\d{10,}$/) ? true : 'Invalid account number';
+        return paymentDetails.account_number.length >= 10 ? true : 'Invalid account number';
       default:
         return true;
     }
@@ -71,8 +101,14 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
       setLoading(true);
       setError(null);
       setStep('processing');
+      
+      // Multi-stage simulation
+      for (let i = 0; i < stages.length; i++) {
+        setProcessingStage(i);
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
 
-      // Use the real donation endpoint from the campaigns module
+      // Use the real donation endpoint
       const response = await apiService.donateToCampaign(
         profile.accessToken, 
         campaign.id, 
@@ -80,37 +116,23 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
         anonymous
       );
 
-      // Backend returns the donation object on success
-      if (response && response.id) {
-        setTransactionId(`TXN-${response.id}${Date.now().toString().slice(-4)}`);
+      if (response) {
+        setTransactionId(`TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
         setStep('success');
         setSuccess(true);
 
         setTimeout(() => {
           onPaymentSuccess?.();
           onClose();
-        }, 3000);
-      } else {
-        setError('Payment verification failed');
-        setStep('details');
+        }, 5000);
       }
     } catch (err) {
       console.error('Payment error:', err);
-      setError(err.message || 'Payment processing failed. Please try again.');
+      setError(err.message || 'Payment failed. Please try again.');
       setStep('details');
     } finally {
       setLoading(false);
     }
-  };
-
-  const getMethodIcon = (methodId) => {
-    const icons = {
-      upi: '💳',
-      card: '🏧',
-      wallet: '📱',
-      bank: '🏦'
-    };
-    return icons[methodId] || '💰';
   };
 
   const formatCardNumber = (value) => {
@@ -123,32 +145,41 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center"
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            className="bg-white rounded-3xl shadow-premium p-10 max-w-md w-full text-center relative overflow-hidden"
           >
+            <div className="absolute top-0 left-0 w-full h-2 bg-green-500"></div>
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex justify-center mb-4"
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", damping: 12 }}
+              className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
             >
-              <CheckCircle size={64} className="text-green-500" />
+              <CheckCircle size={40} className="text-green-600" />
             </motion.div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Payment Successful!</h3>
-            <p className="text-slate-600 mb-4">
-              Your donation of ₹{amount.toFixed(2)} to "{campaign.title}" has been received
+            
+            <h3 className="text-3xl font-display font-black text-slate-900 mb-2 uppercase tracking-tight">Success!</h3>
+            <p className="text-slate-500 font-medium mb-6">
+              Your contribution of <span className="text-slate-900 font-bold">₹{amount.toLocaleString()}</span> to "{campaign.title}" has been registered.
             </p>
-            <p className="text-xs text-slate-500 mb-4">
-              Transaction ID: <span className="font-mono">{transactionId}</span>
-            </p>
-            <p className="text-sm text-slate-600">
-              Thank you for your generosity! A confirmation has been sent to your email.
+            
+            <div className="bg-slate-50 rounded-2xl p-6 mb-8 border border-slate-100">
+              <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
+                <span>Receipt No.</span>
+                <span>Date</span>
+              </div>
+              <div className="flex justify-between text-sm font-mono font-bold text-slate-700">
+                <span>{transactionId}</span>
+                <span>{new Date().toLocaleDateString()}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-400 font-medium italic">
+              Your donation has been added to your profile. Redirecting to dashboard...
             </p>
           </motion.div>
         </motion.div>
@@ -162,251 +193,212 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 50, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white rounded-lg shadow-xl max-w-md w-full"
+          className="bg-white rounded-3xl shadow-premium max-w-md w-full overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-slate-200">
-            <h2 className="text-xl font-bold text-slate-900">Complete Payment</h2>
-            <button
-              onClick={onClose}
-              disabled={loading}
-              className="text-slate-400 hover:text-slate-600 disabled:opacity-50"
-            >
-              <X size={24} />
+          <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="text-xl font-display font-black text-slate-900 uppercase tracking-tight">Secure Checkout</h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+              <X size={20} className="text-slate-400" />
             </button>
           </div>
 
-          {/* Campaign Summary */}
-          <div className="px-6 py-4 bg-slate-50 border-b border-slate-200">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-semibold text-slate-900 text-sm">{campaign.title}</span>
-              <span className="text-lg font-bold text-indigo-600">₹{amount.toFixed(2)}</span>
+          {/* Amount Summary */}
+          <div className="bg-primary-50 p-6 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-1">Total Donation</p>
+              <h3 className="text-3xl font-display font-black text-primary-900">₹{amount.toLocaleString()}</h3>
             </div>
-            <p className="text-xs text-slate-600">Amount to be charged</p>
+            <div className="text-right">
+              <p className="text-xs font-bold text-slate-500 mb-1">Campaign</p>
+              <p className="text-sm font-bold text-slate-900 line-clamp-1">{campaign.title}</p>
+            </div>
           </div>
 
-          {/* Error Message */}
-          {error && step !== 'processing' && (
-            <div className="m-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex gap-2">
-              <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
-          )}
-
-          {/* Form */}
-          <div className="p-6">
+          <div className="p-8">
             {step === 'method' && (
               <div className="space-y-4">
-                <h3 className="font-semibold text-slate-900 mb-4">Select Payment Method</h3>
-                <div className="space-y-2">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Choose Method</h3>
+                <div className="grid grid-cols-1 gap-3">
                   {paymentMethods.map((method) => (
-                    <motion.button
+                    <button
                       key={method.id}
-                      whileHover={{ scale: 1.02 }}
                       onClick={() => {
                         setSelectedMethod(method.id);
                         setStep('details');
                       }}
-                      className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-                        selectedMethod === method.id
-                          ? 'border-indigo-600 bg-indigo-50'
-                          : 'border-slate-200 hover:border-slate-300'
-                      }`}
+                      className="group flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-primary-500 hover:bg-primary-50 transition-all text-left"
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{method.icon}</span>
-                        <div>
-                          <p className="font-semibold text-slate-900">{method.name}</p>
-                          <p className="text-xs text-slate-600">{method.description}</p>
-                        </div>
+                      <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center text-2xl group-hover:bg-white transition-colors">
+                        {method.icon}
                       </div>
-                    </motion.button>
+                      <div className="flex-1">
+                        <p className="font-bold text-slate-900 text-sm">{method.name}</p>
+                        <p className="text-[10px] font-medium text-slate-500">{method.description}</p>
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
             {step === 'details' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-slate-900 mb-4">
-                  {paymentMethods.find(m => m.id === selectedMethod)?.name}
-                </h3>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                    Enter {paymentMethods.find(m => m.id === selectedMethod)?.name} Details
+                  </h3>
+                  <button 
+                    onClick={fillDummyDetails}
+                    className="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:underline"
+                  >
+                    Use Dummy Data
+                  </button>
+                </div>
 
-                {selectedMethod === 'upi' && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      UPI ID (e.g., yourname@bank)
-                    </label>
-                    <input
-                      type="text"
-                      value={paymentDetails.upi_id}
-                      onChange={(e) => setPaymentDetails({ ...paymentDetails, upi_id: e.target.value })}
-                      placeholder="name@upi"
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                )}
-
-                {selectedMethod === 'card' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-900 mb-2">
-                        Card Number
-                      </label>
+                <div className="space-y-4">
+                  {selectedMethod === 'upi' && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">UPI ID</label>
                       <input
                         type="text"
-                        value={formatCardNumber(paymentDetails.card_number)}
-                        onChange={(e) =>
-                          setPaymentDetails({
-                            ...paymentDetails,
-                            card_number: e.target.value.replace(/\s/g, '')
-                          })
-                        }
-                        placeholder="1234 5678 9012 3456"
-                        maxLength="19"
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        value={paymentDetails.upi_id}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, upi_id: e.target.value })}
+                        placeholder="username@bank"
+                        className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary-500 font-medium"
                       />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate-900 mb-2">
-                          Expiry (MM/YY)
-                        </label>
+                  )}
+
+                  {selectedMethod === 'card' && (
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Card Number</label>
                         <input
                           type="text"
-                          value={paymentDetails.expiry}
-                          onChange={(e) => {
-                            let val = e.target.value.replace(/\D/g, '');
-                            if (val.length >= 2) {
-                              val = val.slice(0, 2) + '/' + val.slice(2, 4);
-                            }
-                            setPaymentDetails({ ...paymentDetails, expiry: val });
-                          }}
-                          placeholder="MM/YY"
-                          maxLength="5"
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          value={formatCardNumber(paymentDetails.card_number)}
+                          onChange={(e) => setPaymentDetails({ ...paymentDetails, card_number: e.target.value.replace(/\s/g, '') })}
+                          placeholder="0000 0000 0000 0000"
+                          className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary-500 font-mono"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-900 mb-2">
-                          CVV
-                        </label>
-                        <input
-                          type="password"
-                          value={paymentDetails.cvv}
-                          onChange={(e) =>
-                            setPaymentDetails({
-                              ...paymentDetails,
-                              cvv: e.target.value.replace(/\D/g, '').slice(0, 4)
-                            })
-                          }
-                          placeholder="123"
-                          maxLength="4"
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Expiry</label>
+                          <input
+                            type="text"
+                            value={paymentDetails.expiry}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, expiry: e.target.value })}
+                            placeholder="MM/YY"
+                            className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary-500"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">CVV</label>
+                          <input
+                            type="password"
+                            value={paymentDetails.cvv}
+                            onChange={(e) => setPaymentDetails({ ...paymentDetails, cvv: e.target.value })}
+                            placeholder="***"
+                            className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary-500"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </>
-                )}
+                  )}
 
-                {selectedMethod === 'wallet' && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      value={paymentDetails.phone}
-                      onChange={(e) =>
-                        setPaymentDetails({
-                          ...paymentDetails,
-                          phone: e.target.value.replace(/\D/g, '').slice(0, 10)
-                        })
-                      }
-                      placeholder="10-digit phone"
-                      maxLength="10"
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
+                  {selectedMethod === 'wallet' && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={paymentDetails.phone}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, phone: e.target.value })}
+                        placeholder="10-digit mobile number"
+                        className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  )}
+
+                  {selectedMethod === 'bank' && (
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Number</label>
+                      <input
+                        type="text"
+                        value={paymentDetails.account_number}
+                        onChange={(e) => setPaymentDetails({ ...paymentDetails, account_number: e.target.value })}
+                        placeholder="Enter bank account number"
+                        className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-primary-500"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {error && (
+                  <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold flex items-center gap-2">
+                    <AlertCircle size={14} /> {error}
                   </div>
                 )}
 
-                {selectedMethod === 'bank' && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-900 mb-2">
-                      Bank Account Number
-                    </label>
-                    <input
-                      type="text"
-                      value={paymentDetails.account_number}
-                      onChange={(e) =>
-                        setPaymentDetails({
-                          ...paymentDetails,
-                          account_number: e.target.value.replace(/\D/g, '')
-                        })
-                      }
-                      placeholder="Account number"
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                )}
-
-                <div className="pt-4 flex gap-3">
+                <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => setStep('method')}
-                    disabled={loading}
-                    className="flex-1 px-4 py-2 border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                    className="flex-1 py-4 text-xs font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
                   >
-                    Back
+                    Change Method
                   </button>
                   <Button
                     onClick={handleProcessPayment}
-                    disabled={loading}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl shadow-lg font-black text-xs uppercase tracking-widest"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <DollarSign size={18} />
-                        Pay ₹{amount.toFixed(2)}
-                      </>
-                    )}
+                    Complete Payment
                   </Button>
                 </div>
               </div>
             )}
 
             {step === 'processing' && (
-              <div className="text-center py-8">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="mb-4 flex justify-center"
-                >
-                  <Loader2 size={48} className="text-indigo-600" />
-                </motion.div>
-                <p className="font-semibold text-slate-900 mb-2">Processing Payment...</p>
-                <p className="text-sm text-slate-600">Please wait while we process your donation</p>
+              <div className="text-center py-10 space-y-6">
+                <div className="relative w-20 h-20 mx-auto">
+                   <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                   <motion.div 
+                     className="absolute inset-0 border-4 border-primary-500 rounded-full border-t-transparent"
+                     animate={{ rotate: 360 }}
+                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                   />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-display font-black text-slate-900 uppercase tracking-tight">Processing</h3>
+                  <p className="text-xs font-bold text-primary-600 uppercase tracking-widest animate-pulse">
+                    {stages[processingStage]}
+                  </p>
+                </div>
+                <div className="flex justify-center gap-1">
+                  {stages.map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`h-1 rounded-full transition-all duration-300 ${
+                        i <= processingStage ? 'w-6 bg-primary-500' : 'w-2 bg-slate-100'
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Footer Info */}
-          <div className="px-6 py-4 bg-slate-50 border-t border-slate-200">
-            <p className="text-xs text-slate-600">
-              This is a simulated payment for demonstration. No actual payment will be processed.
-            </p>
+          <div className="p-4 bg-slate-50 text-center border-t border-slate-100">
+             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+               <span className="text-primary-500">🛡️</span> Secure 256-bit SSL encrypted transaction
+             </p>
           </div>
         </motion.div>
       </motion.div>

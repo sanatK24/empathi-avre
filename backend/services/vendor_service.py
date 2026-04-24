@@ -9,9 +9,9 @@ from services.audit import AuditService
 class VendorService:
     @staticmethod
     def get_or_create_profile(db: Session, user: User, data: VendorProfileCreate) -> Vendor:
-        # Side effect: Ensure user role is VENDOR
-        if user.role != UserRole.VENDOR:
-            user.role = UserRole.VENDOR
+        # Enable dual role switching for users who apply to be vendors
+        if not user.can_switch_role:
+            user.can_switch_role = True
             db.commit()
 
         vendor = vendor_repo.get_by_user_id(db, user.id)

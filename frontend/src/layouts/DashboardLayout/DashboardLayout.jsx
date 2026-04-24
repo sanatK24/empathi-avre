@@ -23,8 +23,10 @@ import {
   Siren,
   Sparkles,
   CheckCircle,
-  Megaphone
+  Megaphone,
+  Zap
 } from 'lucide-react';
+
 import { cn } from '../../utils/cn';
 import Button from '../../components/ui/Button';
 import { useAppContext } from '../../context/AppContext';
@@ -36,18 +38,16 @@ const DashboardLayout = ({ role = 'requester' }) => {
   const navItems = {
     requester: [
       { label: 'Dashboard', icon: LayoutDashboard, path: '/user/dashboard' },
-      { label: 'Requests', icon: History, path: '/user/history' },
-      { label: 'Create Request', icon: PlusCircle, path: '/user/create' },
-      { label: 'My Matches', icon: CheckCircle, path: '/user/matches' },
-      { label: 'Campaigns', icon: TrendingUp, path: '/user/campaigns' },
-      { label: 'Create Campaign', icon: Megaphone, path: '/user/campaigns/create' },
-      { label: 'My Campaigns', icon: BarChart3, path: '/user/campaigns/my' },
-      { label: 'Donations', icon: Heart, path: '/user/donations' },
-      { label: 'Emergency Help', icon: Siren, path: '/user/emergency' },
-      { label: 'My Emergencies', icon: History, path: '/user/emergency' }, // Reusing emergencyhub for now
-      { label: 'Recommendations', icon: Sparkles, path: '/user/recommendations' },
+      { label: 'Resource Hub', icon: Zap, path: '/user/resources' },
+
+      { label: 'Campaign Center', icon: TrendingUp, path: '/user/campaigns' },
+      { label: 'My Campaigns', icon: Heart, path: '/user/campaigns/my' },
+      { label: 'Emergency SOS', icon: Siren, path: '/user/emergency' },
+      { label: 'Smart Feed', icon: Sparkles, path: '/user/recommendations' },
       { label: 'Profile', icon: User, path: '/user/profile' },
       { label: 'Settings', icon: Settings, path: '/user/settings' },
+
+
     ],
     vendor: [
       { label: 'Dashboard', icon: LayoutDashboard, path: '/vendor/dashboard' },

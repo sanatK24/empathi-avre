@@ -15,10 +15,6 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "DEVELOPMENT_ONLY_INSECURE_KEY")
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'empathi.db')}")
     
-    # Real-time Settings
-    RABBITMQ_URL: str = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost/")
-    ENABLE_RABBITMQ: bool = os.getenv("ENABLE_RABBITMQ", "True").lower() == "true"
-    
     # ML Settings
     MODEL_PATH: str = "backend/ml/model.pkl"
     DEFAULT_ML_SCORE: float = 0.5

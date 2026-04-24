@@ -92,8 +92,8 @@ function CampaignCreationPage() {
       {/* Header */}
       <div className="mb-8">
         <button
-          onClick={() => navigate('/campaigns')}
-          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4"
+          onClick={() => navigate('/user/campaigns')}
+          className="flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-4 font-bold"
         >
           <ArrowLeft size={20} />
           Back to Campaigns
@@ -143,7 +143,7 @@ function CampaignCreationPage() {
             placeholder="Describe your campaign, what help is needed, and the impact it will have"
             maxLength="5000"
             rows="6"
-            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
           />
           <p className="text-xs text-slate-500 mt-1">{formData.description.length}/5000 characters</p>
         </div>
@@ -261,7 +261,7 @@ function CampaignCreationPage() {
               name="deadline"
               value={formData.deadline}
               onChange={handleInputChange}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
         </div>
@@ -278,7 +278,7 @@ function CampaignCreationPage() {
           <Button
             type="submit"
             disabled={loading}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-lg shadow-primary-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

@@ -39,30 +39,84 @@ const EmergencyHub = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('Hospital');
     const [userLocation, setUserLocation] = useState(null);
+    const [locationName, setLocationName] = useState(null);
+    const [fullAddress, setFullAddress] = useState(null);
     const [locError, setLocError] = useState(null);
+    const [isLocating, setIsLocating] = useState(false);
+    const [watchId, setWatchId] = useState(null);
 
-    useEffect(() => {
-        // 1. Get Browser Location
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    setUserLocation(loc);
-                    fetchNearby(loc);
-                },
-                (err) => {
-                    console.error("Geo error:", err);
-                    setLocError("Location access denied. Using profile city info.");
-                    fetchNearby(null);
-                }
-            );
-        } else {
-            fetchNearby(null);
+    const reverseGeocode = async (lat, lng) => {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`);
+            const data = await response.json();
+            if (data && data.display_name) {
+                setFullAddress(data.display_name);
+                const addr = data.address;
+                const shortName = addr.suburb || addr.neighbourhood || addr.road || addr.city || addr.town;
+                const city = addr.city || addr.town || addr.village || addr.state;
+                setLocationName(shortName ? `${shortName}, ${city}` : data.display_name);
+            }
+        } catch (err) {
+            console.error("Reverse geocode failed:", err);
+        }
+    };
+
+    const handleGetLocation = () => {
+        if (!navigator.geolocation) {
+            setLocError("Geolocation is not supported by your browser.");
+            return;
         }
 
-        // 2. Fetch Directory
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                setUserLocation(loc);
+                setLocError(null);
+                setIsLocating(false);
+                fetchNearby(loc);
+                reverseGeocode(loc.lat, loc.lng);
+            },
+            (err) => {
+                console.error("Geo error:", err);
+                setLocError("Location access denied. Using profile city.");
+                setIsLocating(false);
+            },
+            { enableHighAccuracy: true }
+        );
+    };
+
+    useEffect(() => {
+        // Start watching location persistently for SOS situations
+        if (navigator.geolocation) {
+            const id = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    setUserLocation(newLoc);
+                    setLocError(null);
+                    // Only reverse geocode if location changed significantly (approx ~100m)
+                    // For simplicity, just geocode every time it changes for now or debounce
+                },
+                (err) => console.error("WatchPosition error:", err),
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            );
+            setWatchId(id);
+        }
+
+        // Initial fetch
+        handleGetLocation();
         fetchDirectory();
+
+        return () => {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+        };
     }, [profile.city, profile.accessToken]);
+
+    useEffect(() => {
+        if (userLocation) {
+            reverseGeocode(userLocation.lat, userLocation.lng);
+        }
+    }, [userLocation?.lat, userLocation?.lng]);
 
     const fetchDirectory = async () => {
         try {
@@ -94,10 +148,12 @@ const EmergencyHub = () => {
         }
     };
 
-    // Re-fetch when tab changes
+    // Re-fetch when tab changes or location updates
     useEffect(() => {
-        fetchNearby(userLocation);
-    }, [activeTab]);
+        if (userLocation) {
+            fetchNearby(userLocation);
+        }
+    }, [activeTab, userLocation?.lat, userLocation?.lng]);
 
     const filteredHelplines = helplines.filter(h => 
         h.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -133,18 +189,41 @@ const EmergencyHub = () => {
     const renderFacilities = () => (
         <div className="lg:col-span-12 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                        <MapPin className="w-6 h-6 text-red-600" />
-                        Nearby Medical Centers
-                    </h2>
-                    <p className="text-slate-500 font-medium text-sm flex items-center gap-1">
-                        {userLocation ? "Verified locations ranked by real-time distance" : "Discovery based on profile city"}
-                        {locError && <span className="text-amber-500 text-xs ml-2 flex items-center gap-1"><Info className="w-3 h-3" /> {locError}</span>}
-                    </p>
+                <div className="flex-grow">
+                    <div className="flex items-center gap-4 mb-1">
+                        <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
+                            <MapPin className="w-6 h-6 text-red-600" />
+                            Nearby Medical Centers
+                        </h2>
+                        <Button 
+                            variant="secondary" 
+                            size="sm" 
+                            className={cn(
+                                "rounded-xl text-[10px] font-black uppercase tracking-widest gap-2 h-9 border-none bg-slate-100",
+                                isLocating && "animate-pulse bg-red-50 text-red-600"
+                            )}
+                            onClick={handleGetLocation}
+                            disabled={isLocating}
+                            icon={isLocating ? <Clock className="w-3 h-3 animate-spin" /> : <Navigation className="w-3 h-3" />}
+                        >
+                            {isLocating ? 'Detecting...' : 'Detect My Location'}
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <p className="text-slate-500 font-medium text-sm">
+                            {userLocation 
+                                ? (locationName ? `Live Tracking: ${locationName}` : `Live Tracking: ${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`)
+                                : "Discovery based on profile city"}
+                        </p>
+                        {locError && (
+                            <span className="text-amber-600 text-xs font-bold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
+                                <AlertTriangle className="w-3 h-3" /> {locError}
+                            </span>
+                        )}
+                    </div>
                 </div>
                 
-                <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl overflow-x-auto no-scrollbar">
+                <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl overflow-x-auto no-scrollbar shrink-0">
                     {FACILITY_TABS.map(tab => (
                         <button
                             key={tab.id}
@@ -379,6 +458,32 @@ const EmergencyHub = () => {
         </Card>
     );
 
+    if (!userLocation && !locError && !isLocating) {
+        return (
+            <div className="min-h-[70vh] flex flex-col items-center justify-center p-10 text-center">
+                <motion.div 
+                    initial={{ scale: 0.9, opacity: 0 }} 
+                    animate={{ scale: 1, opacity: 1 }}
+                    className="max-w-md w-full bg-white rounded-[3rem] p-12 shadow-premium border border-slate-100"
+                >
+                    <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-8">
+                        <Navigation className="w-10 h-10 text-red-600 animate-pulse" />
+                    </div>
+                    <h2 className="text-3xl font-black text-slate-900 mb-4 tracking-tight">Location Locked</h2>
+                    <p className="text-slate-500 font-medium mb-10 leading-relaxed">
+                        To provide life-saving assistance, we need your real-time coordinates to find the nearest responders and medical centers.
+                    </p>
+                    <Button 
+                        onClick={handleGetLocation}
+                        className="w-full py-6 bg-red-600 hover:bg-red-700 text-lg font-black uppercase tracking-widest shadow-xl shadow-red-500/20 rounded-2xl"
+                    >
+                        Allow GPS Access
+                    </Button>
+                </motion.div>
+            </div>
+        );
+    }
+
     return (
         <motion.div 
             initial={{ opacity: 0, y: 30 }}
@@ -392,15 +497,34 @@ const EmergencyHub = () => {
                 
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-12">
                     <div className="space-y-6">
-                        <div className="inline-flex items-center gap-2 px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
-                            <Siren className="w-4 h-4 animate-pulse" /> Emergency Hub Active
+                        <div className="flex flex-wrap gap-2">
+                            <div className="inline-flex items-center gap-2 px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
+                                <Siren className="w-4 h-4 animate-pulse" /> Emergency Hub Active
+                            </div>
+                            <button 
+                                onClick={handleGetLocation}
+                                className="inline-flex items-center gap-2 px-6 py-2 bg-black/20 hover:bg-black/30 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-colors"
+                            >
+                                <Navigation className={cn("w-4 h-4", isLocating && "animate-spin")} /> 
+                                {isLocating ? 'Locating...' : 'Refresh Location'}
+                            </button>
                         </div>
+                        
                         <h1 className="text-4xl md:text-6xl font-display font-black tracking-tighter leading-tight max-w-2xl">
                             Immediate Assistance <br/> Is Just One Tap Away.
                         </h1>
-                        <p className="text-red-100 font-medium max-w-lg text-lg opacity-80">
-                            Real-time medical discovery, direct helpline dialer, and AI-powered SOS matching synchronized for your safety.
-                        </p>
+                        
+                        <div className="space-y-2 max-w-lg">
+                            <p className="text-red-100 font-bold text-lg flex items-center gap-2">
+                                <MapPin className="w-5 h-5" />
+                                {locationName || 'Detecting Area...'}
+                            </p>
+                            {fullAddress && (
+                                <p className="text-red-200/60 text-xs font-medium leading-relaxed italic">
+                                    {fullAddress}
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     <div className="flex flex-col items-center gap-4">

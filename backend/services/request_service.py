@@ -7,8 +7,6 @@ from repositories.match_repo import match_repo
 from core.exceptions import NotFoundException, ValidationException
 from core.logging import logger
 from services.audit import AuditService
-from realtime import emit_and_broadcast_sync
-from events import EventType
 
 class RequestService:
     @staticmethod
@@ -37,16 +35,6 @@ class RequestService:
         
         AuditService.log(db, "request_created", user_id=user.id, resource_id=new_request.id, resource_type="request")
         
-        # Emit Real-time Event
-        emit_and_broadcast_sync(
-            EventType.REQUEST_FLAGGED, # Using existing type for now
-            {
-                "request_id": new_request.id,
-                "requester_id": user.id,
-                "resource_name": new_request.resource_name,
-                "urgency": new_request.urgency_level.value
-            }
-        )
         
         return new_request
 
@@ -70,22 +58,6 @@ class RequestService:
         db.commit()
         db.refresh(request)
         
-        # Emit Real-time Event (for affected vendors)
-        affected_matches = db.query(Match).filter(
-            Match.request_id == request_id,
-            Match.status == MatchStatus.CANCELLED_BY_REQUESTER
-        ).all()
-        affected_vendor_ids = [m.vendor_id for m in affected_matches]
-        
-        if affected_vendor_ids:
-            emit_and_broadcast_sync(
-                EventType.MATCH_CANCELLED,
-                {
-                    "request_id": request_id,
-                    "requester_id": user.id,
-                    "affected_vendor_ids": affected_vendor_ids
-                }
-            )
             
         return request
 

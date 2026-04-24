@@ -220,7 +220,7 @@ const AdminCampaigns = () => {
                                   <div className="p-1">
                                     <button 
                                       className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
-                                      onClick={() => navigate(`/user/campaigns/${c.id}`)}
+                                      onClick={() => navigate(`/campaigns/${c.id}`)}
                                     >
                                       <Eye className="w-4 h-4 text-slate-400" /> View Details
                                     </button>

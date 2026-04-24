@@ -11,17 +11,37 @@ import { useAppContext } from '../context/AppContext';
 import { useGoogleLogin } from '@react-oauth/google';
 import { saveAuthSession } from '../services/authService';
 
+const GoogleSignUpButton = ({ onSocialLogin, loading }) => {
+  const loginWithGoogle = useGoogleLogin({
+    onSuccess: (codeResponse) => onSocialLogin(codeResponse.access_token, 'google'),
+    onError: (error) => console.log('Google Login Failed:', error)
+  });
+
+  return (
+    <Button
+      variant="secondary"
+      className="w-full h-12 shadow-none border-slate-200"
+      onClick={() => loginWithGoogle()}
+      disabled={loading}
+    >
+      <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
+      Sign up with Google
+    </Button>
+  );
+};
+
 const RegisterPage = () => {
   const [role, setRole] = useState('requester');
   const [loading, setLoading] = useState(false);
   const { updateProfile } = useAppContext();
   const navigate = useNavigate();
+  const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
   const handleSocialLogin = async (token, provider) => {
     setLoading(true);
     try {
       // Pass the selected role for registration
-      const tokenData = await apiService.socialLogin(token, provider, role);
+      const tokenData = await apiService.socialLogin(token, provider, role.toUpperCase());
       const accessToken = tokenData.access_token;
       const userProfile = await apiService.getMe(accessToken);
 
@@ -31,7 +51,8 @@ const RegisterPage = () => {
       updateProfile({
         fullName: userProfile.name,
         email: userProfile.email,
-        userRole: userProfile.role,
+        backendRole: userProfile.role,
+        userRole: userProfile.role?.toLowerCase() === 'requester' ? 'donor' : userProfile.role?.toLowerCase(),
         isAuthenticated: true,
         accessToken: accessToken,
         backendUserId: userProfile.id,
@@ -39,13 +60,18 @@ const RegisterPage = () => {
         isVerified: userProfile.is_active
       });
 
-      if (userProfile.role === 'vendor') {
+
+      const role = userProfile.role?.toLowerCase();
+      if (role === 'vendor') {
         navigate('/vendor/dashboard');
-      } else if (userProfile.role === 'requester') {
+      } else if (role === 'requester' || role === 'donor' || role === 'user') {
         navigate('/user/dashboard');
-      } else if (userProfile.role === 'admin') {
+      } else if (role === 'admin') {
         navigate('/admin/dashboard');
+      } else {
+        navigate('/user/dashboard');
       }
+
     } catch (error) {
       console.error(`${provider} registration failed:`, error);
       alert(error.message || `${provider} registration failed.`);
@@ -53,11 +79,6 @@ const RegisterPage = () => {
       setLoading(false);
     }
   };
-
-  const loginWithGoogle = useGoogleLogin({
-    onSuccess: (codeResponse) => handleSocialLogin(codeResponse.access_token, 'google'),
-    onError: (error) => console.log('Google Login Failed:', error)
-  });
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -76,7 +97,7 @@ const RegisterPage = () => {
         name: name,
         email: email,
         password: password,
-        role: role,
+        role: role.toUpperCase(),
         organization_name: orgName,
         city: "Mumbai", // Default or could add field
         is_active: true
@@ -139,13 +160,14 @@ const RegisterPage = () => {
 
           <form onSubmit={handleRegister} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              <Input label="First Name" placeholder="John" required />
-              <Input label="Last Name" placeholder="Doe" required />
+              <Input label="First Name" placeholder="John" autoComplete="given-name" required />
+              <Input label="Last Name" placeholder="Doe" autoComplete="family-name" required />
             </div>
             
             <Input 
               label={role === 'requester' ? "Basic Information" : "Vendor Name"} 
               placeholder={role === 'requester' ? "Full Name / Organization" : "Medical Supplies Inc."} 
+              autoComplete="organization"
               required 
             />
             
@@ -153,6 +175,7 @@ const RegisterPage = () => {
               label="Email Address"
               placeholder="name@company.com"
               type="email"
+              autoComplete="email"
               required
             />
             
@@ -160,6 +183,7 @@ const RegisterPage = () => {
               label="Password"
               placeholder="••••••••"
               type="password"
+              autoComplete="new-password"
               required
             />
 
@@ -180,15 +204,17 @@ const RegisterPage = () => {
           </div>
 
           <div className="mt-8">
-             <Button 
-                variant="secondary" 
+            {hasGoogleClientId ? (
+              <GoogleSignUpButton onSocialLogin={handleSocialLogin} loading={loading} />
+            ) : (
+              <Button
+                variant="secondary"
                 className="w-full h-12 shadow-none border-slate-200"
-                onClick={() => loginWithGoogle()}
-                disabled={loading}
-             >
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
-                Sign up with Google
-             </Button>
+                disabled
+              >
+                Google Sign-Up unavailable
+              </Button>
+            )}
           </div>
 
 
