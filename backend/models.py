@@ -261,6 +261,18 @@ class Donation(Base):
     campaign = relationship("Campaign", back_populates="donations")
     donor = relationship("User", back_populates="donations")
 
+    @property
+    def donor_name(self):
+        if self.anonymous:
+            return "Anonymous Donor"
+        return self.donor.name if self.donor else "Unknown Donor"
+
+    @property
+    def donor_city(self):
+        if self.anonymous:
+            return "Private"
+        return self.donor.city if self.donor else "Unknown City"
+
 # ============ CAMPAIGN UPDATES TABLE ============
 class CampaignUpdate(Base):
     __tablename__ = "campaign_updates"

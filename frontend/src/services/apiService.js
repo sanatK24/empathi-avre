@@ -198,7 +198,12 @@ export const apiService = {
         return request(`/campaigns${queryString ? '?' + queryString : ''}`, { token });
     },
     getPersonalizedCampaigns: (token) => request('/campaigns/recommendations', { token }),
+    searchCampaigns: (token, query) => request(`/campaigns?city=${encodeURIComponent(query)}`, { token }),
     getCampaignDetails: (token, campaignId) => request(`/campaigns/${campaignId}`, { token }),
+    getCampaignDonations: (token, campaignId) => request(`/campaigns/${campaignId}/donations`, { token }),
+    getCampaignStats: (token, campaignId) => request(`/campaigns/${campaignId}/stats`, { token }),
+    getRelatedCampaigns: (token, campaignId) => request(`/campaigns/${campaignId}/related`, { token }),
+    getCampaignUpdates: (token, campaignId) => request(`/campaigns/${campaignId}/updates`, { token }),
     createCampaign: (token, campaignData) => request('/campaigns', {
         method: 'POST',
         token,

@@ -42,9 +42,7 @@ function CampaignsFeedPage() {
   };
 
   useEffect(() => {
-    if (profile?.accessToken) {
-      fetchCampaigns();
-    }
+    fetchCampaigns();
   }, [profile?.accessToken]);
 
   const handleSearch = async (e) => {
@@ -91,11 +89,19 @@ function CampaignsFeedPage() {
   };
 
   const handleDonate = (campaign) => {
+    if (!profile?.isAuthenticated) {
+      navigate('/login', { state: { from: window.location.pathname } });
+      return;
+    }
     setSelectedCampaign(campaign);
     setShowDonationModal(true);
   };
 
   const handleViewDetails = (campaign) => {
+    if (!profile?.isAuthenticated) {
+      navigate('/login', { state: { from: window.location.pathname } });
+      return;
+    }
     // Navigate relatively if in a dashboard context, or globally if public
     const currentPath = window.location.pathname;
     if (currentPath.includes('/user/')) {

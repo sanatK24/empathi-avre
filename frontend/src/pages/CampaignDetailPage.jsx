@@ -20,6 +20,7 @@ import {
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import DonationModal from '../components/DonationModal';
+import { cn } from '../utils/cn';
 
 function CampaignDetailPage() {
   const { id } = useParams();
@@ -44,34 +45,18 @@ function CampaignDetailPage() {
       setError(null);
 
       const [campaignData, donationsData, updatesData, relatedData, statsData] = await Promise.all([
-        apiService.getCampaignDetail(profile?.accessToken, id),
+        apiService.getCampaignDetails(profile?.accessToken, id),
         apiService.getCampaignDonations(profile?.accessToken, id),
-        apiService.getCampaigns(profile?.accessToken, { category: 'updates', limit: 1 }).catch(() => []), // Fallback for updates endpoint
-        fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/campaigns/${id}/related`, {
-          headers: { 'Authorization': `Bearer ${profile?.accessToken}` }
-        }).then(r => r.json()).catch(() => []),
-        fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/donations/campaign/${id}/stats`, {
-          headers: { 'Authorization': `Bearer ${profile?.accessToken}` }
-        }).then(r => r.json()).catch(() => null)
+        apiService.getCampaignUpdates(profile?.accessToken, id).catch(() => []),
+        apiService.getRelatedCampaigns(profile?.accessToken, id).catch(() => []),
+        apiService.getCampaignStats(profile?.accessToken, id).catch(() => null)
       ]);
 
       setCampaign(campaignData);
       setDonations(Array.isArray(donationsData) ? donationsData : []);
+      setUpdates(Array.isArray(updatesData) ? updatesData : []);
       setRelatedCampaigns(Array.isArray(relatedData) ? relatedData : []);
       setStats(statsData);
-
-      // Fetch updates separately
-      try {
-        const updatesResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/campaigns/${id}/updates`, {
-          headers: { 'Authorization': `Bearer ${profile?.accessToken}` }
-        });
-        if (updatesResponse.ok) {
-          const updatesData = await updatesResponse.json();
-          setUpdates(Array.isArray(updatesData) ? updatesData : []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch updates:', err);
-      }
     } catch (err) {
       console.error('Failed to load campaign:', err);
       setError(err.message || 'Failed to load campaign details');
@@ -81,10 +66,14 @@ function CampaignDetailPage() {
   };
 
   useEffect(() => {
-    if (profile?.accessToken && id) {
+    if (!profile?.isAuthenticated) {
+      navigate('/login', { state: { from: window.location.pathname } });
+      return;
+    }
+    if (id) {
       fetchCampaignData();
     }
-  }, [profile?.accessToken, id]);
+  }, [profile?.isAuthenticated, id]);
 
   const handlePostUpdate = async (e) => {
     e.preventDefault();
@@ -187,20 +176,26 @@ function CampaignDetailPage() {
     return colors[urgency] || colors.medium;
   };
 
+  const isInDashboard = window.location.pathname.includes('/user/') || 
+                       window.location.pathname.includes('/vendor/') || 
+                       window.location.pathname.includes('/admin/');
+
   return (
-    <section className="bg-slate-50 min-h-screen">
-      {/* Header Navigation */}
-      <div className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <button
-            onClick={() => navigate(getBackPath())}
-            className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium"
-          >
-            <ArrowLeft size={20} />
-            Back to Campaigns
-          </button>
+    <section className={cn("bg-slate-50 min-h-screen", isInDashboard && "bg-transparent min-h-0")}>
+      {/* Header Navigation - Hide if in dashboard */}
+      {!isInDashboard && (
+        <div className="bg-white border-b border-slate-200">
+          <div className="max-w-6xl mx-auto px-6 py-4">
+            <button
+              onClick={() => navigate(getBackPath())}
+              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium"
+            >
+              <ArrowLeft size={20} />
+              Back to Campaigns
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         {error && (

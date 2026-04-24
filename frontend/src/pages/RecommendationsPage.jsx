@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Sparkles, 
@@ -25,8 +26,8 @@ const RecommendationsPage = () => {
     const fetchAll = async () => {
       try {
         setLoading(true);
-        // Fetch all campaigns for the "Smart Feed" masonry view
-        const data = await apiService.getCampaigns();
+        // Fetch personalized campaigns for the "Smart Feed"
+        const data = await apiService.getPersonalizedCampaigns(profile?.accessToken);
         setItems(data || []);
       } catch (err) {
         console.error("Smart Feed fetch failed", err);
@@ -111,6 +112,13 @@ const RecommendationsPage = () => {
                         View Campaign
                       </Button>
                     </div>
+                    <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                      {campaign.reason && (
+                        <div className="px-3 py-1 bg-black/50 backdrop-blur-md rounded-full text-[8px] font-black uppercase tracking-widest text-white border border-white/20">
+                          {campaign.reason}
+                        </div>
+                      )}
+                    </div>
                     <div className="absolute top-4 right-4 z-10">
                       <Badge variant={campaign.urgency_level === 'high' ? 'danger' : 'warning'} className="shadow-lg backdrop-blur-md bg-opacity-80">
                         {campaign.urgency_level}
@@ -119,13 +127,20 @@ const RecommendationsPage = () => {
                   </div>
                   
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest bg-primary-50 px-2 py-1 rounded-md">
-                        {campaign.category}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> {campaign.city}
-                      </span>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-primary-500 uppercase tracking-widest bg-primary-50 px-2 py-1 rounded-md">
+                          {campaign.category}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> {campaign.city}
+                        </span>
+                      </div>
+                      {campaign.score && (
+                        <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-md border border-amber-100">
+                          {campaign.score}% Match
+                        </span>
+                      )}
                     </div>
                     
                     <h3 className="text-lg font-display font-black text-slate-900 leading-tight mb-2 group-hover:text-primary-600 transition-colors uppercase">

@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Campaign, CampaignStatus
-from schemas import CampaignResponse, CampaignCreate, DonationResponse, DonationHistoryResponse
+from schemas import CampaignResponse, CampaignCreate, DonationResponse, DonationHistoryResponse, DonationWithDonorResponse
 
 from api.deps import get_active_user
 from services.campaign_service import CampaignService
@@ -58,6 +58,48 @@ def donate(
 @router.get("/stats/categories")
 def get_cat_stats(db: Session = Depends(get_db)):
     return campaign_repo.get_category_stats(db)
+
+@router.get("/{campaign_id}", response_model=CampaignResponse)
+def get_campaign(
+    campaign_id: int,
+    db: Session = Depends(get_db)
+):
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return campaign
+
+
+@router.get("/{campaign_id}/donations", response_model=List[DonationWithDonorResponse])
+def get_campaign_donations(
+    campaign_id: int,
+    db: Session = Depends(get_db)
+):
+    return donation_repo.get_by_campaign(db, campaign_id)
+
+@router.get("/{campaign_id}/stats")
+def get_campaign_stats(campaign_id: int, db: Session = Depends(get_db)):
+    total = donation_repo.get_total_raised(db, campaign_id)
+    from models import Donation, DonationStatus
+    count = db.query(Donation).filter(Donation.campaign_id == campaign_id, Donation.status == DonationStatus.COMPLETED).count()
+    return {"total_raised": total, "donor_count": count}
+
+@router.get("/{campaign_id}/related", response_model=List[CampaignResponse])
+def get_related_campaigns(campaign_id: int, db: Session = Depends(get_db)):
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        return []
+    return db.query(Campaign).filter(
+        Campaign.category == campaign.category,
+        Campaign.id != campaign_id,
+        Campaign.status == CampaignStatus.ACTIVE
+    ).limit(3).all()
+
+@router.get("/{campaign_id}/updates")
+def get_campaign_updates(campaign_id: int, db: Session = Depends(get_db)):
+    from models import CampaignUpdate
+    return db.query(CampaignUpdate).filter(CampaignUpdate.campaign_id == campaign_id).order_by(CampaignUpdate.created_at.desc()).all()
 
 
 @router.get("/my", response_model=List[CampaignResponse])
