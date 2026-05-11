@@ -40,7 +40,7 @@ class FeatureBuilder:
             "stock_ratio": inventory.quantity / request.quantity if request.quantity > 0 else 0,
             "vendor_rating": vendor.rating,
             "avg_response_time": response_time,
-            "urgency_level": {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(request.urgency_level.value, 2),
+            "urgency_level": {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(request.urgency_level.value.lower(), 2),
             "category_match": 1 if request.category == vendor.category else 0,
             "price": inventory.price or 0,
             "active_status": 1 if vendor.is_active else 0,

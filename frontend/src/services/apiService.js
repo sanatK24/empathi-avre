@@ -167,6 +167,16 @@ export const apiService = {
     }),
     getVendorStats: (token) => request('/vendor/stats', { token }),
     getVendorAnalytics: (token) => request('/vendor/analytics', { token }),
+    lookupProduct: (token, query) => request(`/vendor/product-lookup?q=${encodeURIComponent(query)}`, { token }),
+    getProductSuggestions: (token, query) => request(`/vendor/product-suggestions?q=${encodeURIComponent(query)}`, { token }),
+    discoverVendors: (token, params = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params.city) queryParams.append('city', params.city);
+        if (params.lat) queryParams.append('lat', params.lat);
+        if (params.lng) queryParams.append('lng', params.lng);
+        return request(`/vendor/discovery?${queryParams.toString()}`, { token });
+    },
+    getVendorStorefront: (token, vendorId) => request(`/vendor/${vendorId}/catalogue`, { token }),
 
     // Requester flow
     createRequest: (token, requestData) => request('/requests', {
@@ -215,6 +225,29 @@ export const apiService = {
     }),
     getMyCreatedCampaigns: (token) => request('/campaigns/my', { token }),
     getDonationHistory: (token) => request('/campaigns/my-donations', { token }),
+    getSavedCampaigns: (token, skip = 0, limit = 20) => request(`/campaigns/saved?skip=${skip}&limit=${limit}`, { token }),
+    saveCampaign: (token, campaignId) => request(`/campaigns/${campaignId}/save`, {
+        method: 'POST',
+        token
+    }),
+    unsaveCampaign: (token, campaignId) => request(`/campaigns/${campaignId}/save`, {
+        method: 'DELETE',
+        token
+    }),
+
+    // User Profiles & Follow
+    getPublicProfile: (token, userId) => request(`/users/${userId}/profile`, { token }),
+    followUser: (token, userId) => request(`/users/${userId}/follow`, {
+        method: 'POST',
+        token
+    }),
+    unfollowUser: (token, userId) => request(`/users/${userId}/follow`, {
+        method: 'DELETE',
+        token
+    }),
+    getUserFollowers: (token, userId, skip = 0, limit = 20) => request(`/users/${userId}/followers?skip=${skip}&limit=${limit}`, { token }),
+    getUserFollowing: (token, userId, skip = 0, limit = 20) => request(`/users/${userId}/following?skip=${skip}&limit=${limit}`, { token }),
+    getUserCampaigns: (token, userId, skip = 0, limit = 20) => request(`/users/${userId}/campaigns?skip=${skip}&limit=${limit}`, { token }),
 
     // Emergency Flow
     getActiveEmergencies: () => request('/emergency/active'),

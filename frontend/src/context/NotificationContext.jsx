@@ -9,13 +9,32 @@ function generateId() {
 function getInitialNotifications() {
   try {
     const saved = localStorage.getItem('empathi_notifications')
-    if (saved) {
+    if (saved && JSON.parse(saved).length > 0) {
       return JSON.parse(saved)
     }
   } catch {
     // Ignore malformed data
   }
-  return []
+  
+  // Default welcoming notifications
+  return [
+    {
+      id: 'welcome_1',
+      type: 'info',
+      title: 'Welcome to EmpathI',
+      message: 'Your journey to making a difference starts here. Explore campaigns or find nearby resources.',
+      isRead: false,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'welcome_2',
+      type: 'success',
+      title: 'Location Detected',
+      message: 'We have updated your marketplace results based on your current area in Navi Mumbai.',
+      isRead: false,
+      createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString() // 5 mins ago
+    }
+  ]
 }
 
 export function NotificationProvider({ children }) {

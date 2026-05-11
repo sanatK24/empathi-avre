@@ -151,8 +151,12 @@ const ResourceHubPage = () => {
               <p className="text-slate-500 font-medium">Use our intelligent search to find resources across all vendors.</p>
            </div>
         </div>
-        <Button variant="secondary" className="bg-white border-none shadow-sm font-black uppercase tracking-widest px-8">
-           Deep Search
+        <Button 
+          variant="secondary" 
+          className="bg-white border-none shadow-sm font-black uppercase tracking-widest px-8"
+          onClick={() => navigate('/user/marketplace')}
+        >
+           Browse Marketplace
         </Button>
       </div>
     </div>

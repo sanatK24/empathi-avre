@@ -78,7 +78,7 @@ function CampaignCreationPage() {
       };
 
       const newCampaign = await apiService.createCampaign(profile.accessToken, campaignData);
-      navigate(`/campaigns/${newCampaign.id}`);
+      navigate(`/user/campaigns/${newCampaign.id}`);
     } catch (err) {
       console.error('Campaign creation failed:', err);
       setError(err.message || 'Failed to create campaign. Please try again.');

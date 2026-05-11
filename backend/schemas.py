@@ -136,12 +136,14 @@ class VendorProfileCreate(BaseModel):
     lat: float
     lng: float
     city: str
+    area: Optional[str] = None
     service_radius: float = 10.0
     service_areas: Optional[str] = None
     registration_id: Optional[str] = None
     opening_hours: Optional[str] = "09:00-21:00"
     lead_time: Optional[str] = None
     avg_response_time: int = 15
+    image_url: Optional[str] = None
     is_active: Optional[bool] = True
 
 class VendorResponse(BaseModel):
@@ -152,6 +154,7 @@ class VendorResponse(BaseModel):
     lat: float
     lng: float
     city: str
+    area: Optional[str]
     rating: float
     reliability_score: float
     avg_response_time: int
@@ -161,6 +164,7 @@ class VendorResponse(BaseModel):
     lead_time: Optional[str]
     verification_status: VerificationStatus
     opening_hours: Optional[str]
+    image_url: Optional[str]
     is_active: bool
     total_completed_orders: int
     created_at: datetime
@@ -173,6 +177,9 @@ class InventoryCreate(BaseModel):
     category: str = Field(..., min_length=2, max_length=50)
     sku_code: Optional[str] = None
     brand_name: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=2000)
+    image_url: Optional[str] = None
+    specifications: Optional[str] = None
     quantity: int = Field(..., ge=0)
     reorder_level: int = 10
     price: Optional[float] = Field(None, ge=0)
@@ -183,6 +190,9 @@ class InventoryUpdate(BaseModel):
     reserved_quantity: Optional[int] = None
     reorder_level: Optional[int] = None
     price: Optional[float] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    specifications: Optional[str] = None
     expiry_date: Optional[datetime] = None
 
 class InventoryResponse(BaseModel):
@@ -192,6 +202,9 @@ class InventoryResponse(BaseModel):
     category: str
     sku_code: Optional[str]
     brand_name: Optional[str]
+    description: Optional[str]
+    image_url: Optional[str]
+    specifications: Optional[str]
     quantity: int
     reserved_quantity: int
     reorder_level: int
@@ -388,5 +401,56 @@ class PublicFacilityResponse(BaseModel):
     operating_hours: str
     rating: float
     distance_km: Optional[float] = None
+    class Config:
+        from_attributes = True
+
+# ============ FOLLOW & PROFILE SCHEMAS ============
+class PublicUserProfileResponse(BaseModel):
+    id: int
+    name: str
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    city: Optional[str] = None
+    organization_name: Optional[str] = None
+    follower_count: int = 0
+    following_count: int = 0
+    campaigns_created_count: int = 0
+    is_following: bool = False  # Whether current user follows this user
+
+    class Config:
+        from_attributes = True
+
+class UserFollowerResponse(BaseModel):
+    id: int
+    name: str
+    avatar_url: Optional[str] = None
+    city: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class SavedCampaignResponse(BaseModel):
+    id: int
+    campaign_id: int
+    title: str
+    description: str
+    goal_amount: float
+    raised_amount: float
+    cover_image: Optional[str] = None
+    category: str
+    city: str
+    urgency_level: str
+    verified: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class FollowResponse(BaseModel):
+    id: int
+    follower_id: int
+    following_id: int
+    created_at: datetime
+
     class Config:
         from_attributes = True

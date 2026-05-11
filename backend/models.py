@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
@@ -87,6 +87,10 @@ class User(Base):
     donations = relationship("Donation", back_populates="donor")
     emergency_contacts = relationship("UserEmergencyContact", back_populates="user", cascade="all, delete-orphan")
 
+    # Follow relationships
+    followers = relationship("Follow", foreign_keys="Follow.following_id", backref="following_user", cascade="all, delete-orphan")
+    following = relationship("Follow", foreign_keys="Follow.follower_id", backref="follower_user", cascade="all, delete-orphan")
+
 # ============ VENDORS TABLE ============
 class Vendor(Base):
     __tablename__ = "vendors"
@@ -98,6 +102,7 @@ class Vendor(Base):
     lat = Column(Float)
     lng = Column(Float)
     city = Column(String, index=True)
+    area = Column(String, index=True, nullable=True) # e.g. "Vashi", "Belapur"
     rating = Column(Float, default=0.0)
     reliability_score = Column(Float, default=1.0) # 0.0 to 1.0
     avg_response_time = Column(Integer, default=15)  # minutes
@@ -110,6 +115,7 @@ class Vendor(Base):
     is_active = Column(Boolean, default=True)
     total_completed_orders = Column(Integer, default=0)
     fairness_penalty = Column(Float, default=0.0)  # Used by AVRE to prevent monopoly
+    image_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=func.now())
 
     user = relationship("User", back_populates="vendor")
@@ -126,6 +132,9 @@ class Inventory(Base):
     category = Column(String, index=True)
     sku_code = Column(String, index=True, nullable=True)
     brand_name = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    image_url = Column(String, nullable=True)
+    specifications = Column(Text, nullable=True)  # JSON string of specs
     quantity = Column(Integer)
     reserved_quantity = Column(Integer, default=0)
     reorder_level = Column(Integer, default=10)
@@ -325,5 +334,41 @@ class UserEmergencyContact(Base):
     created_at = Column(DateTime, default=func.now())
 
     user = relationship("User", back_populates="emergency_contacts")
+
+# ============ FOLLOW RELATIONSHIP TABLE ============
+class Follow(Base):
+    __tablename__ = "follows"
+
+    id = Column(Integer, primary_key=True, index=True)
+    follower_id = Column(Integer, ForeignKey("users.id"), index=True)
+    following_id = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    follower = relationship("User", foreign_keys=[follower_id], uselist=False)
+    following = relationship("User", foreign_keys=[following_id], uselist=False)
+
+    # Prevent duplicate follows with unique constraint
+    __table_args__ = (
+        Index('ix_follow_unique', 'follower_id', 'following_id', unique=True),
+    )
+
+# ============ SAVED CAMPAIGNS TABLE ============
+class SavedCampaign(Base):
+    __tablename__ = "saved_campaigns"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), index=True)
+    created_at = Column(DateTime, default=func.now())
+
+    # Relationships
+    user = relationship("User", backref="saved_campaigns")
+    campaign = relationship("Campaign", backref="saved_by")
+
+    # Prevent duplicate saves with unique constraint
+    __table_args__ = (
+        Index('ix_saved_campaign_unique', 'user_id', 'campaign_id', unique=True),
+    )
 
 

@@ -57,12 +57,12 @@ class EmpathIEngine:
 
     def match(self, db: Session, request: Request) -> List[Dict[str, Any]]:
         # 1. Fetch eligible vendors WITH inventory using fuzzy matching for resource_name
+        resource_search = request.resource_name  # Plain Python string
         results = db.query(Vendor, Inventory).join(Inventory, Vendor.id == Inventory.vendor_id).filter(
             Vendor.is_active == True,
             Inventory.quantity >= request.quantity,
             # Handle pluralization and casing (e.g., "Mask" vs "masks")
-            (Inventory.resource_name.ilike(f"%{request.resource_name}%")) | 
-            (request.resource_name.ilike(f"%{Inventory.resource_name}%"))
+            Inventory.resource_name.ilike(f"%{resource_search}%")
         ).all()
         
         # 2. Config
@@ -109,7 +109,7 @@ class EmpathIEngine:
             
             final_score = (
                 config.ml_weight * ml_prediction +
-                config.urgency_weight * (features["speed_score"] if request.urgency_level.value in ["high", "critical"] else 0.5) +
+                config.urgency_weight * (features["speed_score"] if request.urgency_level.value.lower() in ["high", "critical"] else 0.5) +
                 config.fairness_weight * (FairnessManager.calculate_fairness_boost(vendor) + proximity_boost)/2 +
                 config.stock_weight * features["availability_score"] +
                 config.freshness_weight * features["freshness_score"]
@@ -125,7 +125,9 @@ class EmpathIEngine:
                 "rating": round(vendor.rating, 1),
                 "reviews": vendor.total_completed_orders,
                 "price": f"₹{features.get('price', 0)}",
-                "available_stock": features.get("stock_quantity", 0)
+                "available_stock": features.get("stock_quantity", 0),
+                "image_url": inventory.image_url,
+                "description": inventory.description
             })
             
         ranked_results.sort(key=lambda x: x["relevance_score"], reverse=True)

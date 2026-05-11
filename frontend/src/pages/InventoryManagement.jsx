@@ -30,12 +30,18 @@ const InventoryManagement = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [formData, setFormData] = useState({
     resource_name: '',
     category: 'Medical',
     quantity: '',
     price: '',
-    reorder_level: ''
+    reorder_level: '',
+    description: '',
+    image_url: '',
+    specifications: ''
   });
 
   useEffect(() => {
@@ -104,6 +110,55 @@ const InventoryManagement = () => {
     document.body.removeChild(element);
   };
 
+  const handleNameChange = async (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, resource_name: value });
+    
+    if (value.length >= 2) {
+      try {
+        const data = await apiService.getProductSuggestions(profile.accessToken, value);
+        setSuggestions(data);
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error("Failed to get suggestions:", error);
+      }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setFormData({ ...formData, resource_name: suggestion });
+    setShowSuggestions(false);
+    handleProductLookup(suggestion);
+  };
+
+  const handleProductLookup = async (nameOverride = null) => {
+    const query = nameOverride || formData.resource_name;
+    if (!query) return;
+
+    setIsLookingUp(true);
+    try {
+      const result = await apiService.lookupProduct(profile.accessToken, query);
+      if (result.found || result.source === 'template') {
+        const product = result.product;
+        setFormData(prev => ({
+          ...prev,
+          resource_name: product.name || prev.resource_name,
+          category: product.category ? (product.category.charAt(0).toUpperCase() + product.category.slice(1)) : prev.category,
+          description: product.description || prev.description,
+          image_url: product.image_url || prev.image_url,
+          specifications: product.specifications || prev.specifications
+        }));
+      }
+    } catch (error) {
+      console.error("Product lookup failed:", error);
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
   const handleAddItem = async () => {
     if (!formData.resource_name || !formData.quantity || !formData.price) {
       alert('Please fill in all required fields');
@@ -116,7 +171,10 @@ const InventoryManagement = () => {
         category: formData.category,
         quantity: parseInt(formData.quantity),
         price: parseFloat(formData.price),
-        reorder_level: parseInt(formData.reorder_level) || 100
+        reorder_level: parseInt(formData.reorder_level) || 100,
+        description: formData.description,
+        image_url: formData.image_url,
+        specifications: formData.specifications
       });
 
       setFormData({
@@ -124,7 +182,10 @@ const InventoryManagement = () => {
         category: 'Medical',
         quantity: '',
         price: '',
-        reorder_level: ''
+        reorder_level: '',
+        description: '',
+        image_url: '',
+        specifications: ''
       });
       setShowAddForm(false);
 
@@ -329,30 +390,94 @@ const InventoryManagement = () => {
                 </button>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div>
+            <CardContent className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+              <div className="relative">
                 <label className="text-sm font-bold text-slate-700 ml-1 block mb-2">Resource Name *</label>
-                <input
-                  type="text"
-                  placeholder="e.g., Oxygen Cylinder"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all"
-                  value={formData.resource_name}
-                  onChange={e => setFormData({...formData, resource_name: e.target.value})}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="e.g., Oxygen Cylinder"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all"
+                      value={formData.resource_name}
+                      onChange={handleNameChange}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    />
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-[60] overflow-hidden">
+                        {suggestions.map((s, i) => (
+                          <button
+                            key={i}
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 font-medium transition-colors"
+                            onClick={() => handleSuggestionClick(s)}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <Button 
+                    variant="secondary" 
+                    size="sm" 
+                    className="px-3"
+                    onClick={() => handleProductLookup()}
+                    disabled={isLookingUp || !formData.resource_name}
+                  >
+                    {isLookingUp ? '...' : 'Fetch Info'}
+                  </Button>
+                </div>
+              </div>
+
+              {formData.image_url && (
+                <div className="flex justify-center py-2">
+                  <div className="w-24 h-24 rounded-xl border border-slate-100 overflow-hidden bg-slate-50 relative group">
+                    <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                    <button 
+                      className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition-opacity"
+                      onClick={() => setFormData({...formData, image_url: ''})}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-bold text-slate-700 ml-1 block mb-2">Description</label>
+                <textarea
+                  placeholder="Product description and details..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all min-h-[80px]"
+                  value={formData.description}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-bold text-slate-700 ml-1 block mb-2">Category</label>
-                <select
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all"
-                  value={formData.category}
-                  onChange={e => setFormData({...formData, category: e.target.value})}
-                >
-                  <option>Medical</option>
-                  <option>Emergency</option>
-                  <option>Relief</option>
-                  <option>Other</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-bold text-slate-700 ml-1 block mb-2">Category</label>
+                  <select
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all"
+                    value={formData.category}
+                    onChange={e => setFormData({...formData, category: e.target.value})}
+                  >
+                    <option>Medical</option>
+                    <option>Emergency</option>
+                    <option>Relief</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-bold text-slate-700 ml-1 block mb-2">Image URL</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all"
+                    value={formData.image_url}
+                    onChange={e => setFormData({...formData, image_url: e.target.value})}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -378,15 +503,27 @@ const InventoryManagement = () => {
                 </div>
               </div>
 
-              <div>
-                <label className="text-sm font-bold text-slate-700 ml-1 block mb-2">Reorder Level</label>
-                <input
-                  type="number"
-                  placeholder="100"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all"
-                  value={formData.reorder_level}
-                  onChange={e => setFormData({...formData, reorder_level: e.target.value})}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-bold text-slate-700 ml-1 block mb-2">Reorder Level</label>
+                  <input
+                    type="number"
+                    placeholder="100"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all"
+                    value={formData.reorder_level}
+                    onChange={e => setFormData({...formData, reorder_level: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-bold text-slate-700 ml-1 block mb-2">Specifications</label>
+                  <input
+                    type="text"
+                    placeholder='{"Color": "White"}'
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 text-sm focus:ring-2 focus:ring-primary-500/20 focus:bg-white transition-all"
+                    value={formData.specifications}
+                    onChange={e => setFormData({...formData, specifications: e.target.value})}
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">

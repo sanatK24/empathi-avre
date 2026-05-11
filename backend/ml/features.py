@@ -38,7 +38,7 @@ class FeatureEngine:
             "same_city": 1.0 if LocationUtils.same_city(request.city, vendor.city) else 0.0,
             "proximity_score": LocationUtils.get_proximity_score(dist),
             "category_match": 1.0 if request.category == vendor.category else 0.0,
-            "urgency_weight": {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(request.urgency_level.value, 2),
+            "urgency_weight": {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(request.urgency_level.value.lower(), 2),
             "freshness_score": math.exp(-0.01 * freshness_hours),
             "price_score": 1.0 / (1.0 + (inventory.price / 100) if inventory and inventory.price else 10.0)
         }
@@ -54,7 +54,7 @@ class FeatureEngine:
             "proximity_score": LocationUtils.get_proximity_score(dist, decay=0.1),
             "category_affinity": 0.5,
             "verification_score": 1.0 if campaign.verified else 0.0,
-            "urgency_score": {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(campaign.urgency_level.value, 2),
+            "urgency_score": {"low": 1, "medium": 2, "high": 3, "critical": 4}.get(campaign.urgency_level.value.lower(), 2),
             "campaign_progress": (campaign.raised_amount / campaign.goal_amount) if campaign.goal_amount > 0 else 0,
             "remaining_goal": max(0, campaign.goal_amount - campaign.raised_amount) / 1000.0
         }

@@ -30,6 +30,7 @@ import {
 import { cn } from '../../utils/cn';
 import Button from '../../components/ui/Button';
 import { useAppContext } from '../../context/AppContext';
+import NotificationBell from '../../components/NotificationBell';
 
 const DashboardLayout = ({ role = 'requester' }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -72,7 +73,7 @@ const DashboardLayout = ({ role = 'requester' }) => {
   const userInitials = profile.fullName ? profile.fullName.split(' ').map(n => n[0]).join('').toUpperCase() : 'GU';
 
   return (
-    <div className="min-h-screen bg-surface-50 flex">
+    <div className="h-screen bg-surface-50 flex">
       {/* Sidebar */}
       <aside 
         className={cn(
@@ -126,7 +127,7 @@ const DashboardLayout = ({ role = 'requester' }) => {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col w-full overflow-hidden">
         {/* Top Navbar */}
         <header className="h-20 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center space-x-4">
@@ -147,10 +148,7 @@ const DashboardLayout = ({ role = 'requester' }) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl relative transition-all active:scale-95">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
-            </button>
+            <NotificationBell />
             <div className="h-8 w-px bg-slate-200 mx-2 hidden sm:block"></div>
             <div className="flex items-center space-x-3 pl-2">
               <div className="text-right hidden sm:block">

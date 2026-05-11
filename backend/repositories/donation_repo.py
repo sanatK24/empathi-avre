@@ -21,6 +21,6 @@ class DonationRepo(BaseRepo[Donation]):
         ).scalar() or 0.0
 
     def get_user_donation_history(self, db: Session, user_id: int) -> List[Donation]:
-        return db.query(Donation).filter(Donation.user_id == user_id).all()
+        return db.query(Donation).filter(Donation.user_id == user_id).order_by(Donation.created_at.desc()).all()
 
 donation_repo = DonationRepo()

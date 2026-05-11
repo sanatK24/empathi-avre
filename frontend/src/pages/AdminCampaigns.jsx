@@ -218,9 +218,9 @@ const AdminCampaigns = () => {
                                 />
                                 <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-premium z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right">
                                   <div className="p-1">
-                                    <button 
+                                    <button
                                       className="w-full flex items-center gap-2 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
-                                      onClick={() => navigate(`/campaigns/${c.id}`)}
+                                      onClick={() => navigate(`/admin/campaigns/${c.id}`)}
                                     >
                                       <Eye className="w-4 h-4 text-slate-400" /> View Details
                                     </button>

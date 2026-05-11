@@ -1,20 +1,32 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, BackgroundTasks
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, UserRole, Vendor, Campaign
 from api.deps import get_current_admin
 from services.admin_service import AdminService
 from schemas import AdminStats, CampaignVerifyRequest
+from background_tasks import BackgroundTasks as BgTasks
 
 router = APIRouter()
 
 @router.get("/stats", response_model=AdminStats)
 def get_stats(
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: User = Depends(get_current_admin)
 ):
-    return AdminService.get_system_stats(db)
+    """
+    Get admin dashboard statistics.
+    Returns cached stats instantly while rebuilding in background.
+    """
+    # Return cached/current stats
+    stats = AdminService.get_system_stats(db)
+
+    # Rebuild comprehensive statistics in background
+    background_tasks.add_task(BgTasks.generate_admin_statistics, db)
+
+    return stats
 
 @router.get("/users")
 def list_users(

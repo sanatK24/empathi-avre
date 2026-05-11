@@ -14,12 +14,15 @@ import CreateRequest from './pages/CreateRequest';
 import MatchResults from './pages/MatchResults';
 import RequestHistory from './pages/RequestHistory';
 import ResourceHubPage from './pages/ResourceHubPage';
+import VendorMarketplace from './pages/VendorMarketplace';
+import VendorStorefront from './pages/VendorStorefront';
 
 // Campaign Pages
 import CampaignsFeedPage from './pages/CampaignsFeedPage';
 import CampaignCreationPage from './pages/CampaignCreationPage';
 import CampaignDetailPage from './pages/CampaignDetailPage';
 import CampaignAnalyticsDashboard from './pages/CampaignAnalyticsDashboard';
+import PublicProfilePage from './pages/PublicProfilePage';
 
 // Donation and Emergency Pages
 import DonationPage from './pages/DonationPage';
@@ -97,9 +100,12 @@ function App() {
           <Route path="campaigns/:id" element={<CampaignDetailPage />} />
           <Route path="campaigns/create" element={<CampaignCreationPage />} />
           <Route path="campaigns/my" element={<CampaignAnalyticsDashboard />} />
+          <Route path="profiles/:user_id" element={<PublicProfilePage />} />
           <Route path="donations" element={<DonationPage />} />
           <Route path="emergency" element={<EmergencyHub />} />
           <Route path="recommendations" element={<RecommendationsPage />} />
+          <Route path="marketplace" element={<VendorMarketplace />} />
+          <Route path="vendor/:id" element={<VendorStorefront />} />
           <Route path="profile" element={<SharedProfileDashboard />} />
           <Route path="settings" element={<div className="p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-soft">
             <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Settings</h2>

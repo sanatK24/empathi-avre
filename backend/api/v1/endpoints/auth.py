@@ -146,3 +146,13 @@ def delete_emergency_contact(
     db.delete(contact)
     db.commit()
     return {"status": "deleted"}
+
+@router.delete("/profile")
+def delete_profile(
+    current_user: User = Depends(get_active_user),
+    db: Session = Depends(get_db)
+):
+    """Deactivate and delete the current user's profile."""
+    current_user.is_active = False
+    db.commit()
+    return {"status": "deleted", "message": "Profile deactivated successfully"}

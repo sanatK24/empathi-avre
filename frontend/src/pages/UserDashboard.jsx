@@ -104,10 +104,10 @@ const UserDashboard = () => {
   ];
 
   const quickActions = [
-    { label: 'Request Item', icon: ShoppingBag, path: '/user/create', color: 'bg-primary-500' },
+    { label: 'Marketplace', icon: ShoppingBag, path: '/user/marketplace', color: 'bg-primary-500' },
     { label: 'Create Campaign', icon: Megaphone, path: '/user/campaigns/create', color: 'bg-amber-500' },
     { label: 'Emergency Help', icon: Siren, path: '/user/emergency', color: 'bg-red-600' },
-    { label: 'Browse Campaigns', icon: TrendingUp, path: '/user/campaigns', color: 'bg-indigo-500' },
+    { label: 'Smart Feed', icon: Sparkles, path: '/user/recommendations', color: 'bg-indigo-500' },
   ];
 
   if (loading) {
@@ -195,9 +195,11 @@ const UserDashboard = () => {
               <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary-500" /> Recent Activity
               </h2>
-              <Button variant="ghost" size="sm" className="text-xs font-bold text-primary-500 uppercase tracking-widest">
-                View All <ArrowRight className="w-3 h-3 ml-1" />
-              </Button>
+              <Link to="/user/marketplace">
+                <Button variant="ghost" size="sm" className="text-xs font-bold text-primary-500 uppercase tracking-widest">
+                  Browse Marketplace
+                </Button>
+              </Link>
             </div>
             <Card className="border-none ring-1 ring-slate-100 shadow-soft">
               <CardContent className="p-0">

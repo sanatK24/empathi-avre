@@ -228,22 +228,31 @@ const MatchResults = () => {
                     <div className="p-8 flex-grow">
                       <div className="flex justify-between items-start mb-6">
                         <div>
-                          <h3 className="text-xl font-display font-black text-slate-900 group-hover:text-primary-500 transition-colors uppercase tracking-tight">
-                            {getVendorName(vendor)}
-                          </h3>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <div className="flex items-center text-amber-500">
-                              <Star className="w-4 h-4 fill-amber-500 mr-1" />
-                              <span className="text-sm font-bold">{getRating(vendor)}</span>
-                              <span className="text-xs text-slate-400 ml-1 font-medium">
-                                ({getReviews(vendor)} reviews)
-                              </span>
+                        <div className="flex gap-6">
+                          {vendor.image_url && (
+                            <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 flex-shrink-0 bg-slate-50">
+                              <img src={vendor.image_url} alt="Product" className="w-full h-full object-cover" />
                             </div>
-                            <div className="flex items-center text-slate-500">
-                              <MapPin className="w-4 h-4 mr-1 text-slate-400" />
-                              <span className="text-sm font-bold">{getDistance(vendor)}</span>
+                          )}
+                          <div>
+                            <h3 className="text-xl font-display font-black text-slate-900 group-hover:text-primary-500 transition-colors uppercase tracking-tight">
+                              {getVendorName(vendor)}
+                            </h3>
+                            <div className="flex items-center space-x-4 mt-2">
+                              <div className="flex items-center text-amber-500">
+                                <Star className="w-4 h-4 fill-amber-500 mr-1" />
+                                <span className="text-sm font-bold">{getRating(vendor)}</span>
+                                <span className="text-xs text-slate-400 ml-1 font-medium">
+                                  ({getReviews(vendor)} reviews)
+                                </span>
+                              </div>
+                              <div className="flex items-center text-slate-500">
+                                <MapPin className="w-4 h-4 mr-1 text-slate-400" />
+                                <span className="text-sm font-bold">{getDistance(vendor)}</span>
+                              </div>
                             </div>
                           </div>
+                        </div>
                         </div>
                         <div className="text-right">
                           <div className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">
@@ -254,6 +263,12 @@ const MatchResults = () => {
                           </div>
                         </div>
                       </div>
+
+                      {vendor.description && (
+                        <p className="text-sm text-slate-500 font-medium line-clamp-2 mb-6 bg-slate-50/50 p-3 rounded-xl border border-slate-100/50">
+                          {vendor.description}
+                        </p>
+                      )}
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">

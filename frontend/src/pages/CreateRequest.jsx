@@ -31,6 +31,8 @@ const CreateRequest = () => {
     urgency: 'medium',
     notes: ''
   });
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
 
   const handleNext = () => setStep(s => s + 1);
@@ -60,6 +62,49 @@ const CreateRequest = () => {
       alert(error.message || 'Failed to create request. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleNameChange = async (e) => {
+    const value = e.target.value;
+    setFormData({ ...formData, resourceName: value });
+    
+    if (value.length >= 2) {
+      try {
+        const data = await apiService.getProductSuggestions(profile.accessToken, value);
+        setSuggestions(data);
+        setShowSuggestions(true);
+      } catch (error) {
+        console.error("Failed to get suggestions:", error);
+      }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSuggestionClick = async (suggestion) => {
+    setFormData({ ...formData, resourceName: suggestion });
+    setShowSuggestions(false);
+    
+    // Try to auto-detect category
+    try {
+      const data = await apiService.lookupProduct(profile.accessToken, suggestion);
+      if (data.found && data.product.category) {
+        const cat = data.product.category.toLowerCase();
+        // Map backend category to frontend dropdown value if needed
+        let mappedCat = '';
+        if (cat.includes('medical')) mappedCat = 'medical';
+        else if (cat.includes('pharma')) mappedCat = 'pharma';
+        else if (cat.includes('consumables')) mappedCat = 'consumables';
+        else if (cat.includes('emergency')) mappedCat = 'emergency';
+        
+        if (mappedCat) {
+          setFormData(prev => ({ ...prev, category: mappedCat }));
+        }
+      }
+    } catch (error) {
+      console.error("Lookup failed:", error);
     }
   };
 
@@ -111,12 +156,30 @@ const CreateRequest = () => {
                 className="space-y-8"
               >
                 <div className="grid md:grid-cols-2 gap-8">
-                  <Input 
-                    label="Resource Name" 
-                    placeholder="e.g. Surgical Gloves, Oxygen" 
-                    value={formData.resourceName}
-                    onChange={e => setFormData({...formData, resourceName: e.target.value})}
-                  />
+                  <div className="relative">
+                    <Input 
+                      label="Resource Name" 
+                      placeholder="e.g. Surgical Gloves, Oxygen" 
+                      value={formData.resourceName}
+                      onChange={handleNameChange}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    />
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div className="absolute left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
+                        {suggestions.map((s, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 font-medium transition-colors border-b border-slate-50 last:border-0"
+                            onClick={() => handleSuggestionClick(s)}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-slate-700 ml-0.5">Category</label>
                     <select 

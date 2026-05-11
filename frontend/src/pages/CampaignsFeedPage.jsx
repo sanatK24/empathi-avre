@@ -4,6 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import Badge from '../components/ui/Badge';
 import Button from '../components/ui/Button';
+import SaveCampaignButton from '../components/SaveCampaignButton';
 import { Heart, MapPin, AlertCircle, Search, Filter, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import DonationModal from '../components/DonationModal';
@@ -348,6 +349,10 @@ function CampaignsFeedPage() {
                     >
                       Details
                     </Button>
+                    <SaveCampaignButton
+                      campaignId={campaign.id}
+                      token={profile?.accessToken}
+                    />
                   </div>
                 </div>
               </motion.div>

@@ -246,7 +246,12 @@ function CampaignDetailPage() {
                       <Badge className="bg-blue-100 text-blue-800">✓ Fully Funded</Badge>
                     )}
                     <span className="text-sm font-medium text-slate-500 ml-1">
-                      by <span className="text-slate-900 font-bold">{campaign.creator_name || 'Anonymous Creator'}</span>
+                      by <button
+                        onClick={() => navigate(`/user/profiles/${campaign.created_by}`)}
+                        className="text-slate-900 font-bold hover:text-primary-500 hover:underline cursor-pointer transition-colors"
+                      >
+                        {campaign.creator_name || 'Anonymous Creator'}
+                      </button>
                     </span>
                   </div>
                 </div>

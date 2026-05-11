@@ -58,7 +58,7 @@ class CampaignService:
                 reasons.append("Verified campaign")
 
             # 4. Criticality/Urgency (+10)
-            if campaign.urgency_level.value in ["high", "critical"]:
+            if campaign.urgency_level.value.lower() in ["high", "critical"]:
                 score += 10
                 reasons.append("High urgency")
 
@@ -78,6 +78,9 @@ class CampaignService:
             final_recommendations.append({
                 "id": campaign.id,
                 "title": campaign.title,
+                "description": campaign.description,
+                "cover_image": campaign.cover_image,
+                "verified": campaign.verified,
                 "score": round(getattr(campaign, "matching_score", 0) * 100, 2),
                 "reason": " • ".join(reasons) if reasons else "Recommended for you",
                 "progress": round((campaign.raised_amount / campaign.goal_amount * 100) if campaign.goal_amount > 0 else 0, 1),

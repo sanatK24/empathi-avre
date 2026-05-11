@@ -24,6 +24,8 @@ function getInitialProfile() {
   return {
     userId: 1,
     city: '',
+    area: '',
+    locality: '',
     location: null,
     userRole: '', // 'donor' | 'ngo' | 'verifier' | 'admin' | 'vendor'
     isVerified: false,
@@ -166,6 +168,44 @@ export function AppProvider({ children }) {
       switchRole,
       setVerified,
       logout,
+      detectLocation: async () => {
+        if (!navigator.geolocation) {
+          console.error("Geolocation is not supported");
+          return;
+        }
+
+        return new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(async (position) => {
+            const { latitude, longitude } = position.coords;
+            try {
+              // Reverse geocode using Nominatim (Free OpenStreetMap API)
+              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
+              const data = await response.json();
+              
+              const address = data.address;
+              const city = address.city || address.town || address.village || address.suburb || "Mumbai";
+              const area = address.suburb || address.neighbourhood || address.residential || "";
+              const locality = address.road || address.pedestrian || "";
+
+              updateProfile({
+                location: { lat: latitude, lng: longitude },
+                city,
+                area,
+                locality
+              });
+              resolve({ city, area, locality });
+            } catch (err) {
+              console.error("Reverse geocoding failed", err);
+              // Fallback to coordinates
+              updateProfile({ location: { lat: latitude, lng: longitude } });
+              resolve({ lat: latitude, lng: longitude });
+            }
+          }, (err) => {
+            console.error("Geolocation error", err);
+            resolve(null);
+          });
+        });
+      },
       authInitialized,
       permissions,
       hasPermission: (permission) => permissions.includes(permission),

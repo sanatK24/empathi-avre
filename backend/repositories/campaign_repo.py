@@ -14,7 +14,7 @@ class CampaignRepo(BaseRepo[Campaign]):
         ).order_by(Campaign.created_at.desc()).offset(skip).limit(limit).all()
 
     def get_by_creator(self, db: Session, user_id: int) -> List[Campaign]:
-        return db.query(Campaign).filter(Campaign.created_by == user_id).all()
+        return db.query(Campaign).filter(Campaign.created_by == user_id).order_by(Campaign.created_at.desc()).all()
 
     def search(self, db: Session, q: str, limit: int = 20) -> List[Campaign]:
         return db.query(Campaign).filter(
