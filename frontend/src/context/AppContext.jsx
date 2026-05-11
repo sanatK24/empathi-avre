@@ -6,7 +6,6 @@ import {
   useState,
 } from 'react'
 
-import { useNavigate } from 'react-router-dom'
 
 import {
   logout as logoutSession,
@@ -82,7 +81,6 @@ function getInitialProfile() {
 }
 
 export function AppProvider({ children }) {
-  const navigate = useNavigate()
 
   const [profile, setProfile] = useState(getInitialProfile)
   const [authInitialized, setAuthInitialized] = useState(false)
@@ -152,11 +150,11 @@ export function AppProvider({ children }) {
 
       console.log('Profile cleared, redirecting...')
 
-      navigate('/login')
+      window.location.pathname = '/login'
     } catch (error) {
       console.error('Logout error:', error)
 
-      navigate('/login')
+      window.location.pathname = '/login'
     }
   }
 
@@ -217,7 +215,7 @@ export function AppProvider({ children }) {
               : 'user'
           }/dashboard`
 
-          navigate(dashboardPath)
+          window.location.pathname = dashboardPath
         }
       } else {
         localStorage.removeItem('empathi_profile')
@@ -249,7 +247,7 @@ export function AppProvider({ children }) {
         : 'user'
     }/dashboard`
 
-    navigate(dashboardPath)
+    window.location.pathname = dashboardPath
   }
 
   const value = useMemo(
