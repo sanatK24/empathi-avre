@@ -1,24 +1,62 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
-import { logout as logoutSession, mapBackendRoleToFrontendRole, restoreAuthSession } from '../services/authService'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+
+import { useNavigate } from 'react-router-dom'
+
+import {
+  logout as logoutSession,
+  mapBackendRoleToFrontendRole,
+  restoreAuthSession,
+} from '../services/authService'
 
 const AppContext = createContext(null)
 
 const ROLE_PERMISSIONS = {
   donor: ['view_feed', 'donate', 'view_recommendations', 'track_donations'],
-  ngo: ['view_feed', 'create_campaign', 'manage_campaigns', 'request_resources', 'view_recommendations'],
-  verifier: ['view_feed', 'verify_requests', 'view_verification_tasks', 'submit_proof', 'view_recommendations'],
-  admin: ['view_feed', 'declare_emergency', 'manage_crises', 'view_audit_log', 'view_users'],
-  vendor: ['view_feed', 'view_requests', 'manage_availability', 'fulfill_requests', 'view_recommendations'],
+  ngo: [
+    'view_feed',
+    'create_campaign',
+    'manage_campaigns',
+    'request_resources',
+    'view_recommendations',
+  ],
+  verifier: [
+    'view_feed',
+    'verify_requests',
+    'view_verification_tasks',
+    'submit_proof',
+    'view_recommendations',
+  ],
+  admin: [
+    'view_feed',
+    'declare_emergency',
+    'manage_crises',
+    'view_audit_log',
+    'view_users',
+  ],
+  vendor: [
+    'view_feed',
+    'view_requests',
+    'manage_availability',
+    'fulfill_requests',
+    'view_recommendations',
+  ],
 }
 
 function getInitialProfile() {
   try {
     const saved = localStorage.getItem('empathi_profile')
+
     if (saved) {
       return JSON.parse(saved)
     }
   } catch {
-    // Ignore malformed localStorage values.
+    // Ignore malformed localStorage values
   }
 
   return {
@@ -27,7 +65,7 @@ function getInitialProfile() {
     area: '',
     locality: '',
     location: null,
-    userRole: '', // 'donor' | 'ngo' | 'verifier' | 'admin' | 'vendor'
+    userRole: '',
     isVerified: false,
     email: '',
     phone: '',
@@ -44,13 +82,20 @@ function getInitialProfile() {
 }
 
 export function AppProvider({ children }) {
+  const navigate = useNavigate()
+
   const [profile, setProfile] = useState(getInitialProfile)
   const [authInitialized, setAuthInitialized] = useState(false)
 
   const updateProfile = (patch) => {
     setProfile((prev) => {
       const next = { ...prev, ...patch }
-      localStorage.setItem('empathi_profile', JSON.stringify(next))
+
+      localStorage.setItem(
+        'empathi_profile',
+        JSON.stringify(next)
+      )
+
       return next
     })
   }
@@ -59,7 +104,10 @@ export function AppProvider({ children }) {
     updateProfile({ userRole: role })
   }
 
-  const setVerified = (isVerified, verificationData = {}) => {
+  const setVerified = (
+    isVerified,
+    verificationData = {}
+  ) => {
     updateProfile({
       isVerified,
       ...verificationData,
@@ -68,11 +116,15 @@ export function AppProvider({ children }) {
 
   const logout = () => {
     try {
-      console.log('Logging out...');
+      console.log('Logging out...')
+
       logoutSession()
+
       const next = {
         userId: 1,
         city: '',
+        area: '',
+        locality: '',
         location: null,
         userRole: '',
         isVerified: false,
@@ -90,14 +142,21 @@ export function AppProvider({ children }) {
         backendRole: '',
         isAuthenticated: false,
       }
+
       setProfile(next)
-      localStorage.setItem('empathi_profile', JSON.stringify(next))
-      console.log('Profile cleared, redirecting...');
-      window.location.href = '/login'
+
+      localStorage.setItem(
+        'empathi_profile',
+        JSON.stringify(next)
+      )
+
+      console.log('Profile cleared, redirecting...')
+
+      navigate('/login')
     } catch (error) {
-      console.error('Logout error:', error);
-      // Fallback redirect
-      window.location.href = '/login'
+      console.error('Logout error:', error)
+
+      navigate('/login')
     }
   }
 
@@ -106,6 +165,7 @@ export function AppProvider({ children }) {
 
     const hydrateSession = async () => {
       const session = await restoreAuthSession()
+
       if (!active) return
 
       if (session?.user) {
@@ -113,30 +173,53 @@ export function AppProvider({ children }) {
           accessToken: session.accessToken,
           backendUserId: session.user.id,
           backendRole: session.user.role,
-          userRole: mapBackendRoleToFrontendRole(session.user.role),
+          userRole: mapBackendRoleToFrontendRole(
+            session.user.role
+          ),
           fullName: session.user.name || '',
           email: session.user.email || '',
           phone: session.user.phone || '',
           city: session.user.city || '',
-          emergency_contacts: session.user.emergency_contacts || [],
-          personal_categories: session.user.personal_categories || '',
+          emergency_contacts:
+            session.user.emergency_contacts || [],
+          personal_categories:
+            session.user.personal_categories || '',
           bloodGroup: session.user.blood_group,
-          preferredHospital: session.user.preferred_hospital,
+          preferredHospital:
+            session.user.preferred_hospital,
           canSwitchRole: session.user.can_switch_role,
           isVendor: session.user.is_vendor,
           isAuthenticated: true,
         }
-        setProfile(next)
-        localStorage.setItem('empathi_profile', JSON.stringify(next))
 
-        // Auto-redirect if on login or landing page
+        setProfile(next)
+
+        localStorage.setItem(
+          'empathi_profile',
+          JSON.stringify(next)
+        )
+
+        // Auto redirect authenticated users
         const path = window.location.pathname
-        if (path === '/login' || path === '/register' || path === '/') {
-          const dashboardPath = `/${next.userRole === 'donor' ? 'user' : (next.userRole === 'admin' ? 'admin' : (next.userRole === 'vendor' ? 'vendor' : 'user'))}/dashboard`
-          window.location.href = dashboardPath
+
+        if (
+          path === '/login' ||
+          path === '/register' ||
+          path === '/'
+        ) {
+          const dashboardPath = `/${
+            next.userRole === 'donor'
+              ? 'user'
+              : next.userRole === 'admin'
+              ? 'admin'
+              : next.userRole === 'vendor'
+              ? 'vendor'
+              : 'user'
+          }/dashboard`
+
+          navigate(dashboardPath)
         }
       } else {
-        // Clear if invalid session found
         localStorage.removeItem('empathi_profile')
       }
 
@@ -148,78 +231,162 @@ export function AppProvider({ children }) {
     return () => {
       active = false
     }
-  }, [])
+  }, [navigate])
 
-  const permissions = ROLE_PERMISSIONS[profile.userRole] || []
+  const permissions =
+    ROLE_PERMISSIONS[profile.userRole] || []
 
   const switchRole = (newRole) => {
     updateProfile({ userRole: newRole })
-    // Refresh to update layouts if necessary, or just rely on state
-    const dashboardPath = `/${newRole === 'donor' ? 'user' : (newRole === 'admin' ? 'admin' : (newRole === 'vendor' ? 'vendor' : 'user'))}/dashboard`
-    window.location.href = dashboardPath
+
+    const dashboardPath = `/${
+      newRole === 'donor'
+        ? 'user'
+        : newRole === 'admin'
+        ? 'admin'
+        : newRole === 'vendor'
+        ? 'vendor'
+        : 'user'
+    }/dashboard`
+
+    navigate(dashboardPath)
   }
 
   const value = useMemo(
     () => ({
       profile,
-      onboardingDone: Boolean(profile.city && profile.userRole),
+
+      onboardingDone: Boolean(
+        profile.city && profile.userRole
+      ),
+
       updateProfile,
+
       setUserRole,
+
       switchRole,
+
       setVerified,
+
       logout,
+
       detectLocation: async () => {
         if (!navigator.geolocation) {
-          console.error("Geolocation is not supported");
-          return;
+          console.error(
+            'Geolocation is not supported'
+          )
+
+          return
         }
 
         return new Promise((resolve) => {
-          navigator.geolocation.getCurrentPosition(async (position) => {
-            const { latitude, longitude } = position.coords;
-            try {
-              // Reverse geocode using Nominatim (Free OpenStreetMap API)
-              const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-              const data = await response.json();
-              
-              const address = data.address;
-              const city = address.city || address.town || address.village || address.suburb || "Mumbai";
-              const area = address.suburb || address.neighbourhood || address.residential || "";
-              const locality = address.road || address.pedestrian || "";
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              const { latitude, longitude } =
+                position.coords
 
-              updateProfile({
-                location: { lat: latitude, lng: longitude },
-                city,
-                area,
-                locality
-              });
-              resolve({ city, area, locality });
-            } catch (err) {
-              console.error("Reverse geocoding failed", err);
-              // Fallback to coordinates
-              updateProfile({ location: { lat: latitude, lng: longitude } });
-              resolve({ lat: latitude, lng: longitude });
+              try {
+                const response = await fetch(
+                  `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+                )
+
+                const data = await response.json()
+
+                const address = data.address
+
+                const city =
+                  address.city ||
+                  address.town ||
+                  address.village ||
+                  address.suburb ||
+                  'Mumbai'
+
+                const area =
+                  address.suburb ||
+                  address.neighbourhood ||
+                  address.residential ||
+                  ''
+
+                const locality =
+                  address.road ||
+                  address.pedestrian ||
+                  ''
+
+                updateProfile({
+                  location: {
+                    lat: latitude,
+                    lng: longitude,
+                  },
+                  city,
+                  area,
+                  locality,
+                })
+
+                resolve({
+                  city,
+                  area,
+                  locality,
+                })
+              } catch (err) {
+                console.error(
+                  'Reverse geocoding failed',
+                  err
+                )
+
+                updateProfile({
+                  location: {
+                    lat: latitude,
+                    lng: longitude,
+                  },
+                })
+
+                resolve({
+                  lat: latitude,
+                  lng: longitude,
+                })
+              }
+            },
+            (err) => {
+              console.error(
+                'Geolocation error',
+                err
+              )
+
+              resolve(null)
             }
-          }, (err) => {
-            console.error("Geolocation error", err);
-            resolve(null);
-          });
-        });
+          )
+        })
       },
+
       authInitialized,
+
       permissions,
-      hasPermission: (permission) => permissions.includes(permission),
+
+      hasPermission: (permission) =>
+        permissions.includes(permission),
     }),
-    [profile, permissions, setUserRole, setVerified, authInitialized],
+    [
+      profile,
+      permissions,
+      authInitialized,
+    ]
   )
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  )
 }
 
 export function useAppContext() {
   const context = useContext(AppContext)
+
   if (!context) {
-    throw new Error('useAppContext must be used inside AppProvider')
+    throw new Error(
+      'useAppContext must be used inside AppProvider'
+    )
   }
+
   return context
 }
