@@ -229,7 +229,7 @@ export function AppProvider({ children }) {
     return () => {
       active = false
     }
-  }, [navigate])
+  }, [])
 
   const permissions =
     ROLE_PERMISSIONS[profile.userRole] || []
