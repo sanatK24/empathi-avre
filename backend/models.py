@@ -233,7 +233,7 @@ class Campaign(Base):
     goal_amount = Column(Float)
     raised_amount = Column(Float, default=0.0)
     urgency_level = Column(Enum(UrgencyLevel), default=UrgencyLevel.MEDIUM)
-    cover_image = Column(String, nullable=True)
+    cover_image = Column(Text, nullable=True)
     status = Column(Enum(CampaignStatus), default=CampaignStatus.DRAFT)
     verified = Column(Boolean, default=False)
     deadline = Column(DateTime, nullable=True)

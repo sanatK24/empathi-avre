@@ -17,6 +17,8 @@ class CampaignService:
             city=data.city,
             goal_amount=data.goal_amount,
             urgency_level=data.urgency_level,
+            cover_image=data.cover_image,
+            deadline=data.deadline,
             created_by=user.id,
             status=CampaignStatus.ACTIVE
         )

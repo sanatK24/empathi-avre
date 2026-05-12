@@ -167,13 +167,24 @@ export function AppProvider({ children }) {
       if (!active) return
 
       if (session?.user) {
+        const mappedRole = mapBackendRoleToFrontendRole(
+          session.user.role
+        )
+        
+        // For dual-role users, check if they should stay in vendor view
+        let activeUserRole = mappedRole
+        if (session.user.can_switch_role && session.user.is_vendor) {
+          const currentPath = window.location.pathname
+          if (currentPath.startsWith('/vendor')) {
+            activeUserRole = 'vendor'
+          }
+        }
+        
         const next = {
           accessToken: session.accessToken,
           backendUserId: session.user.id,
           backendRole: session.user.role,
-          userRole: mapBackendRoleToFrontendRole(
-            session.user.role
-          ),
+          userRole: activeUserRole,
           fullName: session.user.name || '',
           email: session.user.email || '',
           phone: session.user.phone || '',

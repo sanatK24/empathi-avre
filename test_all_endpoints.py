@@ -248,11 +248,17 @@ def test_campaign_endpoints(req_token):
             "category": "medical",
             "city": "Mumbai",
             "goal_amount": 50000.0,
-            "urgency_level": "HIGH"
+            "urgency_level": "HIGH",
+            "cover_image": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA"
         })
     log("createCampaign", "POST", "/campaigns", r.status_code, r.ok,
         f"- {r.text[:150]}" if not r.ok else "")
     campaign_id = r.json().get("id") if r.ok else None
+    if r.ok:
+        created_cover_image = r.json().get("cover_image")
+        cover_image_result = created_cover_image == "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA"
+        log("createCampaignCoverImage", "POST", "/campaigns", r.status_code, cover_image_result,
+            f"- cover_image stored: {created_cover_image[:40]}..." if created_cover_image else "- missing cover_image")
     
     # GET /campaigns (list)
     r = requests.get(f"{BASE}/campaigns")

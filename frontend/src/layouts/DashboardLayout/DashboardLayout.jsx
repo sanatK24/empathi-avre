@@ -35,6 +35,7 @@ import NotificationBell from '../../components/NotificationBell';
 const DashboardLayout = ({ role = 'requester' }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
+  const { profile, logout } = useAppContext();
 
   const navItems = {
     requester: [
@@ -67,9 +68,18 @@ const DashboardLayout = ({ role = 'requester' }) => {
     ]
   };
 
-  const currentNav = navItems[role] || navItems.requester;
+  // Determine role dynamically: use context role or derive from URL path
+  let activeRole = role;
+  if (location.pathname.startsWith('/vendor')) {
+    activeRole = 'vendor';
+  } else if (location.pathname.startsWith('/admin')) {
+    activeRole = 'admin';
+  } else if (location.pathname.startsWith('/user')) {
+    activeRole = 'requester';
+  }
 
-  const { profile, logout } = useAppContext();
+  const currentNav = navItems[activeRole] || navItems.requester;
+
   const userInitials = profile.fullName ? profile.fullName.split(' ').map(n => n[0]).join('').toUpperCase() : 'GU';
 
   return (

@@ -284,17 +284,21 @@ const SharedProfileDashboard = () => {
                 lng: profile.lng || 72.8777
             });
             
-            setStatus({ type: 'success', message: 'Application submitted! You are now a Vendor.' });
-            // Refresh profile to get dual role flags
+            // Fetch updated profile with new vendor status
             const updatedProfile = await apiService.getMe(profile.accessToken);
-            updateProfile({ 
-                ...profile, 
-                isVendor: true, 
+            
+            // Update profile with dual-role capability
+            updateProfile({
+                ...profile,
+                isVendor: true,
                 canSwitchRole: true,
                 backendRole: updatedProfile.role,
-                userRole: updatedProfile.role.toLowerCase() === 'vendor' ? 'vendor' : 'donor'
+                userRole: 'vendor' // Immediately switch to vendor view
             });
-            setTimeout(() => window.location.reload(), 2000);
+            
+            setStatus({ type: 'success', message: 'Application submitted! Switching to Vendor view...' });
+            // Navigate to vendor dashboard instead of reloading
+            setTimeout(() => window.location.href = '/vendor/dashboard', 1500);
         } catch (err) {
             setStatus({ type: 'error', message: err.message || 'Application failed.' });
         } finally {
