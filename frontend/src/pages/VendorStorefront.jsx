@@ -173,6 +173,65 @@ const VendorStorefront = () => {
         </div>
       )}
 
+      {/* Vendor Owner Details */}
+      {vendor && vendor.user && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gradient-to-r from-slate-50 to-primary-50 rounded-[3rem] p-8 md:p-12 shadow-premium ring-1 ring-slate-100 mb-12 border border-primary-200"
+        >
+          <h3 className="text-lg font-bold text-slate-900 mb-6 uppercase tracking-widest">
+            About the Owner
+          </h3>
+          <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+            {vendor.user.avatar_url && (
+              <div className="w-32 h-32 rounded-[2rem] overflow-hidden flex-shrink-0 bg-white border border-slate-200 shadow-md">
+                <img
+                  src={vendor.user.avatar_url}
+                  alt={vendor.user.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <div className="flex-1 text-center md:text-left">
+              <h4 className="text-2xl font-bold text-slate-900 mb-2">
+                {vendor.user.name}
+              </h4>
+              {vendor.user.organization_name && (
+                <p className="text-primary-600 font-bold mb-3">
+                  {vendor.user.organization_name}
+                </p>
+              )}
+              {vendor.user.bio && (
+                <p className="text-slate-700 mb-4 leading-relaxed">
+                  {vendor.user.bio}
+                </p>
+              )}
+              <div className="flex flex-wrap gap-6 text-sm font-medium text-slate-600">
+                {vendor.user.phone && (
+                  <p className="flex items-center gap-2">
+                    <span className="inline-block w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
+                    {vendor.user.phone}
+                  </p>
+                )}
+                {vendor.user.city && (
+                  <p className="flex items-center gap-2">
+                    <span className="inline-block w-1.5 h-1.5 bg-primary-500 rounded-full"></span>
+                    {vendor.user.city}
+                  </p>
+                )}
+                {vendor.verification_status === 'VERIFIED' && (
+                  <p className="flex items-center gap-2 text-emerald-600 font-bold">
+                    <span className="inline-block w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                    Verified Provider
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* Catalogue */}
       <div className="space-y-8">
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">

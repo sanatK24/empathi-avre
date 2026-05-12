@@ -380,10 +380,11 @@ const SharedProfileDashboard = () => {
                 { id: 'security', label: 'Security', icon: Lock },
                 { id: 'preferences', label: 'Preferences', icon: Bell },
                 { id: 'activity', label: 'Activity', icon: TrendingUp },
+                profile.role !== 'vendor' && { id: 'saved_campaigns', label: 'Saved Campaigns', icon: Heart },
                 profile.isVendor 
                     ? { id: 'role', label: 'Vendor Settings', icon: Store }
                     : { id: 'vendor_application', label: 'Become a Vendor', icon: Sparkles }
-            ].map(tab => (
+            ].filter(Boolean).map(tab => (
                 <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
@@ -645,6 +646,64 @@ const SharedProfileDashboard = () => {
                     </div>
                 </Card>
             </div>
+        );
+    };
+
+    const renderSavedCampaigns = () => {
+        const [savedCampaigns, setSavedCampaigns] = useState([]);
+        const [savedLoading, setSavedLoading] = useState(true);
+
+        useEffect(() => {
+            if (profile.accessToken) {
+                apiService.getSavedCampaigns(profile.accessToken)
+                    .then(data => setSavedCampaigns(Array.isArray(data) ? data : []))
+                    .catch(err => console.error('Failed to load saved campaigns:', err))
+                    .finally(() => setSavedLoading(false));
+            }
+        }, [profile.accessToken]);
+
+        return (
+            <Card className="p-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-rose-500" />
+                    Saved Campaigns
+                </h3>
+                {savedLoading ? (
+                    <div className="text-center py-8">
+                        <p className="text-slate-500">Loading...</p>
+                    </div>
+                ) : savedCampaigns.length === 0 ? (
+                    <div className="text-center py-12">
+                        <Heart className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+                        <p className="text-slate-500">No saved campaigns yet</p>
+                        <p className="text-sm text-slate-400 mt-2">Save campaigns to access them later</p>
+                        <Button className="mt-4" onClick={() => window.location.href = '/campaigns'}>
+                            Browse Campaigns
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {savedCampaigns.map(campaign => (
+                            <div 
+                                key={campaign.id}
+                                className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                onClick={() => window.location.href = `/campaigns/${campaign.id}`}
+                            >
+                                <h4 className="font-bold text-slate-900 mb-2">{campaign.title}</h4>
+                                <p className="text-sm text-slate-600 mb-3 line-clamp-2">{campaign.description}</p>
+                                <div className="flex justify-between items-center text-sm">
+                                    <Badge className="bg-slate-100 text-slate-600">
+                                        {campaign.category}
+                                    </Badge>
+                                    <span className="text-primary-600 font-bold">
+                                        ₹{campaign.raised_amount?.toFixed(0) || 0} / ₹{campaign.goal_amount?.toFixed(0) || 0}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </Card>
         );
     };
 
@@ -988,6 +1047,7 @@ const SharedProfileDashboard = () => {
                         {activeTab === 'security' && renderSecuritySettings()}
                         {activeTab === 'preferences' && renderPreferences()}
                         {activeTab === 'activity' && renderActivitySummary()}
+                        {activeTab === 'saved_campaigns' && renderSavedCampaigns()}
                         {activeTab === 'vendor_application' && renderVendorApplication()}
                         {activeTab === 'role' && renderRoleSpecific()}
                     </motion.div>

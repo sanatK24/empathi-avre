@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
+import SaveCampaignButton from '../components/SaveCampaignButton';
+import CampaignUpdatesSection from '../components/CampaignUpdatesSection';
 import { motion } from 'framer-motion';
 import {
   Heart,
@@ -230,7 +232,7 @@ function CampaignDetailPage() {
             {/* Title & Meta */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
               <div className="flex justify-between items-start gap-4">
-                <div>
+                <div className="flex-1">
                   <h1 className="text-3xl font-bold text-slate-900 mb-3">{campaign.title}</h1>
                   <div className="flex flex-wrap gap-2 items-center">
                     <Badge className={`${getUrgencyColor(campaign.urgency_level)}`}>
@@ -256,16 +258,21 @@ function CampaignDetailPage() {
                   </div>
                 </div>
 
-                {isCreator && (
-                  <div className="flex gap-2">
-                    <button className="p-2 hover:bg-slate-100 rounded-lg">
-                      <Edit size={20} className="text-slate-600" />
-                    </button>
-                    <button className="p-2 hover:bg-slate-100 rounded-lg">
-                      <Share2 size={20} className="text-slate-600" />
-                    </button>
-                  </div>
-                )}
+                <div className="flex gap-2">
+                  {profile.isAuthenticated && (
+                    <SaveCampaignButton campaignId={campaign.id} token={profile.accessToken} />
+                  )}
+                  {isCreator && (
+                    <>
+                      <button className="p-2 hover:bg-slate-100 rounded-lg">
+                        <Edit size={20} className="text-slate-600" />
+                      </button>
+                      <button className="p-2 hover:bg-slate-100 rounded-lg">
+                        <Share2 size={20} className="text-slate-600" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </motion.div>
 
@@ -363,83 +370,11 @@ function CampaignDetailPage() {
 
               {/* Updates Tab */}
               {activeTab === 'updates' && (
-                <div className="space-y-6">
-                  {isCreator && (
-                    <div className="bg-white rounded-lg p-6 border border-slate-200">
-                      <h3 className="text-lg font-semibold text-slate-900 mb-4">Post an update</h3>
-                      <form onSubmit={handlePostUpdate} className="space-y-4">
-                        <input
-                          type="text"
-                          placeholder="Update title"
-                          value={newUpdate.title}
-                          onChange={(e) => setNewUpdate({ ...newUpdate, title: e.target.value })}
-                          maxLength="200"
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <textarea
-                          placeholder="What's the latest update?"
-                          value={newUpdate.content}
-                          onChange={(e) => setNewUpdate({ ...newUpdate, content: e.target.value })}
-                          maxLength="2000"
-                          rows="4"
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-                        />
-                        <Button
-                          type="submit"
-                          disabled={postingUpdate}
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 flex items-center gap-2"
-                        >
-                          {postingUpdate ? (
-                            <>
-                              <Loader2 size={18} className="animate-spin" />
-                              Posting...
-                            </>
-                          ) : (
-                            <>
-                              <MessageSquare size={18} />
-                              Post Update
-                            </>
-                          )}
-                        </Button>
-                      </form>
-                    </div>
-                  )}
-
-                  {updates.length === 0 ? (
-                    <div className="text-center py-8 bg-white rounded-lg border border-slate-200">
-                      <MessageSquare size={32} className="mx-auto text-slate-300 mb-2" />
-                      <p className="text-slate-600">No updates yet</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {updates.map((update) => (
-                        <motion.div
-                          key={update.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white rounded-lg p-6 border border-slate-200"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-semibold text-slate-900">{update.title}</h4>
-                            {isCreator && (
-                              <button
-                                onClick={() => handleDeleteUpdate(update.id)}
-                                className="text-slate-400 hover:text-red-600"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-500 mb-3 flex items-center gap-1">
-                            <Clock size={14} />
-                            {new Date(update.created_at).toLocaleDateString()}
-                          </p>
-                          <p className="text-slate-700 whitespace-pre-wrap">{update.content}</p>
-                        </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <CampaignUpdatesSection 
+                  campaignId={campaign.id} 
+                  isCreator={isCreator}
+                  onUpdateCreated={fetchCampaignData}
+                />
               )}
 
               {/* Donors Tab */}

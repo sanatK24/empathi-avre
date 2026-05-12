@@ -214,6 +214,37 @@ export const apiService = {
     getCampaignStats: (token, campaignId) => request(`/campaigns/${campaignId}/stats`, { token }),
     getRelatedCampaigns: (token, campaignId) => request(`/campaigns/${campaignId}/related`, { token }),
     getCampaignUpdates: (token, campaignId) => request(`/campaigns/${campaignId}/updates`, { token }),
+    createCampaignUpdate: (token, campaignId, updateData) => request(`/campaigns/${campaignId}/updates`, {
+        method: 'POST',
+        token,
+        body: JSON.stringify(updateData)
+    }),
+    deleteCampaignUpdate: (token, campaignId, updateId) => request(`/campaigns/${campaignId}/updates/${updateId}`, {
+        method: 'DELETE',
+        token
+    }),
+    likeCampaignUpdate: (token, campaignId, updateId) => request(`/campaigns/${campaignId}/updates/${updateId}/like`, {
+        method: 'POST',
+        token
+    }),
+    unlikeCampaignUpdate: (token, campaignId, updateId) => request(`/campaigns/${campaignId}/updates/${updateId}/unlike`, {
+        method: 'POST',
+        token
+    }),
+    togglePinUpdate: (token, campaignId, updateId) => request(`/campaigns/${campaignId}/updates/${updateId}/pin`, {
+        method: 'PUT',
+        token
+    }),
+    getUpdateComments: (token, campaignId, updateId) => request(`/campaigns/${campaignId}/updates/${updateId}/comments`, { token }),
+    addUpdateComment: (token, campaignId, updateId, commentData) => request(`/campaigns/${campaignId}/updates/${updateId}/comments`, {
+        method: 'POST',
+        token,
+        body: JSON.stringify(commentData)
+    }),
+    deleteUpdateComment: (token, campaignId, updateId, commentId) => request(`/campaigns/${campaignId}/updates/${updateId}/comments/${commentId}`, {
+        method: 'DELETE',
+        token
+    }),
     createCampaign: (token, campaignData) => request('/campaigns', {
         method: 'POST',
         token,

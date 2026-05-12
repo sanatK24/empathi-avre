@@ -29,14 +29,17 @@ def list_campaigns(
     city: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
-    query = db.query(Campaign).filter(Campaign.status == CampaignStatus.ACTIVE)
+    # Return both ACTIVE and COMPLETED campaigns that have raised money
+    query = db.query(Campaign).filter(
+        (Campaign.status == CampaignStatus.ACTIVE) | (Campaign.status == CampaignStatus.COMPLETED)
+    )
 
     if category:
         query = query.filter(Campaign.category == category)
     if city:
         query = query.filter(Campaign.city == city)
     
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(Campaign.created_at.desc()).offset(skip).limit(limit).all()
 
 
 # ---- STATIC ROUTES MUST come BEFORE /{campaign_id} ----

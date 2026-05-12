@@ -168,6 +168,7 @@ class VendorResponse(BaseModel):
     is_active: bool
     total_completed_orders: int
     created_at: datetime
+    user: Optional['UserResponse'] = None
     class Config:
         from_attributes = True
 
@@ -338,15 +339,36 @@ class DonationHistoryResponse(DonationResponse):
 
 # ============ CAMPAIGN UPDATE SCHEMAS ============
 class CampaignUpdateCreate(BaseModel):
-    title: str = Field(..., min_length=3, max_length=200)
-    content: str = Field(..., min_length=10, max_length=2000)
+    content: str = Field(..., min_length=3, max_length=2000)
+    image_url: Optional[str] = None
+
+class UpdateCommentCreate(BaseModel):
+    text: str = Field(..., min_length=1, max_length=500)
+
+class UpdateCommentResponse(BaseModel):
+    id: int
+    update_id: int
+    user_id: int
+    text: str
+    created_at: datetime
+    user: UserResponse
+    
+    class Config:
+        from_attributes = True
 
 class CampaignUpdateResponse(BaseModel):
     id: int
     campaign_id: int
-    title: str
+    created_by: int
     content: str
+    image_url: Optional[str] = None
+    is_pinned: bool = False
     created_at: datetime
+    creator: UserResponse
+    comments_count: int = 0
+    likes_count: int = 0
+    is_liked_by_user: bool = False
+    
     class Config:
         from_attributes = True
 

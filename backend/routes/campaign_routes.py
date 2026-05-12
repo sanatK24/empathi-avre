@@ -3,7 +3,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from database import get_db
 from models import Campaign, Donation, User, CampaignStatus, UrgencyLevel
-from schemas import CampaignCreate, CampaignUpdate, CampaignResponse, CampaignDetailResponse, DonationResponse, DonationWithDonorResponse
+from schemas import (
+    CampaignCreate, CampaignUpdate, CampaignResponse, CampaignDetailResponse, 
+    DonationResponse, DonationWithDonorResponse, CampaignUpdateCreate, 
+    CampaignUpdateResponse, UpdateCommentCreate, UpdateCommentResponse
+)
 from auth import get_current_user
 from services.audit import AuditService
 from typing import List, Optional
@@ -248,10 +252,10 @@ def get_campaign_donations(
     return result
 
 # ============ CAMPAIGN UPDATES ============
-@router.post("/{campaign_id}/updates", status_code=201)
+@router.post("/{campaign_id}/updates", response_model=CampaignUpdateResponse, status_code=201)
 def create_campaign_update(
     campaign_id: int,
-    update_in: dict,
+    update_in: CampaignUpdateCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -267,8 +271,9 @@ def create_campaign_update(
 
     new_update = CampaignUpdateModel(
         campaign_id=campaign_id,
-        title=update_in.get('title'),
-        content=update_in.get('content')
+        created_by=current_user.id,
+        content=update_in.content,
+        image_url=update_in.image_url
     )
     db.add(new_update)
     db.commit()
@@ -283,22 +288,17 @@ def create_campaign_update(
         details=f"Campaign: {campaign_id}"
     )
 
-    return {
-        "id": new_update.id,
-        "campaign_id": new_update.campaign_id,
-        "title": new_update.title,
-        "content": new_update.content,
-        "created_at": new_update.created_at
-    }
+    return _format_update_response(new_update, current_user.id, db)
 
-@router.get("/{campaign_id}/updates")
+@router.get("/{campaign_id}/updates", response_model=List[CampaignUpdateResponse])
 def get_campaign_updates(
     campaign_id: int,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0)
 ):
-    """Get campaign updates/progress posts"""
+    """Get campaign updates/progress posts (pinned first)"""
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -307,35 +307,23 @@ def get_campaign_updates(
 
     updates = db.query(CampaignUpdateModel).filter(
         CampaignUpdateModel.campaign_id == campaign_id
-    ).order_by(CampaignUpdateModel.created_at.desc()).limit(limit).offset(offset).all()
+    ).order_by(
+        CampaignUpdateModel.is_pinned.desc(),
+        CampaignUpdateModel.created_at.desc()
+    ).limit(limit).offset(offset).all()
 
-    return [
-        {
-            "id": u.id,
-            "campaign_id": u.campaign_id,
-            "title": u.title,
-            "content": u.content,
-            "created_at": u.created_at
-        }
-        for u in updates
-    ]
+    user_id = current_user.id if current_user else None
+    return [_format_update_response(u, user_id, db) for u in updates]
 
-@router.delete("/{campaign_id}/updates/{update_id}")
-def delete_campaign_update(
+@router.post("/{campaign_id}/updates/{update_id}/like")
+def like_update(
     campaign_id: int,
     update_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Delete campaign update (creator only)"""
-    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
-
-    if campaign.created_by != current_user.id:
-        raise HTTPException(status_code=403, detail="Only campaign creator can delete updates")
-
-    from models import CampaignUpdate as CampaignUpdateModel
+    """Like a campaign update"""
+    from models import CampaignUpdate as CampaignUpdateModel, UpdateLike
 
     update = db.query(CampaignUpdateModel).filter(
         CampaignUpdateModel.id == update_id,
@@ -345,18 +333,200 @@ def delete_campaign_update(
     if not update:
         raise HTTPException(status_code=404, detail="Update not found")
 
-    db.delete(update)
+    existing_like = db.query(UpdateLike).filter(
+        UpdateLike.update_id == update_id,
+        UpdateLike.user_id == current_user.id
+    ).first()
+
+    if existing_like:
+        raise HTTPException(status_code=400, detail="Already liked")
+
+    like = UpdateLike(update_id=update_id, user_id=current_user.id)
+    db.add(like)
     db.commit()
 
-    AuditService.log(
-        db,
-        action="campaign_update_deleted",
-        user_id=current_user.id,
-        resource_type="campaign_update",
-        resource_id=update_id
-    )
+    return {"detail": "Liked successfully"}
 
-    return {"detail": "Update deleted"}
+@router.post("/{campaign_id}/updates/{update_id}/unlike")
+def unlike_update(
+    campaign_id: int,
+    update_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Unlike a campaign update"""
+    from models import CampaignUpdate as CampaignUpdateModel, UpdateLike
+
+    update = db.query(CampaignUpdateModel).filter(
+        CampaignUpdateModel.id == update_id,
+        CampaignUpdateModel.campaign_id == campaign_id
+    ).first()
+
+    if not update:
+        raise HTTPException(status_code=404, detail="Update not found")
+
+    like = db.query(UpdateLike).filter(
+        UpdateLike.update_id == update_id,
+        UpdateLike.user_id == current_user.id
+    ).first()
+
+    if not like:
+        raise HTTPException(status_code=400, detail="Not liked")
+
+    db.delete(like)
+    db.commit()
+
+    return {"detail": "Unliked successfully"}
+
+@router.post("/{campaign_id}/updates/{update_id}/comments", response_model=UpdateCommentResponse, status_code=201)
+def add_update_comment(
+    campaign_id: int,
+    update_id: int,
+    comment_in: UpdateCommentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Add a comment to a campaign update"""
+    from models import CampaignUpdate as CampaignUpdateModel, UpdateComment
+
+    update = db.query(CampaignUpdateModel).filter(
+        CampaignUpdateModel.id == update_id,
+        CampaignUpdateModel.campaign_id == campaign_id
+    ).first()
+
+    if not update:
+        raise HTTPException(status_code=404, detail="Update not found")
+
+    new_comment = UpdateComment(
+        update_id=update_id,
+        user_id=current_user.id,
+        text=comment_in.text
+    )
+    db.add(new_comment)
+    db.commit()
+    db.refresh(new_comment)
+
+    return _format_comment_response(new_comment, db)
+
+@router.delete("/{campaign_id}/updates/{update_id}/comments/{comment_id}")
+def delete_update_comment(
+    campaign_id: int,
+    update_id: int,
+    comment_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a comment (creator of comment or campaign creator only)"""
+    from models import CampaignUpdate as CampaignUpdateModel, UpdateComment
+
+    update = db.query(CampaignUpdateModel).filter(
+        CampaignUpdateModel.id == update_id,
+        CampaignUpdateModel.campaign_id == campaign_id
+    ).first()
+
+    if not update:
+        raise HTTPException(status_code=404, detail="Update not found")
+
+    comment = db.query(UpdateComment).filter(
+        UpdateComment.id == comment_id,
+        UpdateComment.update_id == update_id
+    ).first()
+
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    if comment.user_id != current_user.id and update.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
+
+    db.delete(comment)
+    db.commit()
+
+    return {"detail": "Comment deleted"}
+
+@router.put("/{campaign_id}/updates/{update_id}/pin")
+def toggle_pin_update(
+    campaign_id: int,
+    update_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Pin or unpin an update (campaign creator only)"""
+    from models import CampaignUpdate as CampaignUpdateModel
+
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    if campaign.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="Only campaign creator can pin updates")
+
+    update = db.query(CampaignUpdateModel).filter(
+        CampaignUpdateModel.id == update_id,
+        CampaignUpdateModel.campaign_id == campaign_id
+    ).first()
+
+    if not update:
+        raise HTTPException(status_code=404, detail="Update not found")
+
+    update.is_pinned = not update.is_pinned
+    db.commit()
+
+    return {"detail": "Update pinned" if update.is_pinned else "Update unpinned", "is_pinned": update.is_pinned}
+
+# ============ HELPER FUNCTIONS ============
+def _format_update_response(update, user_id: Optional[int], db: Session):
+    """Format a campaign update with counts and user info"""
+    from models import UpdateComment, UpdateLike
+    
+    comments_count = db.query(func.count(UpdateComment.id)).filter(
+        UpdateComment.update_id == update.id
+    ).scalar() or 0
+    
+    likes_count = db.query(func.count(UpdateLike.id)).filter(
+        UpdateLike.update_id == update.id
+    ).scalar() or 0
+    
+    is_liked = False
+    if user_id:
+        is_liked = db.query(UpdateLike).filter(
+            UpdateLike.update_id == update.id,
+            UpdateLike.user_id == user_id
+        ).first() is not None
+    
+    return {
+        "id": update.id,
+        "campaign_id": update.campaign_id,
+        "created_by": update.created_by,
+        "content": update.content,
+        "image_url": update.image_url,
+        "is_pinned": update.is_pinned,
+        "created_at": update.created_at,
+        "creator": {
+            "id": update.creator.id,
+            "name": update.creator.name,
+            "email": update.creator.email,
+            "avatar_url": update.creator.avatar_url
+        },
+        "comments_count": comments_count,
+        "likes_count": likes_count,
+        "is_liked_by_user": is_liked
+    }
+
+def _format_comment_response(comment, db: Session):
+    """Format a comment with user info"""
+    return {
+        "id": comment.id,
+        "update_id": comment.update_id,
+        "user_id": comment.user_id,
+        "text": comment.text,
+        "created_at": comment.created_at,
+        "user": {
+            "id": comment.user.id,
+            "name": comment.user.name,
+            "email": comment.user.email,
+            "avatar_url": comment.user.avatar_url
+        }
+    }
 
 # ============ RELATED CAMPAIGNS ============
 @router.get("/{campaign_id}/related")

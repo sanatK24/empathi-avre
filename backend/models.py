@@ -288,11 +288,41 @@ class CampaignUpdate(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), index=True)
-    title = Column(String)
+    created_by = Column(Integer, ForeignKey("users.id"), index=True)
     content = Column(Text)
+    image_url = Column(Text, nullable=True)
+    is_pinned = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
 
     campaign = relationship("Campaign", back_populates="updates")
+    creator = relationship("User")
+    comments = relationship("UpdateComment", back_populates="update", cascade="all, delete-orphan")
+    likes = relationship("UpdateLike", back_populates="update", cascade="all, delete-orphan")
+
+# ============ UPDATE COMMENTS TABLE ============
+class UpdateComment(Base):
+    __tablename__ = "update_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    update_id = Column(Integer, ForeignKey("campaign_updates.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    text = Column(Text)
+    created_at = Column(DateTime, default=func.now())
+
+    update = relationship("CampaignUpdate", back_populates="comments")
+    user = relationship("User")
+
+# ============ UPDATE LIKES TABLE ============
+class UpdateLike(Base):
+    __tablename__ = "update_likes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    update_id = Column(Integer, ForeignKey("campaign_updates.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    created_at = Column(DateTime, default=func.now())
+
+    update = relationship("CampaignUpdate", back_populates="likes")
+    user = relationship("User")
 
 # ============ EMERGENCY DIRECTORY ============
 class EmergencyContact(Base):
