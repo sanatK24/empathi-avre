@@ -116,38 +116,38 @@ function CampaignsFeedPage() {
       <div className="max-w-7xl mx-auto bg-slate-50 min-h-screen relative flex flex-col">
 
         {/* Top Section - Natural Scrolling */}
-        <div className="bg-slate-50 pt-6 pb-4 px-5 relative z-10">
+        <div className="bg-slate-50 pt-4 md:pt-6 pb-3 md:pb-4 px-4 md:px-5 relative z-10">
           {/* Header */}
-          <div className="flex justify-between items-center mb-5">
+          <div className="flex justify-between items-center mb-4 md:mb-5">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+              <h1 className="text-xl md:text-2xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
                 Discover
               </h1>
-              <p className="text-sm text-slate-500 mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+              <p className="text-xs md:text-sm text-slate-500 mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
                 Help those in need today
               </p>
             </div>
           </div>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearch} className="relative mb-5 flex gap-2">
+          <form onSubmit={handleSearch} className="relative mb-4 md:mb-5 flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <Search className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 md:w-5 h-4 md:h-5" />
               <input
                 type="text"
                 placeholder="Search campaigns..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full h-12 pl-12 pr-4 bg-white rounded-full border border-slate-100 text-sm focus:outline-none focus:border-blue-200 focus:ring-4 focus:ring-blue-50 transition-all text-slate-900 shadow-sm"
+                className="w-full h-10 md:h-12 pl-10 md:pl-12 pr-4 bg-white rounded-full border border-slate-100 text-xs md:text-sm focus:outline-none focus:border-blue-200 focus:ring-4 focus:ring-blue-50 transition-all text-slate-900 shadow-sm"
                 style={{ fontFamily: 'Inter, sans-serif' }}
               />
             </div>
             <button
               type="button"
               onClick={() => setShowFilters(!showFilters)}
-              className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+              className="w-10 md:w-12 h-10 md:h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-50 transition-all"
             >
-              <Filter className="w-5 h-5" />
+              <Filter className="w-4 md:w-5 h-4 md:h-5" />
             </button>
           </form>
 
@@ -211,7 +211,7 @@ function CampaignsFeedPage() {
         </div>
 
         {/* Main Feed */}
-        <div className="px-5 pt-2">
+        <div className="px-4 md:px-5 pt-1 md:pt-2">
           {error && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 text-sm rounded-2xl border border-red-100 flex items-center gap-2">
               <span>{error}</span>
@@ -242,7 +242,7 @@ function CampaignsFeedPage() {
               <p className="text-sm text-slate-500">Try adjusting your filters or search terms.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
               {campaigns.map((campaign) => {
                 const progress = getProgressPercentage(campaign.raised_amount, campaign.goal_amount);
                 return (
@@ -250,10 +250,10 @@ function CampaignsFeedPage() {
                     key={campaign.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-[24px] p-3 shadow-[0_8px_30px_rgb(219,234,254,0.4)] border border-slate-50/50"
+                    className="bg-white rounded-[20px] md:rounded-[24px] p-2 md:p-3 shadow-[0_8px_30px_rgb(219,234,254,0.4)] border border-slate-50/50"
                   >
                     {/* Card Image */}
-                    <div className="relative w-full h-[200px] rounded-[20px] overflow-hidden mb-5 bg-slate-100">
+                    <div className="relative w-full h-[140px] md:h-[200px] rounded-[16px] md:rounded-[20px] overflow-hidden mb-3 md:mb-5 bg-slate-100">
                       {campaign.cover_image ? (
                         <img
                           src={campaign.cover_image}

@@ -119,69 +119,72 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="space-y-10 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 sm:space-y-10 max-w-7xl mx-auto pb-12">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
         <motion.div 
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <h1 className="text-3xl md:text-4xl font-display font-black text-slate-900 tracking-tight uppercase">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-black text-slate-900 tracking-tight uppercase">
             Hello, {profile.fullName || 'User'}
           </h1>
-          <p className="text-slate-500 font-medium text-lg mt-1">
+          <p className="text-slate-500 font-medium text-sm sm:text-lg mt-1">
             Welcome back to EmpathI.
           </p>
         </motion.div>
-        <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-white border border-slate-200">
+        <div className="flex items-center justify-between sm:justify-start gap-3 w-full md:w-auto">
+          <Badge variant="secondary" className="px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] font-black uppercase tracking-widest bg-white border border-slate-200">
             Status: Active
           </Badge>
-          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 shrink-0">
              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
           </div>
         </div>
       </div>
 
       {/* Overview Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         {overviewCards.map((stat, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05 }}
+            className="h-full"
           >
-            <Card className="group hover:ring-2 hover:ring-primary-500/20 transition-all border-none ring-1 ring-slate-100 shadow-soft overflow-hidden">
-              <CardContent className="p-5">
-                <div className={`w-10 h-10 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <stat.icon className="w-5 h-5" />
+            <Card className="group hover:ring-2 hover:ring-primary-500/20 transition-all border-none ring-1 ring-slate-100 shadow-soft overflow-hidden h-full">
+              <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
+                <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform shrink-0`}>
+                  <stat.icon className="w-4 h-4 sm:w-5 sm:h-5" />
                 </div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                <h3 className="text-2xl font-display font-black text-slate-900">{stat.value}</h3>
+                <div>
+                  <h3 className="text-lg sm:text-2xl font-display font-black text-slate-900 leading-tight">{stat.value}</h3>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{stat.label}</p>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         {/* Left Column: Quick Actions & Main Feed */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="lg:col-span-8 space-y-6 sm:space-y-8">
           {/* Quick Actions */}
           <section>
             <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <Zap className="w-4 h-4 text-primary-500" /> Quick Actions
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-4">
               {quickActions.map((action, i) => (
                 <Link to={action.path} key={i}>
-                  <Card className="hover:shadow-premium transition-all border-none ring-1 ring-slate-100 text-center group cursor-pointer h-full">
-                    <CardContent className="p-6 flex flex-col items-center">
-                      <div className={`w-12 h-12 rounded-2xl ${action.color} text-white flex items-center justify-center mb-3 shadow-lg group-hover:scale-110 transition-transform`}>
-                        <action.icon className="w-6 h-6" />
+                  <Card className="hover:shadow-premium transition-all border-none ring-1 ring-slate-100 text-center group cursor-pointer h-full bg-slate-50/50 hover:bg-white">
+                    <CardContent className="p-2 sm:p-6 flex flex-col items-center justify-center h-full">
+                      <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl ${action.color} text-white flex items-center justify-center mb-1.5 sm:mb-3 shadow-lg group-hover:scale-110 transition-transform shrink-0`}>
+                        <action.icon className="w-4 h-4 sm:w-6 sm:h-6" />
                       </div>
-                      <span className="text-xs font-bold text-slate-700 leading-tight">{action.label}</span>
+                      <span className="text-[9px] sm:text-xs font-bold text-slate-700 leading-tight truncate w-full px-1">{action.label}</span>
                     </CardContent>
                   </Card>
                 </Link>
@@ -205,30 +208,30 @@ const UserDashboard = () => {
               <CardContent className="p-0">
                 <div className="divide-y divide-slate-50">
                   {activities.map((item, i) => (
-                    <div key={i} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                    <div key={i} className="p-3 sm:p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors gap-2">
+                      <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
+                        <div className={`w-10 h-10 sm:w-12 sm:h-12 shrink-0 rounded-xl flex items-center justify-center ${
                           item.type === 'request' ? 'bg-blue-50 text-blue-500' :
                           item.type === 'donation' ? 'bg-emerald-50 text-emerald-500' :
                           item.type === 'match' ? 'bg-amber-50 text-amber-500' :
                           'bg-red-50 text-red-500'
                         }`}>
-                          {item.type === 'request' && <ShoppingBag className="w-5 h-5" />}
-                          {item.type === 'donation' && <Heart className="w-5 h-5" />}
-                          {item.type === 'match' && <Users className="w-5 h-5" />}
-                          {item.type === 'emergency' && <Siren className="w-5 h-5" />}
+                          {item.type === 'request' && <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />}
+                          {item.type === 'donation' && <Heart className="w-4 h-4 sm:w-5 sm:h-5" />}
+                          {item.type === 'match' && <Users className="w-4 h-4 sm:w-5 sm:h-5" />}
+                          {item.type === 'emergency' && <Siren className="w-4 h-4 sm:w-5 sm:h-5" />}
                         </div>
-                        <div>
-                          <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">{item.title}</h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.time}</span>
-                            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest capitalize">{item.type}</span>
+                        <div className="min-w-0">
+                          <h4 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-tight truncate">{item.title}</h4>
+                          <div className="flex items-center gap-1 sm:gap-2 mt-0.5 sm:mt-1 truncate">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.time}</span>
+                            <span className="w-1 h-1 bg-slate-200 rounded-full shrink-0"></span>
+                            <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest capitalize truncate">{item.type}</span>
                           </div>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge variant={item.level === 'high' ? 'danger' : item.level === 'medium' ? 'warning' : 'secondary'}>
+                      <div className="flex shrink-0">
+                        <Badge variant={item.level === 'high' ? 'danger' : item.level === 'medium' ? 'warning' : 'secondary'} className="text-[9px] sm:text-[10px] px-2 py-0.5">
                           {item.status}
                         </Badge>
                       </div>
@@ -250,7 +253,7 @@ const UserDashboard = () => {
         </div>
 
         {/* Right Column: Recommendations & Stats */}
-        <div className="lg:col-span-4 space-y-8">
+        <div className="lg:col-span-4 space-y-6 sm:space-y-8">
           {/* Recommendations Card */}
           <Card className="bg-slate-900 text-white border-none shadow-premium overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/20 rounded-full blur-3xl -mr-16 -mt-16"></div>
@@ -261,8 +264,8 @@ const UserDashboard = () => {
               <CardDescription className="text-slate-400 font-medium">Smart AI curated opportunities for you</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 relative z-10">
-              <div className="p-12 text-center text-slate-500 bg-white/5 rounded-2x border border-white/10">
-                <Sparkles className="w-10 h-10 mx-auto mb-4 opacity-20" />
+              <div className="p-6 sm:p-12 text-center text-slate-500 bg-white/5 rounded-2xl border border-white/10">
+                <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-4 opacity-20" />
                 <p className="font-bold uppercase text-[10px] tracking-widest text-white/60">No recommendations yet</p>
                 <p className="text-[10px] mt-2 font-medium italic text-slate-400">Recommendations will appear after your first activity.</p>
               </div>
@@ -281,7 +284,7 @@ const UserDashboard = () => {
               <CardTitle className="text-sm font-black text-slate-400 uppercase tracking-widest">Your Impact</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-               <div className="flex items-center gap-6">
+               <div className="flex items-center gap-4 sm:gap-6">
                   <div className="flex-1">
                     <p className="text-2xl font-black text-slate-900">{stats.lives_impacted || 0}</p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lives Impacted</p>

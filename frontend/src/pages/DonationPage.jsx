@@ -46,14 +46,14 @@ const DonationPage = () => {
   }, [profile.accessToken]);
 
   return (
-    <div className="max-w-6xl mx-auto space-y-10 pb-12">
+    <div className="max-w-6xl mx-auto space-y-6 md:space-y-10 pb-12 px-4">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
         <div>
-          <h1 className="text-4xl font-display font-black text-slate-900 tracking-tight uppercase flex items-center gap-3">
-             <Heart className="w-10 h-10 text-rose-500" /> My Donations
+          <h1 className="text-2xl md:text-4xl font-display font-black text-slate-900 tracking-tight uppercase flex items-center gap-2 md:gap-3">
+             <Heart className="w-6 md:w-10 h-6 md:h-10 text-rose-500" /> My Donations
           </h1>
-          <p className="text-slate-500 font-medium text-lg mt-2">
+          <p className="text-slate-500 font-medium text-sm md:text-lg mt-2">
             Track your contributions and the impact you're making.
           </p>
         </div>
@@ -63,7 +63,7 @@ const DonationPage = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         {[
           { label: 'Total Donated', value: `$${stats.totalDonated.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
           { label: 'Campaigns Support', value: stats.campaignsSupported, icon: TrendingUp, color: 'text-primary-500', bg: 'bg-primary-50' },
@@ -71,7 +71,7 @@ const DonationPage = () => {
           { label: 'Donor Rank', value: stats.rank, icon: Badge, iconComp: <Badge variant="secondary" className="bg-amber-50 text-amber-600 border-none">{stats.rank}</Badge>, isCustom: true }
         ].map((item, i) => (
           <Card key={i} className="border-none ring-1 ring-slate-100 shadow-soft">
-            <CardContent className="p-6">
+            <CardContent className="p-3 md:p-6">
               {item.isCustom ? (
                 <div className="flex flex-col h-full justify-between">
                   {item.iconComp}
@@ -82,11 +82,11 @@ const DonationPage = () => {
                 </div>
               ) : (
                 <>
-                  <div className={`w-10 h-10 rounded-xl ${item.bg} ${item.color} flex items-center justify-center mb-4`}>
-                    <item.icon className="w-5 h-5" />
+                  <div className={`w-8 md:w-10 h-8 md:h-10 rounded-lg md:rounded-xl ${item.bg} ${item.color} flex items-center justify-center mb-2 md:mb-4`}>
+                    <item.icon className="w-4 md:w-5 h-4 md:h-5" />
                   </div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{item.label}</p>
-                  <h3 className="text-2xl font-display font-black text-slate-900 mt-1">{item.value}</h3>
+                  <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{item.label}</p>
+                  <h3 className="text-lg md:text-2xl font-display font-black text-slate-900 mt-1">{item.value}</h3>
                 </>
               )}
             </CardContent>
@@ -96,9 +96,9 @@ const DonationPage = () => {
 
       {/* History Table */}
       <Card className="border-none ring-1 ring-slate-100 shadow-premium overflow-hidden">
-        <CardHeader className="border-b border-slate-50 bg-slate-50/50">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+        <CardHeader className="border-b border-slate-50 bg-slate-50/50 p-4 md:p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <CardTitle className="text-xs md:text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <History className="w-4 h-4" /> Donation History
             </CardTitle>
             <div className="flex items-center gap-2">
@@ -106,28 +106,28 @@ const DonationPage = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+        <CardContent className="p-0 overflow-x-auto">
+          <div className="min-w-full">
             <table className="w-full text-left">
               <thead className="bg-slate-50/50">
                 <tr>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Campaign / Cause</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Receipt</th>
+                  <th className="px-3 md:px-8 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Campaign / Cause</th>
+                  <th className="px-3 md:px-8 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
+                  <th className="px-3 md:px-8 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+                  <th className="px-3 md:px-8 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="px-3 md:px-8 py-3 md:py-4 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Receipt</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {donationHistory.map((don) => (
                   <tr key={don.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-8 py-6">
-                      <div className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">{don.campaign}</div>
-                      <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">ID: {don.id}</div>
+                    <td className="px-3 md:px-8 py-4 md:py-6">
+                      <div className="font-bold text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight text-[11px] md:text-base">{don.campaign}</div>
+                      <div className="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 md:mt-1">ID: {don.id}</div>
                     </td>
-                    <td className="px-8 py-6 text-sm font-semibold text-slate-500">{don.date}</td>
-                    <td className="px-8 py-6 text-sm font-black text-slate-900">${don.amount.toLocaleString()}</td>
-                    <td className="px-8 py-6">
+                    <td className="px-3 md:px-8 py-4 md:py-6 text-xs md:text-sm font-semibold text-slate-500">{don.date}</td>
+                    <td className="px-3 md:px-8 py-4 md:py-6 text-xs md:text-sm font-black text-slate-900">${don.amount.toLocaleString()}</td>
+                    <td className="px-3 md:px-8 py-4 md:py-6">
                       <Badge variant="success" className="bg-emerald-50 text-emerald-600">
                         <CheckCircle2 className="w-3 h-3 mr-1" /> {don.status}
                       </Badge>
@@ -155,12 +155,12 @@ const DonationPage = () => {
       </Card>
 
       {/* Impact Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
          <Card className="bg-indigo-600 text-white border-none shadow-premium overflow-hidden relative">
-            <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mb-16 -mr-16"></div>
-            <CardContent className="p-8">
-               <h3 className="text-lg font-display font-black uppercase mb-4">Cumulative Impact</h3>
-               <p className="text-indigo-100 font-medium mb-6 leading-relaxed">
+            <div className="absolute bottom-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-white/10 rounded-full blur-3xl -mb-12 md:-mb-16 -mr-12 md:-mr-16"></div>
+            <CardContent className="p-5 md:p-8">
+               <h3 className="text-base md:text-lg font-display font-black uppercase mb-3 md:mb-4">Cumulative Impact</h3>
+               <p className="text-indigo-100 font-medium mb-4 md:mb-6 leading-relaxed text-sm md:text-base">
                  {stats.totalDonated > 0 
                    ? `Your contributions have supported ${stats.campaignsSupported} critical initiatives across the network.`
                    : "You haven't supported any campaigns yet. Start your impact journey by browsing active initiatives."}

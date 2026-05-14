@@ -161,50 +161,50 @@ const SmartFeedPage = () => {
     return (
         <div className="bg-slate-50 min-h-screen pb-20">
             {/* Massive Header */}
-            <div className="bg-slate-900 text-white pt-16 pb-24 px-4 sm:px-6 relative overflow-hidden rounded-b-[3rem] shadow-xl">
+            <div className="bg-slate-900 text-white pt-10 md:pt-16 pb-16 md:pb-24 px-4 relative overflow-hidden rounded-b-[2rem] md:rounded-b-[3rem] shadow-xl">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl -mr-48 -mt-48"></div>
                 
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-6 relative z-10">
+                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-end gap-4 md:gap-6 relative z-10">
                     <div className="w-full md:w-auto">
-                        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-4 text-blue-300 border border-white/5">
-                            <TrendingUp className="w-3 h-3" /> Live Community Intelligence
+                        <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] mb-2 md:mb-4 text-blue-300 border border-white/5">
+                            <TrendingUp className="w-2.5 md:w-3 h-2.5 md:h-3" /> Live Community Intelligence
                         </div>
-                        <h1 className="text-3xl md:text-5xl font-display font-black tracking-tight mb-2">Crisis & News Feed</h1>
-                        <p className="text-slate-400 font-medium max-w-xl">
+                        <h1 className="text-2xl md:text-5xl font-display font-black tracking-tight mb-1 md:mb-2">Crisis & News Feed</h1>
+                        <p className="text-slate-400 font-medium max-w-xl text-xs md:text-base">
                             Real-time, AI-curated humanitarian updates and local emergencies near {profile.city || 'you'}.
                         </p>
                     </div>
 
-                    <div className="flex flex-col items-end gap-3 w-full md:w-auto">
+                    <div className="flex flex-col items-end gap-2 md:gap-3 w-full md:w-auto">
                         <button 
                             onClick={handleManualSync}
                             disabled={syncing}
-                            className="text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl transition-colors flex items-center gap-2 backdrop-blur-md"
+                            className="text-[10px] md:text-xs font-bold bg-white/10 hover:bg-white/20 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-lg md:rounded-xl transition-colors flex items-center gap-1.5 md:gap-2 backdrop-blur-md"
                         >
-                            <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin text-blue-400' : ''}`} />
-                            {syncing ? 'Scanning web sources...' : 'Force Sync News'}
+                            <RefreshCw className={`w-3 md:w-4 h-3 md:h-4 ${syncing ? 'animate-spin text-blue-400' : ''}`} />
+                            <span className="hidden md:inline">{syncing ? 'Scanning...' : 'Sync News'}</span><span className="md:hidden">{syncing ? 'Scanning...' : 'Sync'}</span>
                         </button>
                         <div className="relative w-full md:w-72">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <Search className="absolute left-2.5 md:left-3 top-1/2 -translate-y-1/2 w-3.5 md:w-4 h-3.5 md:h-4 text-slate-400" />
                             <input
                                 type="text"
                                 placeholder="Search 'floods in Mumbai'..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-black/30 border border-white/10 text-white placeholder:text-slate-500 rounded-xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-md transition-all"
+                                className="w-full bg-black/30 border border-white/10 text-white placeholder:text-slate-500 rounded-lg md:rounded-xl py-2 md:py-3 pl-9 md:pl-10 pr-3 md:pr-4 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 backdrop-blur-md transition-all"
                             />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 -mt-10 relative z-20">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="max-w-7xl mx-auto px-4 -mt-8 md:-mt-10 relative z-20">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-8">
                     
                     {/* Main Feed */}
-                    <div className="lg:col-span-8 space-y-6">
+                    <div className="lg:col-span-8 space-y-4 md:space-y-6">
                         {/* Categories */}
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                        <div className="flex gap-1.5 md:gap-2 overflow-x-auto no-scrollbar pb-1 md:pb-2">
                             {CATEGORIES.map(cat => (
                                 <button
                                     key={cat}
@@ -223,25 +223,25 @@ const SmartFeedPage = () => {
                         {/* Loading / Empty / Content */}
                         {loading ? (
                             Array(5).fill(0).map((_, i) => (
-                                <div key={i} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex gap-4 animate-pulse">
-                                    <div className="w-24 h-24 sm:w-32 sm:h-32 bg-slate-100 rounded-2xl shrink-0"></div>
-                                    <div className="flex-1 space-y-3 py-2">
-                                        <div className="h-4 bg-slate-100 w-1/4 rounded"></div>
-                                        <div className="h-4 bg-slate-100 w-full rounded"></div>
-                                        <div className="h-4 bg-slate-100 w-3/4 rounded"></div>
+                                <div key={i} className="bg-white rounded-2xl md:rounded-3xl p-3 md:p-5 shadow-sm border border-slate-100 flex gap-3 md:gap-4 animate-pulse">
+                                    <div className="w-16 md:w-24 h-16 md:h-24 md:sm:w-32 md:sm:h-32 bg-slate-100 rounded-xl md:rounded-2xl shrink-0"></div>
+                                    <div className="flex-1 space-y-2 md:space-y-3 py-1 md:py-2">
+                                        <div className="h-3 md:h-4 bg-slate-100 w-1/4 rounded"></div>
+                                        <div className="h-3 md:h-4 bg-slate-100 w-full rounded"></div>
+                                        <div className="h-3 md:h-4 bg-slate-100 w-3/4 rounded"></div>
                                     </div>
                                 </div>
                             ))
                         ) : news.length === 0 ? (
-                            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-                                <Info className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                                <h3 className="text-lg font-bold text-slate-900 mb-1">No News Found</h3>
-                                <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                            <div className="text-center py-12 md:py-20 bg-white rounded-2xl md:rounded-3xl border border-dashed border-slate-200">
+                                <Info className="w-8 md:w-12 h-8 md:h-12 text-slate-200 mx-auto mb-3 md:mb-4" />
+                                <h3 className="text-base md:text-lg font-bold text-slate-900 mb-1">No News Found</h3>
+                                <p className="text-xs md:text-sm text-slate-500 max-w-sm mx-auto px-2">
                                     We couldn't find any relevant updates for "{searchQuery || activeCategory}" right now. Check back later or hit sync.
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-3 md:space-y-4">
                                 <AnimatePresence>
                                     {news.map((article, i) => renderNewsCard(article, i))}
                                 </AnimatePresence>

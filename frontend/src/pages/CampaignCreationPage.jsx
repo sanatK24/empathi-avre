@@ -88,35 +88,35 @@ function CampaignCreationPage() {
   };
 
   return (
-    <section className="max-w-2xl mx-auto p-6">
+    <section className="max-w-2xl mx-auto p-4 md:p-6">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 md:mb-8">
         <button
           onClick={() => navigate('/user/campaigns')}
-          className="flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-4 font-bold"
+          className="flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-3 md:mb-4 font-bold text-sm md:text-base"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} className="md:w-5 md:h-5" />
           Back to Campaigns
         </button>
         <div className="section-head">
-          <h1 className="text-3xl font-bold text-slate-900">Create a Campaign</h1>
-          <p className="text-slate-600 mt-2">Start a campaign to support your community and raise awareness</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Create a Campaign</h1>
+          <p className="text-slate-600 text-sm md:text-base mt-2">Start a campaign to support your community and raise awareness</p>
         </div>
       </div>
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-          <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
-          <div className="text-red-800">{error}</div>
+        <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
+          <AlertCircle size={18} className="text-red-600 flex-shrink-0 mt-0.5 md:w-5 md:h-5" />
+          <div className="text-red-800 text-sm">{error}</div>
         </div>
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-8 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-5 md:p-8 space-y-4 md:space-y-6">
         {/* Campaign Title */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="block text-xs md:text-sm font-semibold text-slate-900 mb-1.5 md:mb-2">
             Campaign Title <span className="text-red-600">*</span>
           </label>
           <input
@@ -126,14 +126,14 @@ function CampaignCreationPage() {
             onChange={handleInputChange}
             placeholder="Enter campaign title"
             maxLength="200"
-            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
           />
-          <p className="text-xs text-slate-500 mt-1">{formData.title.length}/200 characters</p>
+          <p className="text-[10px] md:text-xs text-slate-500 mt-1">{formData.title.length}/200 characters</p>
         </div>
 
         {/* Campaign Description */}
         <div>
-          <label className="block text-sm font-semibold text-slate-900 mb-2">
+          <label className="block text-xs md:text-sm font-semibold text-slate-900 mb-1.5 md:mb-2">
             Description <span className="text-red-600">*</span>
           </label>
           <textarea
@@ -142,10 +142,10 @@ function CampaignCreationPage() {
             onChange={handleInputChange}
             placeholder="Describe your campaign, what help is needed, and the impact it will have"
             maxLength="5000"
-            rows="6"
-            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+            rows="5"
+            className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none text-sm"
           />
-          <p className="text-xs text-slate-500 mt-1">{formData.description.length}/5000 characters</p>
+          <p className="text-[10px] md:text-xs text-slate-500 mt-1">{formData.description.length}/5000 characters</p>
         </div>
 
         {/* Cover Image */}
