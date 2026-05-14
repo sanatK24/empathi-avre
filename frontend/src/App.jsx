@@ -27,7 +27,8 @@ import PublicProfilePage from './pages/PublicProfilePage';
 // Donation and Emergency Pages
 import DonationPage from './pages/DonationPage';
 import RecommendationsPage from './pages/RecommendationsPage';
-import EmergencyHub from './pages/EmergencyHub'; // Assuming I will create/update this
+import EmergencyHub from './pages/EmergencyHub';
+import SmartFeedPage from './pages/SmartFeedPage';
 
 // Vendor Pages
 import InventoryManagement from './pages/InventoryManagement';
@@ -103,6 +104,7 @@ function App() {
           <Route path="profiles/:user_id" element={<PublicProfilePage />} />
           <Route path="donations" element={<DonationPage />} />
           <Route path="emergency" element={<EmergencyHub />} />
+          <Route path="smart-feed" element={<SmartFeedPage />} />
           <Route path="recommendations" element={<RecommendationsPage />} />
           <Route path="marketplace" element={<VendorMarketplace />} />
           <Route path="vendor/:id" element={<VendorStorefront />} />

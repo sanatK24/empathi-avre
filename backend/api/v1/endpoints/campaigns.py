@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query, BackgroundTasks
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Campaign, CampaignStatus
-from schemas import CampaignResponse, CampaignCreate, DonationResponse, DonationHistoryResponse, DonationWithDonorResponse
+from schemas import CampaignResponse, CampaignCreate, DonationResponse, DonationHistoryResponse, DonationWithDonorResponse, CampaignUpdateResponse
 
 from api.deps import get_active_user
 from services.campaign_service import CampaignService
@@ -232,7 +232,7 @@ def get_related_campaigns(campaign_id: int, db: Session = Depends(get_db)):
         Campaign.status == CampaignStatus.ACTIVE
     ).limit(3).all()
 
-@router.get("/{campaign_id}/updates")
+@router.get("/{campaign_id}/updates", response_model=List[CampaignUpdateResponse])
 def get_campaign_updates(campaign_id: int, db: Session = Depends(get_db)):
     from models import CampaignUpdate
     return db.query(CampaignUpdate).filter(CampaignUpdate.campaign_id == campaign_id).order_by(CampaignUpdate.created_at.desc()).all()

@@ -377,8 +377,8 @@ const InventoryManagement = () => {
       </Card>
 
       {showAddForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <Card className="w-full max-w-md bg-white">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <Card className="w-full max-w-md bg-white my-auto shadow-2xl overflow-hidden rounded-3xl">
             <CardHeader className="p-6 border-b border-slate-100">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-display font-black text-slate-900">Add Inventory Item</h2>

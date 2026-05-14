@@ -82,7 +82,7 @@ const CommentsModal = ({ update, campaignId, onClose, onCommentAdded }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 overflow-y-auto flex items-center justify-center p-4"
       onClick={onClose}
     >
       <motion.div
@@ -90,7 +90,7 @@ const CommentsModal = ({ update, campaignId, onClose, onCommentAdded }) => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-[2rem] max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl"
+        className="bg-white rounded-3xl max-w-2xl w-full max-h-fit my-auto flex flex-col shadow-2xl overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-100">

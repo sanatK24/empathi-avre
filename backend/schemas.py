@@ -427,6 +427,7 @@ class PublicFacilityResponse(BaseModel):
         from_attributes = True
 
 # ============ FOLLOW & PROFILE SCHEMAS ============
+
 class PublicUserProfileResponse(BaseModel):
     id: int
     name: str
@@ -474,5 +475,25 @@ class FollowResponse(BaseModel):
     following_id: int
     created_at: datetime
 
+    class Config:
+        from_attributes = True
+
+# ============ NEWS SCHEMAS ============
+class NewsArticleBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    source: str
+    link: str
+    category: str
+    city: Optional[str] = None
+    urgency_score: float = 0.0
+    sentiment: Optional[str] = None
+    published_at: Optional[datetime] = None
+
+class NewsArticleResponse(NewsArticleBase):
+    id: int
+    created_at: datetime
+    
     class Config:
         from_attributes = True

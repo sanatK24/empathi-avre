@@ -1,8 +1,8 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models import User
+from models import User, Request
 from api.deps import get_active_user
 from services.emergency_service import EmergencyService
 from schemas import RequestCreate, RequestResponse, EmergencyContactResponse, PublicFacilityResponse
@@ -15,6 +15,8 @@ def get_active_emergencies(
 ):
     """Public view of active critical needs."""
     return EmergencyService.get_dashboard_data(db)
+
+
 
 @router.post("/request", response_model=RequestResponse)
 def report_emergency(
@@ -43,3 +45,7 @@ def get_facilities(
 ):
     """Search for nearby hospitals, clinics, and trauma centers."""
     return EmergencyService.search_nearby_facilities(db, city, lat, lng, type)
+
+
+
+

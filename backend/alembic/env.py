@@ -1,6 +1,8 @@
+# pyrefly: ignore [missing-import]
 import os
 import sys
 from logging.config import fileConfig
+# pyrefly: ignore [missing-import]
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
@@ -10,6 +12,7 @@ sys.path.insert(0, os.getcwd())
 # Import models
 from database import Base
 from models import User, Vendor, Inventory, Request, Match, AuditLog, ScoringConfig, Campaign, Donation, CampaignUpdate
+from config import settings
 
 # Alembic Config
 config = context.config
@@ -21,7 +24,7 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def get_url():
-    return os.getenv("DATABASE_URL", "sqlite:///./avre.db")
+    return settings.DATABASE_URL
 
 def run_migrations_offline() -> None:
     url = get_url()

@@ -133,8 +133,8 @@ const VendorStorefront = () => {
       </button>
 
       {vendor && (
-        <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-premium ring-1 ring-slate-100 mb-12 flex flex-col md:flex-row gap-8 items-center">
-          <div className="w-40 h-40 rounded-[2.5rem] overflow-hidden flex-shrink-0 bg-slate-50 border border-slate-100 shadow-inner">
+        <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-premium ring-1 ring-slate-100 mb-12 flex flex-col md:flex-row gap-8 items-center">
+          <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl md:rounded-[2.5rem] overflow-hidden flex-shrink-0 bg-slate-50 border border-slate-100 shadow-inner">
             <img 
               src={vendor.image_url || `https://images.unsplash.com/photo-${1580000000000 + (vendor.id * 1000)}?auto=format&fit=crop&w=400&h=400&q=80`} 
               alt={vendor.shop_name}
@@ -142,26 +142,26 @@ const VendorStorefront = () => {
             />
           </div>
           <div className="flex-1 text-center md:text-left space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <h1 className="text-4xl font-display font-black text-slate-900 uppercase tracking-tight">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+              <h1 className="text-2xl md:text-4xl font-display font-black text-slate-900 uppercase tracking-tight">
                 {vendor.shop_name}
               </h1>
               <div className="flex items-center justify-center md:justify-start gap-2">
                 <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-xl flex items-center gap-1">
-                  <span className="text-lg font-black">{vendor.rating}</span>
-                  <Star className="w-4 h-4 fill-emerald-700" />
+                  <span className="text-sm md:text-lg font-black">{vendor.rating}</span>
+                  <Star className="w-3 h-3 md:w-4 md:h-4 fill-emerald-700" />
                 </div>
-                <span className="text-xs font-bold text-slate-400">({vendor.reviews} Reviews)</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">({vendor.reviews} Reviews)</span>
               </div>
             </div>
             
-            <div className="flex flex-wrap justify-center md:justify-start items-center gap-6 text-slate-500 font-medium">
-              <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-primary-500" /> {vendor.area}, {vendor.city}</p>
-              <p className="flex items-center gap-2"><Clock className="w-4 h-4 text-amber-500" /> {vendor.avg_response_time} mins Delivery</p>
-              <p className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-emerald-500" /> Verified Provider</p>
+            <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-6 gap-y-2 text-slate-500 font-medium text-xs md:text-base">
+              <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-primary-500" /> {vendor.area}</p>
+              <p className="flex items-center gap-2"><Clock className="w-4 h-4 text-amber-500" /> {vendor.avg_response_time}m Delivery</p>
+              <p className="flex items-center gap-2 text-emerald-600"><ShieldCheck className="w-4 h-4" /> Verified</p>
             </div>
           </div>
-          <div className="flex-shrink-0">
+          <div className="hidden md:block flex-shrink-0">
              <Button 
                variant="secondary" 
                className="rounded-2xl px-8 h-14 bg-slate-900 text-white border-none hover:bg-slate-800"

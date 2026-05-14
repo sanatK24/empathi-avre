@@ -1,6 +1,8 @@
+# pyrefly: ignore [missing-import]
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, ForeignKey, Text, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+# pyrefly: ignore [missing-import]
 from database import Base
 import enum
 from datetime import datetime
@@ -88,8 +90,8 @@ class User(Base):
     emergency_contacts = relationship("UserEmergencyContact", back_populates="user", cascade="all, delete-orphan")
 
     # Follow relationships
-    followers = relationship("Follow", foreign_keys="Follow.following_id", backref="following_user", cascade="all, delete-orphan")
-    following = relationship("Follow", foreign_keys="Follow.follower_id", backref="follower_user", cascade="all, delete-orphan")
+    followers = relationship("Follow", foreign_keys="Follow.following_id", back_populates="following", cascade="all, delete-orphan")
+    following = relationship("Follow", foreign_keys="Follow.follower_id", back_populates="follower", cascade="all, delete-orphan")
 
 # ============ VENDORS TABLE ============
 class Vendor(Base):
@@ -375,8 +377,8 @@ class Follow(Base):
     created_at = Column(DateTime, default=func.now())
 
     # Relationships
-    follower = relationship("User", foreign_keys=[follower_id], uselist=False)
-    following = relationship("User", foreign_keys=[following_id], uselist=False)
+    follower = relationship("User", foreign_keys=[follower_id], back_populates="following")
+    following = relationship("User", foreign_keys=[following_id], back_populates="followers")
 
     # Prevent duplicate follows with unique constraint
     __table_args__ = (
@@ -401,4 +403,19 @@ class SavedCampaign(Base):
         Index('ix_saved_campaign_unique', 'user_id', 'campaign_id', unique=True),
     )
 
+# ============ NEWS FEED TABLE ============
+class NewsArticle(Base):
+    __tablename__ = "news_articles"
 
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, index=True)
+    description = Column(Text, nullable=True)
+    image_url = Column(Text, nullable=True)
+    source = Column(String, index=True)
+    link = Column(String, unique=True, index=True)
+    category = Column(String, index=True)
+    city = Column(String, index=True, nullable=True)
+    urgency_score = Column(Float, default=0.0)
+    sentiment = Column(String, nullable=True)
+    published_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=func.now())

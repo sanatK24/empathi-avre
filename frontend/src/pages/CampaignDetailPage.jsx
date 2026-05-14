@@ -217,13 +217,16 @@ function CampaignDetailPage() {
             {/* Cover Image & Title */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               {campaign.cover_image ? (
-                <img
-                  src={campaign.cover_image}
-                  alt={campaign.title}
-                  className="w-full h-96 object-cover rounded-lg"
-                />
+                <div className="relative aspect-[16/9] md:aspect-auto md:h-96 overflow-hidden rounded-3xl shadow-xl">
+                  <img
+                    src={campaign.cover_image}
+                    alt={campaign.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
+                </div>
               ) : (
-                <div className="w-full h-96 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center">
+                <div className="w-full aspect-[16/9] md:aspect-auto md:h-96 bg-primary-gradient rounded-3xl flex items-center justify-center shadow-xl">
                   <Heart size={64} className="text-white opacity-50" />
                 </div>
               )}
@@ -231,43 +234,37 @@ function CampaignDetailPage() {
 
             {/* Title & Meta */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-slate-900 mb-3">{campaign.title}</h1>
+              <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+                <div className="flex-1 space-y-4">
+                  <h1 className="text-3xl md:text-4xl font-display font-black text-slate-900 tracking-tight leading-tight uppercase break-words">{campaign.title}</h1>
                   <div className="flex flex-wrap gap-2 items-center">
-                    <Badge className={`${getUrgencyColor(campaign.urgency_level)}`}>
-                      {campaign.urgency_level.charAt(0).toUpperCase() + campaign.urgency_level.slice(1)}
+                    <Badge className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", getUrgencyColor(campaign.urgency_level))}>
+                      {campaign.urgency_level}
                     </Badge>
                     {campaign.verified && (
-                      <Badge className="bg-green-100 text-green-800">✓ Verified</Badge>
+                      <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[10px] font-black uppercase tracking-widest flex-shrink-0">✓ Verified</Badge>
                     )}
-                    {campaign.is_flagged && (
-                      <Badge className="bg-red-100 text-red-800">⚠ Flagged for Review</Badge>
-                    )}
-                    {isFunded && (
-                      <Badge className="bg-blue-100 text-blue-800">✓ Fully Funded</Badge>
-                    )}
-                    <span className="text-sm font-medium text-slate-500 ml-1">
-                      by <button
+                    <span className="text-sm font-bold text-slate-400 break-words w-full sm:w-auto">
+                      BY <button
                         onClick={() => navigate(`/user/profiles/${campaign.created_by}`)}
-                        className="text-slate-900 font-bold hover:text-primary-500 hover:underline cursor-pointer transition-colors"
+                        className="text-slate-900 font-black hover:text-primary-500 transition-colors uppercase"
                       >
-                        {campaign.creator_name || 'Anonymous Creator'}
+                        {campaign.creator_name || 'Anonymous'}
                       </button>
                     </span>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {profile.isAuthenticated && (
                     <SaveCampaignButton campaignId={campaign.id} token={profile.accessToken} />
                   )}
                   {isCreator && (
                     <>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg">
+                      <button className="p-2 hover:bg-slate-100 rounded-lg flex-shrink-0">
                         <Edit size={20} className="text-slate-600" />
                       </button>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg">
+                      <button className="p-2 hover:bg-slate-100 rounded-lg flex-shrink-0">
                         <Share2 size={20} className="text-slate-600" />
                       </button>
                     </>
@@ -277,45 +274,47 @@ function CampaignDetailPage() {
             </motion.div>
 
             {/* Progress Section */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-lg p-6 border border-slate-200">
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Raised</p>
-                  <p className="text-2xl font-bold text-indigo-600">₹{campaign.raised_amount?.toFixed(0) || 0}</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white rounded-[2rem] p-8 border-none ring-1 ring-slate-100 shadow-soft">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Raised</p>
+                  <p className="text-3xl font-display font-black text-primary-500 tracking-tight">₹{campaign.raised_amount?.toLocaleString() || 0}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Goal</p>
-                  <p className="text-2xl font-bold text-slate-900">₹{campaign.goal_amount?.toFixed(0) || 0}</p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Goal</p>
+                  <p className="text-3xl font-display font-black text-slate-900 tracking-tight">₹{campaign.goal_amount?.toLocaleString() || 0}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-slate-600 mb-1">Progress</p>
-                  <p className="text-2xl font-bold text-slate-900">{Math.round(progress)}%</p>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progress</p>
+                  <p className="text-3xl font-display font-black text-slate-900 tracking-tight">{Math.round(progress)}%</p>
                 </div>
               </div>
 
-              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden mb-4">
-                <div
-                  className="bg-gradient-to-r from-indigo-500 to-indigo-600 h-full transition-all rounded-full"
-                  style={{ width: `${Math.min(progress, 100)}%` }}
+              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden mb-6">
+                <motion.div
+                  className="bg-primary-gradient h-full rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.min(progress, 100)}%` }}
+                  transition={{ duration: 1, delay: 0.5 }}
                 />
               </div>
 
               {stats && (
-                <div className="grid grid-cols-2 gap-4 text-sm text-slate-600">
-                  <div>{stats.total_donations || 0} donations</div>
-                  <div>{stats.unique_donors || 0} supporters</div>
+                <div className="flex items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <span className="flex items-center gap-1.5"><Users className="w-3 h-3" /> {stats.unique_donors || 0} Supporters</span>
+                  <span className="flex items-center gap-1.5"><Heart className="w-3 h-3" /> {stats.total_donations || 0} Donations</span>
                 </div>
               )}
             </motion.div>
 
             {/* Tabs */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <div className="flex gap-4 border-b border-slate-200 mb-6">
+              <div className="flex gap-2 sm:gap-4 border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar whitespace-nowrap">
                 {['overview', 'updates', 'donors'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-3 font-medium transition-colors ${
+                    className={`px-3 sm:px-4 py-3 font-medium transition-colors text-sm sm:text-base ${
                       activeTab === tab
                         ? 'text-indigo-600 border-b-2 border-indigo-600'
                         : 'text-slate-600 hover:text-slate-900'
@@ -423,14 +422,19 @@ function CampaignDetailPage() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Donation Button */}
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.4 }}
+              className="sticky bottom-6 md:static z-50"
+            >
               <Button
                 onClick={() => setShowDonationModal(true)}
                 disabled={isFunded}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 disabled:cursor-not-allowed py-3 text-lg font-semibold flex items-center justify-center gap-2"
+                className="w-full h-16 rounded-2xl bg-primary-500 hover:bg-primary-600 text-white font-black uppercase tracking-widest text-sm shadow-2xl shadow-primary-500/40 flex items-center justify-center gap-3 border-4 border-white md:border-none"
               >
-                <Heart size={20} />
-                {isFunded ? 'Fully Funded' : 'Donate Now'}
+                <Heart size={20} className="fill-white" />
+                {isFunded ? 'Goal Achieved' : 'Support This Cause'}
               </Button>
             </motion.div>
 

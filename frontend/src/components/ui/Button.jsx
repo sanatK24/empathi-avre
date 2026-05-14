@@ -7,6 +7,7 @@ const Button = React.forwardRef(({
   variant = 'primary', 
   size = 'md', 
   loading = false,
+  fullWidth = false,
   children,
   disabled,
   ...props 
@@ -32,6 +33,7 @@ const Button = React.forwardRef(({
       disabled={disabled || loading}
       className={cn(
         'inline-flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:opacity-50 disabled:cursor-not-allowed',
+        fullWidth && 'w-full',
         variants[variant],
         sizes[size],
         className

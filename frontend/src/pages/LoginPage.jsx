@@ -141,9 +141,9 @@ const LoginPage = () => {
           animate={{ opacity: 1, x: 0 }}
           className="w-full max-w-md"
         >
-          <div className="mb-10 text-center lg:text-left">
-            <h1 className="text-3xl font-display font-black text-slate-900 mb-3 tracking-tight">Welcome Back</h1>
-            <p className="text-slate-500 font-medium">Log in to manage your matches, donations and campaigns.</p>
+          <div className="mb-10 text-center lg:text-left px-4 md:px-0">
+            <h1 className="text-3xl md:text-4xl font-display font-black text-slate-900 mb-3 tracking-tight uppercase">Welcome Back</h1>
+            <p className="text-slate-500 font-medium text-sm md:text-base">Log in to manage your matches, donations and campaigns.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, Mail, Phone, Building2, FileText, Save, Trash2, CheckCircle2, 
@@ -17,11 +18,25 @@ import { cn } from '../utils/cn';
 
 const SharedProfileDashboard = () => {
     const { profile, updateProfile, logout, switchRole } = useAppContext();
+    const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [status, setStatus] = useState({ type: null, message: '' });
     const [stats, setStats] = useState(null);
-    const [activeTab, setActiveTab] = useState('general');
+    const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'general');
+
+    // Hoisted states for Saved Campaigns
+    const [savedCampaigns, setSavedCampaigns] = useState([]);
+    const [savedLoading, setSavedLoading] = useState(true);
+
+    useEffect(() => {
+        if (profile?.accessToken) {
+            apiService.getSavedCampaigns(profile.accessToken)
+                .then(data => setSavedCampaigns(Array.isArray(data) ? data : []))
+                .catch(err => console.error('Failed to load saved campaigns:', err))
+                .finally(() => setSavedLoading(false));
+        }
+    }, [profile?.accessToken]);
 
     // Form states
     const [formData, setFormData] = useState({
@@ -308,68 +323,69 @@ const SharedProfileDashboard = () => {
 
     const renderHeader = () => (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
-            <div className="flex items-center gap-6">
-                <div className="relative group">
-                    <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-primary-500 to-primary-700 flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-primary-500/20 group-hover:scale-105 transition-transform">
-                        {formData.fullName.charAt(0) || 'U'}
-                    </div>
-                    <button className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl shadow-lg border border-slate-100 text-slate-500 hover:text-primary-500 transition-colors">
-                        <Palette className="w-4 h-4" />
-                    </button>
+        <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
+            <div className="relative group shrink-0">
+                <div className="w-20 h-20 md:w-24 md:h-24 rounded-3xl bg-primary-gradient flex items-center justify-center text-white font-black text-2xl md:text-3xl shadow-xl shadow-primary-500/20 group-hover:scale-105 transition-transform">
+                    {formData.fullName.charAt(0) || 'U'}
                 </div>
-                <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl font-display font-black text-slate-900 tracking-tight">
-                            {formData.fullName || 'Guest User'}
-                        </h1>
+                <button className="absolute -bottom-2 -right-2 p-2 bg-white rounded-xl shadow-lg border border-slate-100 text-slate-500 hover:text-primary-500 transition-colors">
+                    <Palette className="w-3 h-3 md:w-4 md:h-4" />
+                </button>
+            </div>
+            <div className="text-center md:text-left">
+                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-1">
+                    <h1 className="text-2xl md:text-3xl font-display font-black text-slate-900 tracking-tight uppercase">
+                        {formData.fullName || 'Guest User'}
+                    </h1>
+                    <div className="flex items-center justify-center gap-2">
                         <Badge variant={profile.isVerified ? 'success' : 'secondary'} className="h-6">
                             {profile.isVerified ? <ShieldCheck className="w-3 h-3 mr-1" /> : null}
                             {profile.userRole === 'vendor' ? 'Vendor' : 'User'}
                         </Badge>
                         {profile.isVendor && profile.canSwitchRole && (
                             <Badge variant="outline" className="bg-primary-50 text-primary-600 border-primary-200 uppercase text-[10px] font-black tracking-tighter">
-                                Dual Role Active
+                                Dual Role
                             </Badge>
                         )}
                     </div>
-                    <p className="text-slate-500 font-medium flex items-center gap-2">
-                        <Mail className="w-4 h-4" />
-                        {formData.email}
-                    </p>
-                    <div className="flex items-center gap-4 mt-3">
-                        <Badge variant="ghost" className="bg-slate-100 text-slate-600">
-                            Status: Active
-                        </Badge>
-                        <p className="text-xs font-bold text-slate-400 flex items-center gap-1 uppercase tracking-wider">
-                            <Clock className="w-3 h-3" />
-                            Joined {new Date(profile.createdAt || Date.now()).toLocaleDateString()}
-                        </p>
-                    </div>
+                </div>
+                <p className="text-slate-400 font-medium flex items-center justify-center md:justify-start gap-2 text-sm">
+                    <Mail className="w-4 h-4" />
+                    {formData.email}
+                </p>
+                <div className="flex items-center justify-center md:justify-start gap-4 mt-3">
+                    <Badge variant="ghost" className="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-widest border border-slate-100">
+                        Status: Active
+                    </Badge>
                 </div>
             </div>
+        </div>
             
-            <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+            <Button 
+                variant="secondary" 
+                fullWidth
+                className="md:w-auto shadow-none border-slate-100 h-12"
+                icon={<Eye className="w-4 h-4" />}
+                onClick={() => setStatus({ type: 'info', message: 'Generating public preview... Your profile is currently set to public.' })}
+            >
+                Preview
+            </Button>
+            {profile.canSwitchRole && (
                 <Button 
-                    variant="outline" 
-                    icon={<Eye className="w-4 h-4" />}
-                    onClick={() => setStatus({ type: 'info', message: 'Generating public preview... Your profile is currently set to public.' })}
+                    variant="secondary"
+                    fullWidth
+                    className="md:w-auto bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-indigo-200 h-12"
+                    icon={<Activity className="w-4 h-4" />}
+                    onClick={() => switchRole(profile.userRole === 'vendor' ? 'donor' : 'vendor')}
                 >
-                    Public View
+                    Switch Role
                 </Button>
-                {profile.canSwitchRole && (
-                    <Button 
-                        variant="secondary"
-                        className="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-indigo-200"
-                        icon={<Activity className="w-4 h-4" />}
-                        onClick={() => switchRole(profile.userRole === 'vendor' ? 'donor' : 'vendor')}
-                    >
-                        Switch to {profile.userRole === 'vendor' ? 'User' : 'Vendor'} View
-                    </Button>
-                )}
-                <Button variant="primary" icon={<Save className="w-4 h-4" />} loading={saving} onClick={handleSave}>
-                    Save Changes
-                </Button>
-            </div>
+            )}
+            <Button variant="primary" fullWidth className="md:w-auto h-12" icon={<Save className="w-4 h-4" />} loading={saving} onClick={handleSave}>
+                Save Changes
+            </Button>
+        </div>
         </div>
     );
 
@@ -379,9 +395,10 @@ const SharedProfileDashboard = () => {
                 { id: 'general', label: 'General', icon: User },
                 { id: 'security', label: 'Security', icon: Lock },
                 { id: 'preferences', label: 'Preferences', icon: Bell },
+                { id: 'medical', label: 'Medical Profile', icon: Heart },
                 { id: 'activity', label: 'Activity', icon: TrendingUp },
                 profile.role !== 'vendor' && { id: 'saved_campaigns', label: 'Saved Campaigns', icon: Heart },
-                profile.isVendor 
+                profile.isVendor
                     ? { id: 'role', label: 'Vendor Settings', icon: Store }
                     : { id: 'vendor_application', label: 'Become a Vendor', icon: Sparkles }
             ].filter(Boolean).map(tab => (
@@ -390,8 +407,8 @@ const SharedProfileDashboard = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
                         "flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all",
-                        activeTab === tab.id 
-                            ? "bg-white text-primary-600 shadow-sm" 
+                        activeTab === tab.id
+                            ? "bg-white text-primary-600 shadow-sm"
                             : "text-slate-500 hover:text-slate-900"
                     )}
                 >
@@ -582,6 +599,119 @@ const SharedProfileDashboard = () => {
         </div>
     );
 
+    const renderMedicalProfile = () => (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Card className="p-8">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-red-500" />
+                    Medical Information
+                </h3>
+                <div className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-1">Blood Group</label>
+                        <select
+                            value={formData.bloodGroup}
+                            onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
+                            className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-medium focus:ring-2 focus:ring-red-500 outline-none"
+                        >
+                            <option value="">Select Blood Group</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
+                    <Input
+                        label="Preferred Hospital"
+                        value={formData.preferredHospital}
+                        onChange={(e) => handleInputChange('preferredHospital', e.target.value)}
+                        placeholder="Enter your preferred hospital"
+                        icon={<MapPin className="w-4 h-4" />}
+                    />
+                </div>
+            </Card>
+
+            <Card className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <Users className="w-5 h-5 text-primary-500" />
+                        Emergency Contacts
+                    </h3>
+                    {formData.emergencyContacts?.length > 0 && (
+                        <Badge className="bg-emerald-50 text-emerald-600 border-emerald-200">
+                            {formData.emergencyContacts.length} Added
+                        </Badge>
+                    )}
+                </div>
+
+                <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
+                    {formData.emergencyContacts?.length > 0 ? (
+                        formData.emergencyContacts.map((contact, idx) => (
+                            <div key={idx} className="p-4 bg-slate-50 rounded-lg border border-slate-200 flex items-between justify-between group hover:bg-slate-100 transition-colors">
+                                <div className="flex-1">
+                                    <p className="font-bold text-slate-900 text-sm">{contact.name}</p>
+                                    <p className="text-xs text-slate-500 font-medium">{contact.category}</p>
+                                    <p className="text-sm text-primary-600 font-bold mt-1">{contact.phone}</p>
+                                </div>
+                                <button
+                                    onClick={() => handleDeleteContact(contact.id)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-100 rounded-lg text-red-600"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-sm text-slate-500 italic">No emergency contacts added yet</p>
+                    )}
+                </div>
+
+                <div className="space-y-4 pt-4 border-t border-slate-200">
+                    <h4 className="text-sm font-bold text-slate-900">Add New Contact</h4>
+                    <Input
+                        label="Name"
+                        value={formData.newContact.name}
+                        onChange={(e) => handleNestedChange('newContact', 'name', e.target.value)}
+                        placeholder="Contact name"
+                        icon={<User className="w-4 h-4" />}
+                    />
+                    <Input
+                        label="Phone"
+                        value={formData.newContact.phone}
+                        onChange={(e) => handleNestedChange('newContact', 'phone', e.target.value)}
+                        placeholder="Phone number"
+                        icon={<Phone className="w-4 h-4" />}
+                    />
+                    <div className="space-y-2">
+                        <label className="text-sm font-bold text-slate-700 ml-1">Relationship</label>
+                        <select
+                            value={formData.newContact.category}
+                            onChange={(e) => handleNestedChange('newContact', 'category', e.target.value)}
+                            className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-medium focus:ring-2 focus:ring-primary-500 outline-none"
+                        >
+                            <option value="Family">Family</option>
+                            <option value="Friend">Friend</option>
+                            <option value="Doctor">Doctor</option>
+                            <option value="Caregiver">Caregiver</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <Button
+                        onClick={handleAddContact}
+                        className="w-full"
+                        disabled={!formData.newContact.name || !formData.newContact.phone}
+                    >
+                        Add Contact
+                    </Button>
+                </div>
+            </Card>
+        </div>
+    );
+
     const renderActivitySummary = () => {
         const roleStats = {
             requester: [
@@ -650,18 +780,6 @@ const SharedProfileDashboard = () => {
     };
 
     const renderSavedCampaigns = () => {
-        const [savedCampaigns, setSavedCampaigns] = useState([]);
-        const [savedLoading, setSavedLoading] = useState(true);
-
-        useEffect(() => {
-            if (profile.accessToken) {
-                apiService.getSavedCampaigns(profile.accessToken)
-                    .then(data => setSavedCampaigns(Array.isArray(data) ? data : []))
-                    .catch(err => console.error('Failed to load saved campaigns:', err))
-                    .finally(() => setSavedLoading(false));
-            }
-        }, [profile.accessToken]);
-
         return (
             <Card className="p-8">
                 <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -947,12 +1065,12 @@ const SharedProfileDashboard = () => {
                 <Sparkles className="w-32 h-32 text-primary-500" />
             </div>
             <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-8">
+                <div className="flex items-center gap-5 mb-10">
                     <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-600 shadow-sm">
                         <Store className="w-8 h-8" />
                     </div>
                     <div>
-                        <h3 className="text-2xl font-display font-black text-slate-900 tracking-tight">Become a Vendor</h3>
+                        <h3 className="text-2xl font-display font-black text-slate-900 tracking-tight uppercase">Become a Vendor</h3>
                         <p className="text-slate-500 font-medium italic text-sm">Join the EmpathI network to fulfill critical resource requests.</p>
                     </div>
                 </div>
@@ -1046,6 +1164,7 @@ const SharedProfileDashboard = () => {
                         {activeTab === 'general' && renderGeneralInfo()}
                         {activeTab === 'security' && renderSecuritySettings()}
                         {activeTab === 'preferences' && renderPreferences()}
+                        {activeTab === 'medical' && renderMedicalProfile()}
                         {activeTab === 'activity' && renderActivitySummary()}
                         {activeTab === 'saved_campaigns' && renderSavedCampaigns()}
                         {activeTab === 'vendor_application' && renderVendorApplication()}

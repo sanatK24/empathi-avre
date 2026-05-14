@@ -2,11 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
-import Badge from '../components/ui/Badge';
-import Button from '../components/ui/Button';
-import SaveCampaignButton from '../components/SaveCampaignButton';
-import { Heart, MapPin, AlertCircle, Search, Filter, Plus } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Heart, MapPin, Search, Filter, Bell } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import DonationModal from '../components/DonationModal';
 
 function CampaignsFeedPage() {
@@ -23,15 +20,14 @@ function CampaignsFeedPage() {
     city: '',
     urgency: '',
     sort_by: 'created_at'
-
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [activeCategory, setActiveCategory] = useState('All');
 
   const fetchCampaigns = async (newFilters = filters) => {
     try {
       setLoading(true);
       setError(null);
-
       const campaignsData = await apiService.getCampaigns(profile?.accessToken, newFilters);
       setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
     } catch (err) {
@@ -52,7 +48,6 @@ function CampaignsFeedPage() {
       fetchCampaigns();
       return;
     }
-
     try {
       setLoading(true);
       const results = await apiService.searchCampaigns(profile?.accessToken, searchQuery);
@@ -75,14 +70,12 @@ function CampaignsFeedPage() {
     setShowFilters(false);
   };
 
-  const getUrgencyColor = (urgency) => {
-    const colors = {
-      low: 'bg-blue-100 text-blue-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      high: 'bg-orange-100 text-orange-800',
-      critical: 'bg-red-100 text-red-800'
-    };
-    return colors[urgency] || colors.medium;
+  const handleCategoryClick = (cat) => {
+    setActiveCategory(cat);
+    const catValue = cat === 'All' ? '' : cat.toLowerCase();
+    const newFilters = { ...filters, category: catValue };
+    setFilters(newFilters);
+    fetchCampaigns(newFilters);
   };
 
   const getProgressPercentage = (raised, goal) => {
@@ -103,7 +96,6 @@ function CampaignsFeedPage() {
       navigate('/login', { state: { from: window.location.pathname } });
       return;
     }
-    // Navigate relatively if in a dashboard context, or globally if public
     const currentPath = window.location.pathname;
     if (currentPath.includes('/user/')) {
       navigate(`/user/campaigns/${campaign.id}`);
@@ -119,247 +111,242 @@ function CampaignsFeedPage() {
   const categories = ['Medical', 'Food', 'Shelter', 'Education', 'Infrastructure', 'Other'];
   const urgencies = ['Low', 'Medium', 'High', 'Critical'];
 
-  if (loading && campaigns.length === 0) {
-    return (
-      <section className="p-6">
-        <div className="animate-pulse space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 bg-slate-200 rounded-lg"></div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
   return (
-    <section className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="section-head mb-8">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">Campaigns</h1>
-            <p className="text-slate-600 mt-2">Support communities and causes that need help</p>
+    <div className="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900">
+      <div className="max-w-7xl mx-auto bg-slate-50 min-h-screen relative flex flex-col">
+
+        {/* Top Section - Natural Scrolling */}
+        <div className="bg-slate-50 pt-6 pb-4 px-5 relative z-10">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-5">
+            <div>
+              <h1 className="text-2xl font-semibold text-slate-900" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                Discover
+              </h1>
+              <p className="text-sm text-slate-500 mt-0.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Help those in need today
+              </p>
+            </div>
           </div>
-          {profile?.isAuthenticated && (
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/user/campaigns/my')}
-                className="flex items-center gap-2 border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-5"
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearch} className="relative mb-5 flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search campaigns..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-12 pl-12 pr-4 bg-white rounded-full border border-slate-100 text-sm focus:outline-none focus:border-blue-200 focus:ring-4 focus:ring-blue-50 transition-all text-slate-900 shadow-sm"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100 text-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-50 transition-all"
+            >
+              <Filter className="w-5 h-5" />
+            </button>
+          </form>
+
+          {/* Filters Dropdown (Mobile Optimized) */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden mb-4"
               >
-                <Heart className="w-4 h-4 text-rose-500 fill-rose-500/10" />
-                My Campaigns
-              </Button>
-              <Button
-                onClick={() => navigate('/user/campaigns/create')}
-                className="flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-bold px-6 shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
+                <div className="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider" style={{ fontFamily: 'Inter, sans-serif' }}>Urgency</label>
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                      <button
+                        onClick={() => handleFilterChange('urgency', '')}
+                        className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${!filters.urgency ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600'}`}
+                      >
+                        All
+                      </button>
+                      {urgencies.map((urg) => (
+                        <button
+                          key={urg}
+                          onClick={() => handleFilterChange('urgency', urg.toLowerCase())}
+                          className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filters.urgency === urg.toLowerCase() ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600'}`}
+                        >
+                          {urg}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={applyFilters}
+                    className="w-full py-3 bg-blue-600 text-white rounded-xl text-sm font-semibold shadow-md shadow-blue-200"
+                  >
+                    Apply Filters
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Category Pills */}
+          <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 -mx-5 px-5">
+            {['All', ...categories].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => handleCategoryClick(cat)}
+                className={`whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium transition-all ${activeCategory === cat
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                  : 'bg-white text-slate-600 border border-slate-100 hover:bg-slate-50'
+                  }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
               >
-                <Plus className="w-5 h-5" />
-                Create Campaign
-              </Button>
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Feed */}
+        <div className="px-5 pt-2">
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 text-red-600 text-sm rounded-2xl border border-red-100 flex items-center gap-2">
+              <span>{error}</span>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-[24px] p-3 shadow-sm border border-slate-50 animate-pulse">
+                  <div className="w-full h-48 bg-slate-200 rounded-[20px] mb-4"></div>
+                  <div className="h-6 bg-slate-200 rounded w-3/4 mb-4 ml-2"></div>
+                  <div className="h-4 bg-slate-200 rounded w-1/2 mb-4 ml-2"></div>
+                  <div className="h-2 bg-slate-200 rounded-full w-full mb-4"></div>
+                  <div className="flex gap-3 px-2 pb-2">
+                    <div className="h-12 bg-slate-200 rounded-xl flex-1"></div>
+                    <div className="h-12 bg-slate-200 rounded-xl w-24"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : campaigns.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Heart className="w-10 h-10 text-blue-200" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">No campaigns found</h3>
+              <p className="text-sm text-slate-500">Try adjusting your filters or search terms.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {campaigns.map((campaign) => {
+                const progress = getProgressPercentage(campaign.raised_amount, campaign.goal_amount);
+                return (
+                  <motion.div
+                    key={campaign.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-[24px] p-3 shadow-[0_8px_30px_rgb(219,234,254,0.4)] border border-slate-50/50"
+                  >
+                    {/* Card Image */}
+                    <div className="relative w-full h-[200px] rounded-[20px] overflow-hidden mb-5 bg-slate-100">
+                      {campaign.cover_image ? (
+                        <img
+                          src={campaign.cover_image}
+                          alt={campaign.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-blue-50">
+                          <Heart className="w-12 h-12 text-blue-200" />
+                        </div>
+                      )}
+
+                      {/* Overlay Gradients */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 via-transparent to-transparent"></div>
+
+                      {/* Category Badge */}
+                      <div className="absolute top-4 left-4">
+                        <span className="bg-white/95 backdrop-blur-md text-blue-600 text-[11px] font-bold px-3 py-1.5 rounded-full shadow-sm uppercase tracking-wide">
+                          {campaign.category || 'General'}
+                        </span>
+                      </div>
+
+                      {/* Urgency Badge if High/Critical */}
+                      {(campaign.urgency_level === 'high' || campaign.urgency_level === 'critical') && (
+                        <div className="absolute top-4 right-4">
+                          <span className="bg-red-500/95 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1.5 rounded-full shadow-sm uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                            Urgent
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="px-2 pb-1">
+                      <h3 className="text-[19px] font-bold text-slate-900 leading-snug mb-3 line-clamp-2" style={{ fontFamily: 'Poppins, sans-serif' }}>
+                        {campaign.title}
+                      </h3>
+
+                      <div className="flex justify-between items-center text-[13px] text-slate-500 mb-5" style={{ fontFamily: 'Inter, sans-serif' }}>
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <MapPin className="w-4 h-4 text-blue-500" />
+                          <span className="truncate max-w-[120px]">{campaign.city}</span>
+                        </div>
+                        <div className="flex items-center font-medium bg-slate-50 px-2.5 py-1 rounded-lg text-slate-700">
+                          Goal: ₹{campaign.goal_amount?.toLocaleString()}
+                        </div>
+                      </div>
+
+                      {/* Progress */}
+                      <div className="mb-6 bg-slate-50 p-4 rounded-[16px] border border-slate-100/50">
+                        <div className="flex justify-between text-sm mb-2.5" style={{ fontFamily: 'Inter, sans-serif' }}>
+                          <span className="font-bold text-slate-900">
+                            ₹{campaign.raised_amount?.toLocaleString() || 0} <span className="text-slate-500 font-normal">raised</span>
+                          </span>
+                          <span className="font-semibold text-blue-600">{Math.round(progress)}%</span>
+                        </div>
+                        <div className="w-full h-2 bg-blue-100/50 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-600 rounded-full relative"
+                            style={{ width: `${progress}%` }}
+                          >
+                            <div className="absolute inset-0 bg-white/20"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={() => handleDonate(campaign)}
+                          className="flex-1 w-full bg-blue-600 active:bg-blue-700 text-white font-semibold py-3.5 rounded-xl transition-colors shadow-[0_4px_14px_rgb(37,99,235,0.3)] text-sm flex items-center justify-center gap-2"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                          <Heart className="w-4 h-4 fill-white/20 flex-shrink-0" /> <span className="truncate">Donate Now</span>
+                        </button>
+                        <button
+                          onClick={() => handleViewDetails(campaign)}
+                          className="w-full sm:w-auto px-4 sm:px-6 bg-blue-50 active:bg-blue-100 text-blue-600 font-semibold py-3.5 rounded-xl transition-colors text-sm flex items-center justify-center"
+                          style={{ fontFamily: 'Inter, sans-serif' }}
+                        >
+                          View
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* Search & Filter Bar */}
-        <div className="flex gap-3 flex-col sm:flex-row">
-          <form onSubmit={handleSearch} className="flex-1">
-            <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search campaigns by title or city..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-          </form>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
-          >
-            <Filter size={18} />
-            Filters
-          </button>
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-4"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Category</label>
-                <select
-                  value={filters.category}
-                  onChange={(e) => handleFilterChange('category', e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                >
-                  <option value="">All Categories</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat.toLowerCase()}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Urgency</label>
-                <select
-                  value={filters.urgency}
-                  onChange={(e) => handleFilterChange('urgency', e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                >
-                  <option value="">All Urgencies</option>
-                  {urgencies.map((urg) => (
-                    <option key={urg} value={urg.toLowerCase()}>
-                      {urg}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Sort By</label>
-                <select
-                  value={filters.sort_by}
-                  onChange={(e) => handleFilterChange('sort_by', e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                >
-                  <option value="created_at">Latest</option>
-                  <option value="raised_amount">Most Funded</option>
-                  <option value="urgency_level">Urgent First</option>
-                </select>
-              </div>
-
-              <div className="flex items-end gap-2">
-                <Button
-                  onClick={applyFilters}
-                  className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
-                >
-                  Apply
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
       </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-          <AlertCircle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
-          <div className="text-red-800">{error}</div>
-        </div>
-      )}
-
-      {/* Campaigns Grid */}
-      {campaigns.length === 0 ? (
-        <div className="text-center py-12 bg-slate-50 rounded-lg">
-          <Heart size={48} className="mx-auto text-slate-300 mb-4" />
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">No campaigns found</h3>
-          <p className="text-slate-600">Try adjusting your filters or search terms</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campaigns.map((campaign) => {
-            const progress = getProgressPercentage(campaign.raised_amount, campaign.goal_amount);
-            return (
-              <motion.div
-                key={campaign.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-slate-200 overflow-hidden flex flex-col"
-              >
-                {/* Cover Image Placeholder */}
-                {campaign.cover_image ? (
-                  <img
-                    src={campaign.cover_image}
-                    alt={campaign.title}
-                    className="w-full h-40 object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-40 bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
-                    <Heart size={32} className="text-white opacity-50" />
-                  </div>
-                )}
-
-                {/* Content */}
-                <div className="p-4 flex-1 flex flex-col">
-                  {/* Title & Badges */}
-                  <div className="mb-3">
-                    <div className="flex gap-2 items-start mb-2">
-                      <h3 className="font-bold text-slate-900 text-lg flex-1 line-clamp-2">
-                        {campaign.title}
-                      </h3>
-                      {campaign.verified && (
-                        <Badge className="bg-green-100 text-green-800 text-xs whitespace-nowrap">
-                          ✓ Verified
-                        </Badge>
-                      )}
-                    </div>
-                    <Badge className={`${getUrgencyColor(campaign.urgency_level)} text-xs w-fit`}>
-                      {campaign.urgency_level.charAt(0).toUpperCase() + campaign.urgency_level.slice(1)}
-                    </Badge>
-                  </div>
-
-                  {/* Description */}
-                  <p className="text-sm text-slate-600 mb-3 line-clamp-2">
-                    {campaign.description}
-                  </p>
-
-                  {/* Location */}
-                  <div className="flex items-center gap-2 text-sm text-slate-600 mb-4">
-                    <MapPin size={16} />
-                    {campaign.city}
-                  </div>
-
-                  {/* Progress */}
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="font-medium text-slate-900">₹{campaign.raised_amount?.toFixed(0) || 0}</span>
-                      <span className="text-slate-600">₹{campaign.goal_amount?.toFixed(0) || 0}</span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-primary-500 to-primary-600 h-full transition-all"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-slate-600 mt-1">{Math.round(progress)}% funded</p>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 mt-auto">
-                    <Button
-                      onClick={() => handleDonate(campaign)}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      Donate
-                    </Button>
-                    <Button
-                      onClick={() => handleViewDetails(campaign)}
-                      className="flex-1 bg-primary-600 hover:bg-primary-700 text-white"
-                    >
-                      Details
-                    </Button>
-                    <SaveCampaignButton
-                      campaignId={campaign.id}
-                      token={profile?.accessToken}
-                    />
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Donation Modal */}
       {showDonationModal && selectedCampaign && (
@@ -371,13 +358,13 @@ function CampaignsFeedPage() {
           }}
           onDonationSuccess={() => {
             setShowDonationModal(false);
-            // Refresh campaigns to show updated raised amount
             fetchCampaigns();
           }}
         />
       )}
-    </section>
+    </div>
   );
 }
 
 export default CampaignsFeedPage;
+

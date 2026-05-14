@@ -141,11 +141,11 @@ const VendorDashboard = () => {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-4xl font-display font-black text-slate-900 tracking-tight uppercase">
+        <h1 className="text-3xl md:text-4xl font-display font-black text-slate-900 tracking-tight uppercase">
           Vendor Overview
         </h1>
         <p className="text-slate-500 font-medium text-lg">
-          Welcome back, {profile.fullName || 'Vendor'}. Here's what's happening with your supply chain.
+          Welcome back, {profile.fullName || 'Vendor'}.
         </p>
       </div>
 
@@ -220,7 +220,7 @@ const VendorDashboard = () => {
                 ))}
                 <Button
                   variant="ghost"
-                  className="w-full text-primary-500 font-bold py-4 hover:bg-primary-50"
+                  className="w-full text-primary-500 font-bold py-4 hover:bg-primary-50 text-xs uppercase tracking-widest"
                 >
                   View All Recommendations
                 </Button>

@@ -15,7 +15,7 @@ import {
 import { Card, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 
@@ -34,6 +34,32 @@ const CreateRequest = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  React.useEffect(() => {
+    if (location.state?.triageData) {
+      const td = location.state.triageData;
+      // Map the raw category to a valid dropdown option
+      let mappedCat = '';
+      const rawCat = (td.category || '').toLowerCase();
+      if (rawCat.includes('medic') || rawCat.includes('surg') || rawCat.includes('blood') || rawCat.includes('bed')) mappedCat = 'medical';
+      else if (rawCat.includes('pharma') || rawCat.includes('drug') || rawCat.includes('pill')) mappedCat = 'pharma';
+      else if (rawCat.includes('food') || rawCat.includes('water') || rawCat.includes('consum')) mappedCat = 'consumables';
+      else mappedCat = 'emergency';
+
+      setFormData(prev => ({
+        ...prev,
+        resourceName: td.resource_name || '',
+        category: mappedCat,
+        location: td.city || '',
+        urgency: td.urgency_level || 'critical',
+        quantity: td.quantity ? String(td.quantity) : '1',
+        notes: td.notes || ''
+      }));
+      // Auto-advance to next step if mostly filled
+      if (td.resource_name) setStep(2);
+    }
+  }, [location.state]);
 
   const handleNext = () => setStep(s => s + 1);
   const handlePrev = () => setStep(s => s - 1);
@@ -42,7 +68,7 @@ const CreateRequest = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const response = await apiService.createRequest(profile.accessToken, {
         resource_name: formData.resourceName,
@@ -54,9 +80,33 @@ const CreateRequest = () => {
         urgency_level: formData.urgency,
         notes: formData.notes
       });
-      
-      // Navigate to results with the specific request ID
-      navigate(`/user/results?requestId=${response.id}`);
+
+      // Check if this is an emergency request (high or critical urgency)
+      const isEmergency = formData.urgency === 'high' || formData.urgency === 'critical';
+
+      if (isEmergency) {
+        // For emergency requests, use intelligent matching
+        try {
+          const emergencyQuery = `${formData.resourceName} - ${formData.notes || formData.category}`;
+          const intelligentResults = await apiService.intelligentEmergencyMatch(
+            profile.accessToken,
+            response.id,
+            emergencyQuery
+          );
+
+          // Navigate to results with intelligent matching data
+          navigate(`/user/results?requestId=${response.id}`, {
+            state: { intelligentResults }
+          });
+        } catch (intelligentError) {
+          console.warn('Intelligent matching failed, falling back to regular matching:', intelligentError);
+          // Fall back to regular matching if intelligent matching fails
+          navigate(`/user/results?requestId=${response.id}`);
+        }
+      } else {
+        // Regular matching for non-emergency requests
+        navigate(`/user/results?requestId=${response.id}`);
+      }
     } catch (error) {
       console.error('Failed to create request:', error);
       alert(error.message || 'Failed to create request. Please try again.');
@@ -126,26 +176,26 @@ const CreateRequest = () => {
         {steps.map((s, i) => (
           <React.Fragment key={i}>
             <div className="flex flex-col items-center gap-3 relative">
-               <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm ${
+               <div className={`w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center transition-all duration-300 shadow-sm ${
                  step > i + 1 ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 
                  step === i + 1 ? 'bg-primary-500 text-white shadow-primary-500/20' : 
                  'bg-white text-slate-400 border border-slate-100'
                }`}>
-                 {step > i + 1 ? <CheckCircle2 className="w-6 h-6" /> : <s.icon className="w-5 h-5" />}
+                 {step > i + 1 ? <CheckCircle2 className="w-5 h-5 md:w-6 md:h-6" /> : <s.icon className="w-4 h-4 md:w-5 md:h-5" />}
                </div>
-               <span className={`text-xs font-bold uppercase tracking-widest ${step === i + 1 ? 'text-primary-600' : 'text-slate-400'}`}>
-                 {s.title}
+               <span className={`text-[10px] md:text-xs font-black uppercase tracking-widest text-center ${step === i + 1 ? 'text-primary-600' : 'text-slate-400'}`}>
+                 {s.title.split(' ')[0]}
                </span>
             </div>
             {i < steps.length - 1 && (
-              <div className={`flex-grow h-1 mx-4 rounded-full ${step > i + 1 ? 'bg-emerald-500' : 'bg-slate-100'}`}></div>
+              <div className={`flex-grow h-0.5 md:h-1 mx-2 md:mx-4 rounded-full ${step > i + 1 ? 'bg-emerald-500' : 'bg-slate-100'}`}></div>
             )}
           </React.Fragment>
         ))}
       </div>
 
-      <Card className="shadow-premium overflow-visible border-none ring-1 ring-slate-100">
-        <CardContent className="p-8 md:p-12">
+      <Card className="shadow-premium overflow-visible border-none ring-1 ring-slate-100 rounded-[2rem] sm:rounded-[2.5rem]">
+        <CardContent className="p-6 md:p-12">
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div
@@ -223,8 +273,8 @@ const CreateRequest = () => {
                   </div>
                 </div>
 
-                <div className="pt-4 flex justify-end">
-                   <Button size="lg" onClick={handleNext} disabled={!formData.resourceName}>
+                <div className="pt-4">
+                   <Button size="lg" onClick={handleNext} disabled={!formData.resourceName} fullWidth>
                       Continue to Location <ArrowRight className="w-5 h-5 ml-2" />
                    </Button>
                 </div>
@@ -278,11 +328,11 @@ const CreateRequest = () => {
                    />
                 </div>
 
-                <div className="pt-4 flex justify-between">
-                   <Button variant="ghost" size="lg" onClick={handlePrev}>
+                <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-between">
+                   <Button variant="ghost" size="lg" onClick={handlePrev} className="order-2 sm:order-1">
                       <ArrowLeft className="w-5 h-5 mr-2" /> Back
                    </Button>
-                   <Button size="lg" onClick={handleNext} disabled={!formData.location}>
+                   <Button size="lg" onClick={handleNext} disabled={!formData.location} className="order-1 sm:order-2" fullWidth>
                       Review Request <ArrowRight className="w-5 h-5 ml-2" />
                    </Button>
                 </div>
@@ -331,11 +381,11 @@ const CreateRequest = () => {
                    </p>
                 </div>
 
-                <div className="pt-4 flex justify-between">
-                   <Button variant="ghost" size="lg" onClick={handlePrev}>
+                <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-between">
+                   <Button variant="ghost" size="lg" onClick={handlePrev} className="order-2 sm:order-1">
                       <ArrowLeft className="w-5 h-5 mr-2" /> Back
                    </Button>
-                   <Button size="lg" className="px-12" onClick={handleSubmit} loading={loading}>
+                   <Button size="lg" className="px-12 order-1 sm:order-2" onClick={handleSubmit} loading={loading} fullWidth>
                       Submit & Match <Zap className="w-5 h-5 ml-2" />
                    </Button>
                 </div>

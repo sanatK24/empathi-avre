@@ -58,7 +58,7 @@ const NotificationBell = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 15, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="absolute right-0 mt-4 w-96 max-h-[500px] bg-white/90 backdrop-blur-xl border border-slate-200 rounded-[2rem] shadow-premium z-50 overflow-hidden flex flex-col"
+            className="absolute right-0 mt-4 w-[calc(100vw-2rem)] sm:w-96 max-h-[80vh] sm:max-h-[500px] bg-white/90 backdrop-blur-xl border border-slate-200 rounded-[2rem] shadow-premium z-50 overflow-hidden flex flex-col"
           >
             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>

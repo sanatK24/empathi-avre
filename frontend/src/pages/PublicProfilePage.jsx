@@ -201,26 +201,26 @@ function PublicProfilePage() {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
             {/* Left: Avatar & Basic Info */}
             <div className="flex flex-col md:flex-row md:items-center gap-6">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white shadow-lg">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-primary-gradient flex items-center justify-center text-white shadow-lg shrink-0 mx-auto md:mx-0">
                 {userProfile.avatar_url ? (
                   <img src={userProfile.avatar_url} alt={userProfile.name} className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  <span className="text-4xl font-black">{userProfile.name.charAt(0).toUpperCase()}</span>
+                  <span className="text-3xl md:text-4xl font-black">{userProfile.name.charAt(0).toUpperCase()}</span>
                 )}
               </div>
-              <div>
-                <h1 className="text-3xl font-display font-black text-slate-900 uppercase">
+              <div className="text-center md:text-left">
+                <h1 className="text-2xl md:text-3xl font-display font-black text-slate-900 uppercase">
                   {userProfile.name}
                 </h1>
                 {userProfile.organization_name && (
-                  <p className="text-slate-600 font-medium mt-1">{userProfile.organization_name}</p>
+                  <p className="text-primary-600 font-bold mt-1 text-sm">{userProfile.organization_name}</p>
                 )}
                 {userProfile.bio && (
-                  <p className="text-slate-600 mt-2 max-w-md">{userProfile.bio}</p>
+                  <p className="text-slate-500 mt-2 max-w-md text-sm font-medium leading-relaxed">{userProfile.bio}</p>
                 )}
                 {userProfile.city && (
-                  <div className="flex items-center gap-2 text-slate-600 mt-2">
-                    <MapPin className="w-4 h-4" />
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-slate-400 mt-2 text-xs font-bold uppercase tracking-widest">
+                    <MapPin className="w-3 h-3" />
                     {userProfile.city}
                   </div>
                 )}
@@ -256,24 +256,25 @@ function PublicProfilePage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button
                   onClick={handleFollow}
-                  className={`flex-1 flex items-center justify-center gap-2 ${
+                  fullWidth
+                  className={cn(
+                    "flex items-center justify-center gap-2 font-bold h-12 rounded-xl",
                     isFollowing
-                      ? 'bg-slate-200 text-slate-900 hover:bg-slate-300'
-                      : 'bg-primary-600 hover:bg-primary-700 text-white'
-                  }`}
+                      ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/20'
+                  )}
                 >
                   <UserPlus className="w-4 h-4" />
                   {isFollowing ? 'Following' : 'Follow'}
                 </Button>
                 <Button
-                  variant="outline"
-                  className="flex-1 flex items-center justify-center gap-2"
+                  variant="secondary"
+                  className="w-12 h-12 p-0 flex items-center justify-center rounded-xl flex-shrink-0"
                 >
-                  <Share2 className="w-4 h-4" />
-                  Share
+                  <Share2 className="w-5 h-5" />
                 </Button>
               </div>
             </div>

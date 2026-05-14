@@ -133,25 +133,27 @@ const VendorMarketplace = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-8">
       {/* Search Header */}
       <div className="sticky top-0 z-30 bg-slate-50/80 backdrop-blur-md py-6 -mx-4 px-4 border-b border-slate-100">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
           <div className="relative flex-1 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-primary-500 transition-colors" />
             <input 
               type="text" 
               placeholder="Search for medical stores, pharmacies or equipment providers..." 
-              className="w-full pl-12 pr-4 py-4 rounded-2xl border border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-sm font-medium"
+              className="w-full pl-12 pr-4 h-14 rounded-2xl border border-slate-200 bg-white shadow-sm focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-all text-sm font-medium"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full lg:w-auto">
             <Button 
               variant="secondary" 
-              className="bg-white border-slate-200 rounded-2xl h-[58px] px-6"
+              className="bg-white border-slate-200 rounded-2xl h-14 px-6 flex-1 lg:flex-none"
               onClick={() => detectLocation()}
             >
               <MapPin className="w-4 h-4 mr-2" /> 
-              {profile.area ? `${profile.area}, ${profile.city}` : 'Detect Location'}
+              <span className="truncate max-w-[150px]">
+                {profile.area ? `${profile.area}, ${profile.city}` : 'Detect Location'}
+              </span>
             </Button>
           </div>
         </div>
@@ -209,8 +211,8 @@ const VendorMarketplace = () => {
             {/* Medical Providers Section */}
             {(selectedCategory === 'All' || selectedCategory === 'Medical Equipment') && (
               <section className="space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                  <h2 className="text-xl font-display font-black text-slate-900 uppercase tracking-tight">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
+                  <h2 className="text-lg md:text-xl font-display font-black text-slate-900 uppercase tracking-tight">
                     Medical Providers in <span className="text-primary-500">{profile.area || profile.city || 'Your Area'}</span>
                   </h2>
                   {selectedCategory === 'All' && filteredVendors.filter(v => v.category === 'Medical Equipment').length > 3 && (
@@ -237,7 +239,7 @@ const VendorMarketplace = () => {
             {selectedCategory === 'All' && (
               <section className="space-y-8 pt-8 border-t border-slate-100">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-xl font-display font-black text-slate-900 uppercase tracking-tight">
+                  <h2 className="text-lg md:text-xl font-display font-black text-slate-900 uppercase tracking-tight">
                     Other Resources in <span className="text-primary-500">{profile.area || profile.city || 'Your Area'}</span>
                   </h2>
                 </div>

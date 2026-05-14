@@ -1,8 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 from database import get_db, engine, Base
 from api.v1.router import api_router
+# pyrefly: ignore [missing-import]
+from apscheduler.schedulers.background import BackgroundScheduler
+from services.news_service import NewsService
+from database import SessionLocal
 import os
 
 # Create tables
@@ -14,6 +19,31 @@ app = FastAPI(
     version="1.1.0"
 )
 
+# Set up Scheduler
+scheduler = BackgroundScheduler()
+
+def scheduled_news_sync():
+    db = SessionLocal()
+    try:
+        print("[Scheduler] Running background news sync...")
+        added = NewsService.sync_news(db)
+        print(f"[Scheduler] Added {added} new articles.")
+    except Exception as e:
+        print(f"[Scheduler] Error syncing news: {e}")
+    finally:
+        db.close()
+
+@app.on_event("startup")
+def start_scheduler():
+    scheduler.add_job(scheduled_news_sync, 'interval', minutes=15)
+    scheduler.start()
+    print("[Scheduler] Started RSS feed scheduler.")
+
+@app.on_event("shutdown")
+def stop_scheduler():
+    scheduler.shutdown()
+    print("[Scheduler] Stopped RSS feed scheduler.")
+
 # Production + Localhost CORS
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -21,6 +51,7 @@ ALLOWED_ORIGINS = [
     "http://localhost:3000",
 
     "https://empathi-frontend.onrender.com",
+    "https://2t89fg90-5173.inc1.devtunnels.ms"
 ]
 
 app.add_middleware(

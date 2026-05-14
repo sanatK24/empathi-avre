@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Siren, MapPin, Phone, Shield, Navigation, Search, 
   AlertTriangle, Zap, Heart, Droplets, Activity, Truck,
   ChevronRight, PhoneCall, ExternalLink, Info, Filter,
-  Stethoscope, Cross, Tent, LifeBuoy, User, Clock, Star
+  Stethoscope, Cross, Tent, LifeBuoy, User, Clock, Star,
+  Bot, Send, Loader2
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -13,6 +15,7 @@ import Input from '../components/ui/Input';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import { cn } from '../utils/cn';
+import NearbyEmergencyResources from '../components/emergency/NearbyEmergencyResources';
 
 const SOS_ACTIONS = [
     { id: 'police', label: 'Police', phone: '100', icon: Shield, color: 'bg-blue-600', text: 'text-white' },
@@ -23,27 +26,21 @@ const SOS_ACTIONS = [
     { id: 'women', label: 'Women Info', phone: '1091', icon: Heart, color: 'bg-pink-600', text: 'text-white' },
 ];
 
-const FACILITY_TABS = [
-    { id: 'Hospital', label: 'Hospitals', icon: Cross },
-    { id: 'Trauma Center', label: 'Emergency Care', icon: Activity },
-    { id: 'Blood Bank', label: 'Blood Banks', icon: Droplets },
-    { id: 'Clinic', label: 'Clinics', icon: Stethoscope },
-];
-
 const EmergencyHub = () => {
     const { profile } = useAppContext();
     const [helplines, setHelplines] = useState([]);
-    const [facilities, setFacilities] = useState([]);
     const [loadingDir, setLoadingDir] = useState(true);
-    const [loadingFac, setLoadingFac] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('Hospital');
     const [userLocation, setUserLocation] = useState(null);
     const [locationName, setLocationName] = useState(null);
     const [fullAddress, setFullAddress] = useState(null);
     const [locError, setLocError] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
     const [watchId, setWatchId] = useState(null);
+    const [triageInput, setTriageInput] = useState('');
+    const [isTriaging, setIsTriaging] = useState(false);
+    const [triageError, setTriageError] = useState(null);
+    const navigate = useNavigate();
 
     const reverseGeocode = async (lat, lng) => {
         try {
@@ -89,16 +86,22 @@ const EmergencyHub = () => {
     useEffect(() => {
         // Start watching location persistently for SOS situations
         if (navigator.geolocation) {
+            let lastLocationUpdate = Date.now();
+            const LOCATION_UPDATE_THROTTLE = 10000; // Update location max every 10 seconds
+
             const id = navigator.geolocation.watchPosition(
                 (pos) => {
-                    const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    setUserLocation(newLoc);
-                    setLocError(null);
-                    // Only reverse geocode if location changed significantly (approx ~100m)
-                    // For simplicity, just geocode every time it changes for now or debounce
+                    const now = Date.now();
+                    // Throttle location updates to avoid constant re-fetching
+                    if (now - lastLocationUpdate > LOCATION_UPDATE_THROTTLE) {
+                        const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        setUserLocation(newLoc);
+                        setLocError(null);
+                        lastLocationUpdate = now;
+                    }
                 },
                 (err) => console.error("WatchPosition error:", err),
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
             );
             setWatchId(id);
         }
@@ -130,31 +133,6 @@ const EmergencyHub = () => {
         }
     };
 
-    const fetchNearby = async (location) => {
-        try {
-            setLoadingFac(true);
-            const params = {
-                city: profile.city,
-                lat: location?.lat,
-                lng: location?.lng,
-                type: activeTab
-            };
-            const data = await apiService.getFacilities(profile.accessToken, params);
-            setFacilities(data || []);
-        } catch (err) {
-            console.error("Failed to fetch facilities:", err);
-        } finally {
-            setLoadingFac(false);
-        }
-    };
-
-    // Re-fetch when tab changes or location updates
-    useEffect(() => {
-        if (userLocation) {
-            fetchNearby(userLocation);
-        }
-    }, [activeTab, userLocation?.lat, userLocation?.lng]);
-
     const filteredHelplines = helplines.filter(h => 
         h.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         h.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -166,8 +144,40 @@ const EmergencyHub = () => {
         }
     };
 
+    const handleTriageSubmit = async (e) => {
+        e.preventDefault();
+        if (!triageInput.trim()) return;
+
+        try {
+            setIsTriaging(true);
+            setTriageError(null);
+            
+            // Call the local Ollama backend endpoint
+            const result = await apiService.triageEmergency(profile.accessToken, triageInput);
+            
+            // Redirect to CreateRequest with auto-filled state
+            navigate('/user/create', { 
+                state: { 
+                    triageData: {
+                        resource_name: result.subtype || result.resource_type,
+                        category: result.resource_type,
+                        urgency_level: result.urgency_level,
+                        city: result.city || locationName || profile.city,
+                        quantity: result.quantity || 1,
+                        notes: `[AI TRIAGE PARSED]\nOriginal Request: ${triageInput}`
+                    }
+                } 
+            });
+        } catch (err) {
+            console.error("Triage failed:", err);
+            setTriageError("Failed to analyze emergency. Please use the standard request form.");
+        } finally {
+            setIsTriaging(false);
+        }
+    };
+
     const renderSOSGrid = () => (
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-8 md:mb-10">
             {SOS_ACTIONS.map(action => (
                 <motion.div
                     key={action.id}
@@ -175,144 +185,15 @@ const EmergencyHub = () => {
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleSOS(action.label, action.phone)}
                     className={cn(
-                        "p-6 rounded-3xl cursor-pointer shadow-premium text-center flex flex-col items-center gap-3 transition-shadow",
+                        "p-4 md:p-6 rounded-2xl md:rounded-3xl cursor-pointer shadow-premium text-center flex flex-col items-center gap-2 md:gap-3 transition-shadow",
                         action.color, action.text
                     )}
                 >
-                    <action.icon className="w-8 h-8" />
-                    <span className="font-black text-sm uppercase tracking-tighter leading-none">{action.label}</span>
+                    <action.icon className="w-6 md:w-8 h-6 md:h-8" />
+                    <span className="font-black text-xs md:text-sm uppercase tracking-tighter leading-none">{action.label}</span>
                 </motion.div>
             ))}
         </section>
-    );
-
-    const renderFacilities = () => (
-        <div className="lg:col-span-12 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="flex-grow">
-                    <div className="flex items-center gap-4 mb-1">
-                        <h2 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-                            <MapPin className="w-6 h-6 text-red-600" />
-                            Nearby Medical Centers
-                        </h2>
-                        <Button 
-                            variant="secondary" 
-                            size="sm" 
-                            className={cn(
-                                "rounded-xl text-[10px] font-black uppercase tracking-widest gap-2 h-9 border-none bg-slate-100",
-                                isLocating && "animate-pulse bg-red-50 text-red-600"
-                            )}
-                            onClick={handleGetLocation}
-                            disabled={isLocating}
-                            icon={isLocating ? <Clock className="w-3 h-3 animate-spin" /> : <Navigation className="w-3 h-3" />}
-                        >
-                            {isLocating ? 'Detecting...' : 'Detect My Location'}
-                        </Button>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <p className="text-slate-500 font-medium text-sm">
-                            {userLocation 
-                                ? (locationName ? `Live Tracking: ${locationName}` : `Live Tracking: ${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`)
-                                : "Discovery based on profile city"}
-                        </p>
-                        {locError && (
-                            <span className="text-amber-600 text-xs font-bold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
-                                <AlertTriangle className="w-3 h-3" /> {locError}
-                            </span>
-                        )}
-                    </div>
-                </div>
-                
-                <div className="flex items-center gap-1 bg-slate-100 p-1.5 rounded-2xl overflow-x-auto no-scrollbar shrink-0">
-                    {FACILITY_TABS.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={cn(
-                                "flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black whitespace-nowrap transition-all",
-                                activeTab === tab.id 
-                                ? "bg-white text-red-600 shadow-sm" 
-                                : "text-slate-500 hover:text-slate-900"
-                            )}
-                        >
-                            <tab.icon className="w-4 h-4" />
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loadingFac ? (
-                    Array(3).fill(0).map((_, i) => (
-                        <div key={i} className="h-48 bg-slate-100 animate-pulse rounded-3xl" />
-                    ))
-                ) : facilities.map((fac, i) => (
-                    <motion.div
-                        key={fac.id}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.05 }}
-                    >
-                        <Card className="h-full group hover:ring-2 hover:ring-red-500/20 transition-all border-none ring-1 ring-slate-100 shadow-soft overflow-hidden">
-                            <CardContent className="p-0">
-                                <div className="p-6">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <Badge variant={fac.is_verified ? "success" : "secondary"}>
-                                            {fac.facility_type}
-                                        </Badge>
-                                        <div className="flex items-center gap-1 text-slate-400">
-                                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                            <span className="text-xs font-bold">{fac.rating}</span>
-                                        </div>
-                                    </div>
-                                    <h4 className="text-lg font-black text-slate-900 mb-1 leading-tight">{fac.name}</h4>
-                                    <p className="text-sm text-slate-500 font-medium flex items-center gap-1 mb-4">
-                                        <MapPin className="w-3 h-3" /> {fac.address}
-                                    </p>
-                                    
-                                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">
-                                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {fac.operating_hours || '24/7'}</span>
-                                        {fac.distance_km !== null && (
-                                            <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full">{fac.distance_km} km away</span>
-                                        )}
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <Button 
-                                            className="flex-1 bg-red-600 hover:bg-red-700" 
-                                            size="sm" 
-                                            icon={<PhoneCall className="w-4 h-4" />}
-                                            onClick={() => fac.phone && (window.location.href = `tel:${fac.phone}`)}
-                                            disabled={!fac.phone}
-                                        >
-                                            Call
-                                        </Button>
-                                        <Button 
-                                            variant="outline" 
-                                            className="flex-1" 
-                                            size="sm" 
-                                            icon={<Navigation className="w-4 h-4" />}
-                                            onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fac.name + ' ' + fac.address)}`, '_blank')}
-                                        >
-                                            Map
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </motion.div>
-                ))}
-                
-                {!loadingFac && facilities.length === 0 && (
-                    <div className="col-span-full py-16 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                         <MapPin className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                         <p className="text-slate-500 font-bold">No {activeTab}s found in your area.</p>
-                         <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-2">Try expanding your search or selecting a different city.</p>
-                    </div>
-                )}
-            </div>
-        </div>
     );
 
     const renderDirectory = () => (
@@ -396,7 +277,19 @@ const EmergencyHub = () => {
                         <User className="w-5 h-5 text-red-500" />
                         My Emergency Network
                     </h3>
-                    <Button variant="ghost" className="text-white/50 hover:text-white" size="sm" onClick={() => window.location.href='/profile?tab=role'}>Manage</Button>
+                    <Button
+                        variant="ghost"
+                        className="text-white/50 hover:text-white"
+                        size="sm"
+                        onClick={() => {
+                            const rolePrefix = profile.userRole?.toLowerCase() === 'requester' ? '/user' :
+                                              profile.userRole?.toLowerCase() === 'vendor' ? '/vendor' :
+                                              profile.userRole?.toLowerCase() === 'admin' ? '/admin' : '/user';
+                            navigate(`${rolePrefix}/profile?tab=medical`);
+                        }}
+                    >
+                        Manage
+                    </Button>
                 </div>
                 
                 <div className="space-y-4">
@@ -439,20 +332,41 @@ const EmergencyHub = () => {
                         </div>
                     )}
 
-                    <div className="mt-4 p-5 bg-emerald-500/10 rounded-3xl border border-emerald-500/20">
-                         <h5 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">Medical Profile</h5>
-                         <div className="flex items-center gap-4">
-                             <div className="flex flex-col">
-                                 <span className="text-[10px] text-white/50 uppercase font-black">Blood Group</span>
-                                 <span className="text-xl font-black text-white">{profile.bloodGroup || 'N/A'}</span>
+                    {(!profile.bloodGroup || !profile.preferredHospital) ? (
+                        <div className="mt-4 p-5 bg-amber-500/10 rounded-3xl border border-amber-500/20 text-center">
+                            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto mb-2 opacity-50" />
+                            <h5 className="font-black text-amber-400 uppercase tracking-tight mb-1">Incomplete Profile</h5>
+                            <p className="text-xs text-white/50 mb-4 font-medium">Adding your blood group and preferred hospital saves critical time in an emergency.</p>
+                            <Button
+                                variant="outline"
+                                className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 w-full"
+                                size="sm"
+                                onClick={() => {
+                                    const rolePrefix = profile.userRole?.toLowerCase() === 'requester' ? '/user' :
+                                                      profile.userRole?.toLowerCase() === 'vendor' ? '/vendor' :
+                                                      profile.userRole?.toLowerCase() === 'admin' ? '/admin' : '/user';
+                                    navigate(`${rolePrefix}/profile?tab=medical`);
+                                }}
+                            >
+                                Complete Medical Profile
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="mt-4 p-5 bg-emerald-500/10 rounded-3xl border border-emerald-500/20">
+                             <h5 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">Medical Profile</h5>
+                             <div className="flex items-center gap-4">
+                                 <div className="flex flex-col">
+                                     <span className="text-[10px] text-white/50 uppercase font-black">Blood Group</span>
+                                     <span className="text-xl font-black text-white">{profile.bloodGroup}</span>
+                                 </div>
+                                 <div className="w-px h-8 bg-white/10 mx-1" />
+                                 <div className="flex flex-col overflow-hidden">
+                                     <span className="text-[10px] text-white/50 uppercase font-black">Preferred Hospital</span>
+                                     <span className="text-sm font-bold text-white truncate">{profile.preferredHospital}</span>
+                                 </div>
                              </div>
-                             <div className="w-px h-8 bg-white/10 mx-1" />
-                             <div className="flex flex-col overflow-hidden">
-                                 <span className="text-[10px] text-white/50 uppercase font-black">Preferred Hospital</span>
-                                 <span className="text-sm font-bold text-white truncate">{profile.preferredHospital || 'None set'}</span>
-                             </div>
-                         </div>
-                    </div>
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>
@@ -491,90 +405,131 @@ const EmergencyHub = () => {
             className="max-w-7xl mx-auto space-y-12 pb-20 px-4"
         >
             {/* Massive Premium Header */}
-            <div className="bg-red-600 rounded-[2.5rem] p-10 md:p-16 text-white relative overflow-hidden shadow-2xl">
+            <div className="bg-red-600 rounded-2xl md:rounded-[2.5rem] p-6 md:p-16 text-white relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48 animate-pulse"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-2xl -ml-32 -mb-32"></div>
-                
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-12">
-                    <div className="space-y-6">
-                        <div className="flex flex-wrap gap-2">
-                            <div className="inline-flex items-center gap-2 px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
-                                <Siren className="w-4 h-4 animate-pulse" /> Emergency Hub Active
+
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 md:gap-12">
+                    <div className="space-y-4 md:space-y-6 flex-1 order-2 md:order-1">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+                            <div className="inline-flex items-center gap-2 px-4 md:px-6 py-2 bg-white/20 backdrop-blur-md rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest">
+                                <Siren className="w-3 md:w-4 h-3 md:h-4 animate-pulse" /> Emergency Hub Active
                             </div>
-                            <button 
+                            <button
                                 onClick={handleGetLocation}
-                                className="inline-flex items-center gap-2 px-6 py-2 bg-black/20 hover:bg-black/30 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-colors"
+                                className="inline-flex items-center gap-2 px-4 md:px-6 py-2 bg-black/20 hover:bg-black/30 backdrop-blur-md rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-colors"
                             >
-                                <Navigation className={cn("w-4 h-4", isLocating && "animate-spin")} /> 
-                                {isLocating ? 'Locating...' : 'Refresh Location'}
+                                <Navigation className={cn("w-3 md:w-4 h-3 md:h-4", isLocating && "animate-spin")} />
+                                {isLocating ? 'Locating...' : 'Refresh'}
                             </button>
                         </div>
-                        
-                        <h1 className="text-4xl md:text-6xl font-display font-black tracking-tighter leading-tight max-w-2xl">
-                            Immediate Assistance <br/> Is Just One Tap Away.
+
+                        <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-display font-black tracking-tighter leading-tight uppercase">
+                            Immediate <br className="md:hidden" /> Assistance <br className="hidden md:block" /> Is One Tap Away.
                         </h1>
-                        
-                        <div className="space-y-2 max-w-lg">
-                            <p className="text-red-100 font-bold text-lg flex items-center gap-2">
-                                <MapPin className="w-5 h-5" />
-                                {locationName || 'Detecting Area...'}
+
+                        <div className="space-y-1 md:space-y-2">
+                            <p className="text-red-100 font-bold text-sm md:text-lg flex items-center gap-2">
+                                <MapPin className="w-4 md:w-5 h-4 md:h-5 flex-shrink-0" />
+                                <span className="line-clamp-2">{locationName || 'Detecting Area...'}</span>
                             </p>
                             {fullAddress && (
-                                <p className="text-red-200/60 text-xs font-medium leading-relaxed italic">
+                                <p className="text-red-200/60 text-xs font-medium leading-relaxed italic line-clamp-2">
                                     {fullAddress}
                                 </p>
                             )}
                         </div>
                     </div>
 
-                    <div className="flex flex-col items-center gap-4">
+                    <div className="flex flex-col items-center gap-2 md:gap-4 order-1 md:order-2 flex-shrink-0">
                         <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => handleSOS('Main SOS', '112')}
-                            className="w-40 h-40 md:w-56 md:h-56 bg-white rounded-full flex items-center justify-center text-red-600 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] relative group overflow-hidden shrink-0"
+                            className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 bg-white rounded-full flex items-center justify-center text-red-600 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.3)] md:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] relative group overflow-hidden"
                         >
                             <div className="absolute inset-0 bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                             <div className="flex flex-col items-center relative z-10">
-                                <span className="font-display font-black text-4xl md:text-6xl uppercase tracking-tighter">SOS</span>
-                                <span className="text-[10px] font-black uppercase tracking-widest mt-1 opacity-50">Call 112</span>
+                                <span className="font-display font-black text-3xl sm:text-4xl md:text-6xl uppercase tracking-tighter">SOS</span>
+                                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest mt-1 opacity-50">Call 112</span>
                             </div>
-                            <div className="absolute inset-0 border-[10px] border-red-100/30 rounded-full animate-ping opacity-25"></div>
+                            <div className="absolute inset-0 border-[8px] md:border-[10px] border-red-100/30 rounded-full animate-ping opacity-25"></div>
                             <div className="absolute inset-0 border-2 border-red-100/50 rounded-full scale-110"></div>
                         </motion.button>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-white/50 animate-bounce">Tap for Universal SOS</p>
+                        <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-white/50 animate-bounce">Tap for SOS</p>
                     </div>
                 </div>
             </div>
 
+            {/* AI Natural Language Triage Bar */}
+            <Card className="bg-slate-900 border-none shadow-2xl overflow-hidden relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 opacity-50"></div>
+                <CardContent className="p-6 md:p-8 relative z-10">
+                    <div className="flex flex-col md:flex-row gap-6 items-center">
+                        <div className="flex items-center gap-4 text-white shrink-0">
+                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                                <Bot className="w-6 h-6 text-blue-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-black text-lg uppercase tracking-tight">AI Emergency Triage</h3>
+                                <p className="text-xs text-white/50 font-medium">Type what you need, we'll auto-fill the rest.</p>
+                            </div>
+                        </div>
+                        
+                        <form onSubmit={handleTriageSubmit} className="flex-1 w-full relative">
+                            <input
+                                type="text"
+                                value={triageInput}
+                                onChange={(e) => setTriageInput(e.target.value)}
+                                disabled={isTriaging}
+                                placeholder="e.g. My father had an accident, we need O-negative blood immediately!"
+                                className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/40 h-14 pl-6 pr-16 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/20 transition-all font-medium"
+                            />
+                            <button 
+                                type="submit"
+                                disabled={isTriaging || !triageInput.trim()}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-xl flex items-center justify-center transition-colors shadow-lg"
+                            >
+                                {isTriaging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
+                            </button>
+                        </form>
+                    </div>
+                    {triageError && (
+                        <p className="text-red-400 text-xs font-bold mt-3 ml-16 flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3" /> {triageError}
+                        </p>
+                    )}
+                </CardContent>
+            </Card>
+
             {renderSOSGrid()}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                {/* Main Content Area */}
-                <div className="lg:col-span-8 space-y-12">
-                    {renderFacilities()}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-10">
+                {/* Main Facilities Section */}
+                <div className="lg:col-span-8 space-y-8 md:space-y-12">
+                    <NearbyEmergencyResources />
                 </div>
 
                 {/* Sidebar Directory and Contacts */}
-                <div className="lg:col-span-4 space-y-10">
+                <div className="lg:col-span-4 space-y-6 md:space-y-10">
                     {renderMyEmergency()}
                     {renderDirectory()}
 
                     {/* Quick Guidance */}
                     <Card className="bg-emerald-50 border-emerald-100 overflow-hidden relative">
                          <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl" />
-                         <CardContent className="p-8">
+                         <CardContent className="p-6 md:p-8">
                              <h4 className="font-black text-emerald-900 mb-4 flex items-center gap-2 uppercase tracking-tight">
                                  <Zap className="w-5 h-5 text-emerald-600" />
                                  Emergency Protocol
                              </h4>
-                             <ul className="space-y-4">
+                             <ul className="space-y-3 md:space-y-4">
                                  {[
                                      "Stay calm and secure your surroundings.",
                                      "Provide clear landmark info to responders.",
                                      "Keep your phone line free for incoming help.",
                                      "Medical records are automatically shared."
                                  ].map((step, i) => (
-                                     <li key={i} className="flex gap-3 text-sm font-bold text-emerald-700 leading-snug">
+                                     <li key={i} className="flex gap-3 text-xs md:text-sm font-bold text-emerald-700 leading-snug">
                                          <span className="shrink-0 w-5 h-5 rounded-full bg-emerald-200 flex items-center justify-center text-[10px] font-black">{i+1}</span>
                                          {step}
                                      </li>

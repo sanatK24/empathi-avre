@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
+  MapPin,
   TrendingUp,
   Target,
   Users,
@@ -64,122 +65,145 @@ const CampaignAnalyticsDashboard = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-display font-black text-slate-900 tracking-tight uppercase flex items-center gap-3">
-             <Megaphone className="w-10 h-10 text-primary-500" /> My Campaigns
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 px-4 md:px-0">
+        <div className="text-center md:text-left">
+          <h1 className="text-3xl md:text-5xl font-display font-black text-slate-900 tracking-tight uppercase flex items-center justify-center md:justify-start gap-4">
+             <Megaphone className="w-10 h-10 md:w-14 md:h-14 text-primary-500" /> My Campaigns
           </h1>
-          <p className="text-slate-500 font-medium text-lg mt-2">
-            Manage your initiatives and track fundraising performance.
+          <p className="text-slate-500 font-medium text-base md:text-xl mt-3 max-w-xl mx-auto md:mx-0 leading-relaxed">
+            Manage your initiatives and track fundraising performance with real-time predictive insights.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
            <Button 
-             variant="outline" 
+             variant="secondary" 
              size="lg" 
-             className="bg-white border-slate-200 text-slate-700 font-bold hover:bg-slate-50"
+             fullWidth
+             className="bg-white border border-slate-200 text-slate-900 font-black uppercase text-xs tracking-widest hover:bg-slate-50 h-14 md:h-16 px-10 rounded-2xl"
              onClick={() => navigate('/user/campaigns')}
            >
-             <ArrowUpRight className="w-4 h-4 mr-2" /> Browse All
+             <ArrowUpRight className="w-4 h-4 mr-2" /> Browse
            </Button>
            <Button 
              size="lg" 
-             className="bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-lg shadow-primary-500/20 active:scale-95 transition-all"
+             fullWidth
+             className="bg-primary-gradient text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary-500/30 active:scale-95 transition-all h-14 md:h-16 px-10 rounded-2xl"
              onClick={() => navigate('/user/campaigns/create')}
            >
-             <Plus className="w-4 h-4 mr-2" /> Start New Campaign
+             <Plus className="w-4 h-4 mr-2" /> Create New
            </Button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 px-4 md:px-0">
         {[
-          { label: 'Funds Raised', value: `$${stats.totalRaised.toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { label: 'Active Goals', value: stats.activeCampaigns, icon: Target, color: 'text-primary-500', bg: 'bg-primary-50' },
-          { label: 'Supporter Base', value: stats.totalDonors, icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-          { label: 'Success Rate', value: stats.successRate, icon: CheckCircle2, color: 'text-amber-500', bg: 'bg-amber-50' }
+          { label: 'Funds Raised', value: `₹${stats.totalRaised.toLocaleString()}`, icon: TrendingUp, color: 'text-emerald-500', bg: 'bg-emerald-50/50' },
+          { label: 'Active Goals', value: stats.activeCampaigns, icon: Target, color: 'text-primary-500', bg: 'bg-primary-50/50' },
+          { label: 'Supporters', value: stats.totalDonors, icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-50/50' },
+          { label: 'Success', value: stats.successRate, icon: CheckCircle2, color: 'text-amber-500', bg: 'bg-amber-50/50' }
         ].map((item, i) => (
-          <Card key={i} className="border-none ring-1 ring-slate-100 shadow-soft hover:shadow-md transition-all">
-            <CardContent className="p-6">
-              <div className={`w-10 h-10 rounded-xl ${item.bg} ${item.color} flex items-center justify-center mb-4`}>
-                <item.icon className="w-5 h-5" />
+          <Card key={i} className="border-none ring-1 ring-slate-100 shadow-soft hover:shadow-xl transition-all rounded-[2rem] overflow-hidden group">
+            <CardContent className="p-6 md:p-8 flex flex-col items-center text-center">
+              <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[1.25rem] ${item.bg} ${item.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                <item.icon className="w-6 h-6 md:w-8 md:h-8" />
               </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{item.label}</p>
-              <h3 className="text-2xl font-display font-black text-slate-900 mt-1">{item.value}</h3>
+              <p className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">{item.label}</p>
+              <h3 className="text-xl md:text-3xl font-display font-black text-slate-900 tracking-tight">{item.value}</h3>
             </CardContent>
           </Card>
         ))}
       </div>
 
       {/* Campaign List */}
-      <div className="space-y-6">
-         <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-primary-500" /> Active Initiatives
+      <div className="space-y-6 px-4 md:px-0">
+         <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <BarChart3 className="w-3 h-3 md:w-4 md:h-4 text-primary-500" /> Active Initiatives
          </h2>
          
          <div className="grid grid-cols-1 gap-6">
             {myCampaigns.map((camp) => {
               const progress = (camp.raised_amount / camp.goal_amount) * 100;
               return (
-                <Card key={camp.id} className="border-none ring-1 ring-slate-100 shadow-soft hover:shadow-premium transition-all group overflow-hidden">
-                  <div className="flex flex-col md:flex-row">
-                    <div className="w-full md:w-64 h-48 relative overflow-hidden">
+                <Card key={camp.id} className="border-none ring-1 ring-slate-100 shadow-premium hover:shadow-2xl transition-all group overflow-hidden rounded-[2.5rem]">
+                  <div className="flex flex-col md:flex-row min-h-[220px] max-h-[350px] overflow-hidden">
+                    {/* Card Image - Proportional Aspect Ratio */}
+                    <div className="w-full md:w-[350px] lg:w-[400px] aspect-video relative overflow-hidden shrink-0 bg-slate-100">
                       {camp.cover_image ? (
-                        <img src={camp.cover_image} alt={camp.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <img src={camp.cover_image} alt={camp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
                       ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
-                          <Megaphone className="w-12 h-12 text-white/50" />
+                        <div className="w-full h-full bg-primary-gradient flex items-center justify-center">
+                          <Megaphone className="w-16 h-16 text-white/20 animate-pulse" />
                         </div>
                       )}
-                      <div className="absolute top-4 left-4">
-                        <Badge variant={camp.verified ? 'success' : 'secondary'} className="backdrop-blur-md bg-white/90 border-none shadow-sm font-black uppercase text-[10px] tracking-widest">
-                          {camp.verified ? 'Verified' : 'Pending'}
+                      
+                      {/* Overlay Layer */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-60"></div>
+                      
+                      <div className="absolute top-6 left-6 flex gap-2">
+                        <Badge className="bg-white/95 backdrop-blur-md text-slate-900 border-none shadow-2xl font-black uppercase text-[10px] tracking-[0.15em] px-4 py-2 rounded-full">
+                          {camp.verified ? '✓ Verified' : 'Pending'}
                         </Badge>
+                      </div>
+                      <div className="absolute bottom-6 right-6">
+                        <div className="bg-slate-900/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl font-black text-lg shadow-2xl border border-white/10">
+                          ₹{camp.raised_amount.toLocaleString()} <span className="text-white/40 text-[10px] block tracking-widest">CURRENTLY RAISED</span>
+                        </div>
                       </div>
                     </div>
                     
-                    <div className="flex-1 p-6 flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-xl font-display font-black text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight">
+                    {/* Card Content - Precise Padding */}
+                    <div className="flex-1 p-5 md:p-6 flex flex-col justify-between bg-white relative">
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <h3 className="text-xl md:text-2xl font-display font-black text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight leading-[1.1] line-clamp-2">
                             {camp.title}
                           </h3>
-                          <p className="text-sm font-black text-slate-900">₹{camp.raised_amount.toLocaleString()} <span className="text-slate-400 font-bold">/ ₹{camp.goal_amount.toLocaleString()}</span></p>
+                          <div className="flex items-center gap-5 text-slate-400">
+                             <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.1em]">
+                               <MapPin className="w-4 h-4 text-primary-500" /> {camp.city}
+                             </div>
+                             <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.1em]">
+                               <Target className="w-4 h-4 text-amber-500" /> ₹{camp.goal_amount.toLocaleString()} Target
+                             </div>
+                          </div>
                         </div>
-                        <p className="text-sm text-slate-500 line-clamp-2 mb-4 font-medium italic">
-                          {camp.description}
+
+                        <p className="text-sm text-slate-500 line-clamp-2 font-medium leading-relaxed italic">
+                          "{camp.description}"
                         </p>
                         
-                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mb-2">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${Math.min(progress, 100)}%` }}
-                            className="h-full bg-primary-500 rounded-full shadow-sm"
-                          />
-                        </div>
-                        <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          <span>{Math.round(progress)}% Goal Reached</span>
-                          <span>{camp.city}</span>
+                        <div className="pt-2 space-y-2.5">
+                          <div className="flex justify-between items-end">
+                            <span className="text-xs font-black text-primary-600 uppercase tracking-[0.2em]">{Math.round(progress)}% PROGRESS</span>
+                            <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Goal: ₹{camp.goal_amount.toLocaleString()}</span>
+                          </div>
+                          <div className="w-full bg-slate-100 h-3 md:h-4 rounded-full overflow-hidden shadow-inner">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min(progress, 100)}%` }}
+                              className="h-full bg-primary-gradient rounded-full shadow-lg"
+                            />
+                          </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-3 mt-6">
+                      <div className="flex flex-col sm:flex-row items-center gap-3 mt-4">
                         <Button
                           variant="primary"
-                          size="sm"
-                          className="flex-1 font-black text-[10px] uppercase tracking-widest shadow-lg shadow-primary-500/20"
+                          fullWidth
+                          className="h-10 md:h-12 font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary-500/20 rounded-xl"
                           onClick={() => setSelectedPublicCampaign(camp)}
                         >
-                          <Eye className="w-4 h-4 mr-2" /> Public View
+                          <Eye className="w-5 h-5 mr-3" /> Public Preview
                         </Button>
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 font-black text-[10px] uppercase tracking-widest border-slate-200"
+                          variant="secondary"
+                          fullWidth
+                          className="h-10 md:h-12 font-black text-xs uppercase tracking-[0.2em] bg-slate-50 text-slate-600 border border-slate-100 hover:bg-slate-100 rounded-xl"
                           onClick={() => navigate(`/user/campaigns/edit/${camp.id}`)}
                         >
-                          <Edit3 className="w-4 h-4 mr-2" /> Edit Details
+                          <Edit3 className="w-5 h-5 mr-3" /> Management
                         </Button>
                       </div>
                     </div>
@@ -202,11 +226,11 @@ const CampaignAnalyticsDashboard = () => {
 
       {/* Public Preview Modal */}
       {selectedPublicCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-premium"
+            className="bg-white rounded-3xl max-w-2xl w-full my-auto shadow-premium overflow-hidden"
           >
             {/* Header */}
             <div className="sticky top-0 bg-white border-b border-slate-100 p-6 flex justify-between items-center">

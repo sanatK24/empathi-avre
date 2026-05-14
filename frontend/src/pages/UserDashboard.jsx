@@ -126,18 +126,18 @@ const UserDashboard = () => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <h1 className="text-4xl font-display font-black text-slate-900 tracking-tight uppercase">
+          <h1 className="text-3xl md:text-4xl font-display font-black text-slate-900 tracking-tight uppercase">
             Hello, {profile.fullName || 'User'}
           </h1>
           <p className="text-slate-500 font-medium text-lg mt-1">
-            Welcome to your unified EmpathI control center.
+            Welcome back to EmpathI.
           </p>
         </motion.div>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="px-4 py-2 text-xs font-black uppercase tracking-widest bg-white border border-slate-200">
-            Current Status: Active
+          <Badge variant="secondary" className="px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-white border border-slate-200">
+            Status: Active
           </Badge>
-          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200">
+          <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
           </div>
         </div>
@@ -268,7 +268,7 @@ const UserDashboard = () => {
               </div>
               <Button 
                 onClick={() => window.location.href='/user/recommendations'}
-                className="w-full bg-white text-slate-900 hover:bg-slate-100 shadow-none font-black text-xs uppercase tracking-widest"
+                className="w-full bg-white text-slate-900 hover:bg-slate-100 shadow-none font-black text-[10px] uppercase tracking-widest py-4 rounded-xl"
               >
                 Explore Smart Feed
               </Button>

@@ -287,14 +287,57 @@ export const apiService = {
         token,
         body: JSON.stringify(data)
     }),
+    triageEmergency: (token, query) => request('/emergency/triage', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({ query })
+    }),
     getHelplines: (token, city) => request(`/emergency/helplines${city ? '?city=' + city : ''}`, { token }),
-    getFacilities: (token, { city, lat, lng, type }) => {
+    getFacilities: async (token, { lat, lng, type, radius = 5000 }) => {
         const queryParams = new URLSearchParams();
-        if (city) queryParams.append('city', city);
         if (lat) queryParams.append('lat', lat);
-        if (lng) queryParams.append('lng', lng);
-        if (type) queryParams.append('type', type);
-        return request(`/emergency/facilities?${queryParams.toString()}`, { token });
+        if (lng) queryParams.append('lon', lng);
+
+        // Map frontend facility types to backend keywords
+        const typeMap = {
+            'Hospital': 'hospital',
+            'Trauma Center': 'hospital', // Trauma centers are typically hospitals
+            'Blood Bank': 'blood bank',
+            'Clinic': 'clinic',
+            'hospital': 'hospital',
+            'clinic': 'clinic',
+            'blood bank': 'blood bank'
+        };
+
+        const keyword = type ? typeMap[type] || type.toLowerCase() : 'hospital';
+        queryParams.append('keyword', keyword);
+        queryParams.append('radius', radius);
+        console.log(`[Frontend] Fetching facilities: type=${type}, keyword=${keyword}, lat=${lat}, lng=${lng}, radius=${radius}`);
+
+        const data = await request(`/emergency-map/nearby?${queryParams.toString()}`, {
+            token,
+            timeout: 60000 // Overpass API can be slow, use 60 second timeout
+        });
+
+        // Transform backend response to match frontend expectations
+        if (data.resources) {
+            console.log(`[Frontend] Got ${data.resources.length} resources from backend`);
+            return data.resources.map(resource => ({
+                id: resource.id,
+                name: resource.name,
+                facility_type: resource.type,
+                address: resource.address,
+                rating: 4.5, // Default since backend doesn't provide
+                operating_hours: '24/7', // Default since backend doesn't provide
+                distance_km: resource.distance,
+                phone: resource.phone,
+                is_verified: !!resource.phone, // Mark as verified if has phone
+                lat: resource.lat,
+                lon: resource.lon
+            }));
+        }
+        console.log(`[Frontend] No resources returned from backend`);
+        return [];
     },
 
     // Admin
@@ -322,4 +365,54 @@ export const apiService = {
         method: 'DELETE',
         token
     }),
+
+    // News Feed
+    getTrendingNews: (token) => request('/news/trending', { token }),
+    getPersonalizedNews: (token, params = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params.city) queryParams.append('city', params.city);
+        if (params.category) queryParams.append('category', params.category);
+        return request(`/news/feed?${queryParams.toString()}`, { token });
+    },
+    searchNews: (token, query) => request(`/news/search?q=${encodeURIComponent(query)}`, { token }),
+    syncNews: (token, city) => request(`/news/sync${city ? '?city=' + encodeURIComponent(city) : ''}`, {
+        method: 'POST',
+        token
+    }),
+
+    // Emergency Map
+    getNearbyEmergencyResources: (token, lat, lon, keyword, radius, options = {}) => {
+        const queryParams = new URLSearchParams();
+        queryParams.append('lat', lat);
+        queryParams.append('lon', lon);
+        if (keyword) queryParams.append('keyword', keyword);
+        if (radius) queryParams.append('radius', radius);
+        return request(`/emergency-map/nearby?${queryParams.toString()}`, {
+            token,
+            timeout: options.timeout || 60000
+        });
+    },
+
+    // Hybrid Emergency Intelligence (NEW)
+    intelligentEmergencyMatch: (token, requestId, emergencyQuery) => {
+        const queryParams = new URLSearchParams();
+        queryParams.append('request_id', requestId);
+        queryParams.append('emergency_query', emergencyQuery);
+        return request(`/emergency/intelligent-match?${queryParams.toString()}`, {
+            method: 'POST',
+            token,
+            timeout: 60000 // Allow up to 60 seconds for intelligent matching
+        });
+    },
+    smartEmergencyRetry: (token, requestId, expandedRadius, nearbyCities) => {
+        const queryParams = new URLSearchParams();
+        queryParams.append('request_id', requestId);
+        if (expandedRadius) queryParams.append('expanded_radius', expandedRadius);
+        if (nearbyCities) queryParams.append('nearby_cities', nearbyCities);
+        return request(`/emergency/smart-retry?${queryParams.toString()}`, {
+            method: 'POST',
+            token,
+            timeout: 60000
+        });
+    },
 };

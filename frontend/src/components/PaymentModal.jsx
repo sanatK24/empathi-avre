@@ -145,12 +145,12 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]"
+          className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto"
         >
           <motion.div
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
-            className="bg-white rounded-3xl shadow-premium p-10 max-w-md w-full text-center relative overflow-hidden"
+            className="bg-white rounded-3xl shadow-premium p-10 max-w-md w-full text-center relative overflow-hidden my-auto"
           >
             <div className="absolute top-0 left-0 w-full h-2 bg-green-500"></div>
             <motion.div
@@ -193,7 +193,7 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto"
         onClick={onClose}
       >
         <motion.div
@@ -201,7 +201,7 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 50, opacity: 0 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-white rounded-3xl shadow-premium max-w-md w-full overflow-hidden"
+          className="bg-white rounded-3xl shadow-premium max-w-md w-full overflow-hidden my-auto"
         >
           {/* Header */}
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">

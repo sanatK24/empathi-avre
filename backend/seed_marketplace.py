@@ -1,3 +1,4 @@
+# pyrefly: ignore [missing-import]
 import random
 import os
 import sys

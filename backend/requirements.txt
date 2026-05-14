@@ -28,3 +28,7 @@ pytest-json-report==1.5.0
 lightgbm==4.1.0
 email-validator>=2.0.0
 google-auth==2.23.4
+feedparser==6.0.11
+beautifulsoup4==4.12.3
+textblob==0.18.0.post0
+apscheduler==3.10.4
