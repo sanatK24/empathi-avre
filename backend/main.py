@@ -3,12 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 # pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 from database import get_db, engine, Base
+from cleanup_db import cleanup_database
 from api.v1.router import api_router
-# pyrefly: ignore [missing-import]
 from apscheduler.schedulers.background import BackgroundScheduler
 from services.news_service import NewsService
 from database import SessionLocal
 import os
+
+# TEMPORARY: Wipe DB on startup for cleanup (will be removed in next commit)
+try:
+    cleanup_database()
+except Exception as e:
+    print(f"Cleanup failed or already completed: {e}")
 
 # Create tables
 Base.metadata.create_all(bind=engine)
