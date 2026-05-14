@@ -3,112 +3,13 @@ from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas import UserCreate, UserResponse, Token, SocialAuthRequest, UserUpdate, UserProfileResponse, UserEmergencyContactBase, UserEmergencyContactResponse
+from schemas import UserCreate, UserResponse, Token, UserUpdate, UserProfileResponse, UserEmergencyContactBase, UserEmergencyContactResponse
 from services.auth_service import AuthService
 from api.deps import get_current_user, get_active_user
 from models import User
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
 from config import settings
-import requests as py_requests
 
 router = APIRouter()
-
-@router.post("/social", response_model=Token)
-def social_login(auth_data: SocialAuthRequest, db: Session = Depends(get_db)):
-    provider_data = {}
-    
-    if auth_data.provider == "google":
-        try:
-            userinfo_response = py_requests.get(
-                "https://www.googleapis.com/oauth2/v3/userinfo",
-                headers={"Authorization": f"Bearer {auth_data.token}"}
-            )
-            
-            if userinfo_response.ok:
-                idinfo = userinfo_response.json()
-                provider_data = {
-                    "email": idinfo['email'],
-                    "name": idinfo.get('name', idinfo['email'].split('@')[0]),
-                    "social_id": idinfo.get('sub'),
-                    "avatar_url": idinfo.get('picture')
-                }
-            else:
-                # Fallback to ID token verification
-                idinfo = id_token.verify_oauth2_token(
-                    auth_data.token, 
-                    google_requests.Request(), 
-                    settings.GOOGLE_CLIENT_ID
-                )
-                provider_data = {
-                    "email": idinfo['email'],
-                    "name": idinfo.get('name', idinfo['email'].split('@')[0]),
-                    "social_id": idinfo.get('sub'),
-                    "avatar_url": idinfo.get('picture')
-                }
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Google authentication failed: {str(e)}")
-    else:
-        raise HTTPException(status_code=400, detail="Unsupported provider")
-
-    user = AuthService.social_sync(db, auth_data, provider_data)
-    return AuthService.create_token_response(user)
-    
-@router.get("/google/callback")
-async def google_callback(code: str, db: Session = Depends(get_db)):
-    """
-    OAuth2 callback route for Google authentication.
-    Google redirects here with an authorization code.
-    """
-    # 1. Exchange code for token
-    token_url = "https://oauth2.googleapis.com/token"
-    data = {
-        "code": code,
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "client_secret": settings.GOOGLE_CLIENT_SECRET,
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
-        "grant_type": "authorization_code",
-    }
-    
-    try:
-        response = py_requests.post(token_url, data=data)
-        if not response.ok:
-            error_detail = response.json().get("error_description", "Unknown error")
-            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=google_exchange_failed&detail={error_detail}")
-        
-        tokens = response.json()
-        id_token_str = tokens.get("id_token")
-        
-        if not id_token_str:
-            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=no_id_token")
-        
-        # 2. Verify ID Token
-        idinfo = id_token.verify_oauth2_token(
-            id_token_str, 
-            google_requests.Request(), 
-            settings.GOOGLE_CLIENT_ID
-        )
-        
-        provider_data = {
-            "email": idinfo['email'],
-            "name": idinfo.get('name', idinfo['email'].split('@')[0]),
-            "social_id": idinfo.get('sub'),
-            "avatar_url": idinfo.get('picture')
-        }
-        
-        # 3. Sync user in DB
-        auth_data = SocialAuthRequest(token=id_token_str, provider="google")
-        user = AuthService.social_sync(db, auth_data, provider_data)
-        
-        # 4. Generate our app's JWT
-        token_response = AuthService.create_token_response(user)
-        access_token = token_response["access_token"]
-        
-        # 5. Redirect back to frontend with the token
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login-success?token={access_token}")
-        
-    except Exception as e:
-        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=google_auth_exception&detail={str(e)}")
 
 @router.post("/register", response_model=UserResponse)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
