@@ -122,10 +122,7 @@ export const apiService = {
         method: 'POST',
         body: JSON.stringify(userData)
     }),
-    socialLogin: (token, provider, role = 'requester') => request('/auth/social', {
-        method: 'POST',
-        body: JSON.stringify({ token, provider, role })
-    }),
+
     getMe: (token) => request('/auth/me', { token }),
 
     // Vendor Management

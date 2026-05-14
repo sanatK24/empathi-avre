@@ -7,7 +7,7 @@ import DashboardLayout from './layouts/DashboardLayout/DashboardLayout';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import LoginSuccessPage from './pages/LoginSuccessPage';
+
 
 // User Pages
 import UserDashboard from './pages/UserDashboard';
@@ -85,7 +85,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/login-success" element={<LoginSuccessPage />} />
+
           <Route path="/campaigns" element={<CampaignsFeedPage />} />
           <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
         </Route>

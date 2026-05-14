@@ -1,5 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
 
 const AUTH_STORAGE_KEY = 'empathi_auth_session'
 
@@ -124,63 +124,7 @@ export function logout() {
   clearAuthSession()
 }
 
-let googleScriptPromise
 
-function ensureGoogleScript() {
-  if (window.google?.accounts?.oauth2) {
-    return Promise.resolve()
-  }
-
-  if (googleScriptPromise) {
-    return googleScriptPromise
-  }
-
-  googleScriptPromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector('script[data-google-gsi="true"]')
-    if (existing) {
-      existing.addEventListener('load', () => resolve())
-      existing.addEventListener('error', () => reject(new Error('Failed to load Google script')))
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.defer = true
-    script.dataset.googleGsi = 'true'
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Failed to load Google script'))
-    document.head.appendChild(script)
-  })
-
-  return googleScriptPromise
-}
-
-async function getGoogleAuthorizationCode() {
-  if (!GOOGLE_CLIENT_ID) {
-    throw new Error('VITE_GOOGLE_CLIENT_ID is not configured')
-  }
-
-  await ensureGoogleScript()
-
-  return new Promise((resolve, reject) => {
-    const codeClient = window.google.accounts.oauth2.initCodeClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: 'openid email profile',
-      ux_mode: 'popup',
-      callback: (response) => {
-        if (!response?.code) {
-          reject(new Error('Google did not return an authorization code'))
-          return
-        }
-        resolve(response.code)
-      },
-      error_callback: () => reject(new Error('Google sign-in was cancelled or failed')),
-    })
-
-    codeClient.requestCode()
-  })
-}
 
 async function getMe(token) {
   return apiGet('/auth/me', token)

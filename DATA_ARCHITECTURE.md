@@ -9,7 +9,7 @@ The project uses a structured relational database with the following core entiti
 
 | Entity | Purpose | Key Fields |
 | :--- | :--- | :--- |
-| **User** | Central identity & auth | `email`, `role`, `social_provider`, `social_id`, `avatar_url`, `organization_name`, `is_active` |
+| **User** | Central identity & auth | `email`, `role`, `avatar_url`, `organization_name`, `is_active` |
 | **Vendor** | Provider of resources | `shop_name`, `category`, `lat/lng` (geo), `rating`, `reliability_score`, `verification_status` |
 | **Inventory** | Items held by vendors | `resource_name`, `category`, `quantity`, `reserved_quantity`, `price`, `expiry_date` |
 | **Request** | Consumer resource needs | `resource_name`, `quantity`, `urgency_level` (Low-Critical), `location`, `status` |
@@ -24,7 +24,7 @@ The project uses a structured relational database with the following core entiti
 These schemas handle the validation and serialization of data between the FastAPI backend and the React frontend (`backend/schemas.py`).
 
 ### Authentication & Profiles
-- `SocialAuthRequest`: Handles Google OAuth tokens and registration roles.
+- `UserCreate`: Standard email/password registration.
 - `UserResponse`: Comprehensive user profile including new `avatar_url` and role data.
 - `Token`: JWT bearer token structure.
 
@@ -76,7 +76,7 @@ The backend follows a modular routing structure. All endpoints are relative to t
 | :--- | :--- | :--- |
 | POST | `/auth/register` | Create a new user account |
 | POST | `/auth/login` | Login with email/password (OAuth2 Password Flow) |
-| POST | `/auth/social` | Login/Register with Google OAuth |
+
 | GET | `/auth/me` | Fetch currently authenticated user profile |
 | PUT | `/auth/profile` | Update user profile details |
 | DELETE | `/auth/profile` | Deactivate/Delete user account |

@@ -59,8 +59,6 @@ class User(Base):
     name = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     password_hash = Column(String, nullable=True) # Nullable for social users
-    social_provider = Column(String, nullable=True) # e.g., 'google'
-    social_id = Column(String, nullable=True) # provider-specific user ID
     avatar_url = Column(String, nullable=True) # profile picture URL
     role = Column(Enum(UserRole), default=UserRole.REQUESTER)
     phone = Column(String, nullable=True)

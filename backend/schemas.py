@@ -63,15 +63,7 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class SocialAuthRequest(BaseModel):
-    token: str
-    provider: str
-    role: Optional[UserRole] = UserRole.REQUESTER
 
-    @field_validator('role', mode='before')
-    @classmethod
-    def validate_role(cls, v):
-        return to_upper(v)
 
 class UserEmergencyContactBase(BaseModel):
     name: str

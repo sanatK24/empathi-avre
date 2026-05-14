@@ -1,7 +1,7 @@
 from typing import Optional
 from sqlalchemy.orm import Session
 from models import User, UserRole
-from schemas import UserCreate, SocialAuthRequest
+from schemas import UserCreate
 from repositories.user_repo import user_repo
 from core.security import get_password_hash, verify_password, create_access_token
 from core.exceptions import AuthException, ValidationException
@@ -32,23 +32,7 @@ class AuthService:
             raise AuthException("Incorrect email or password")
         return user
 
-    @staticmethod
-    def social_sync(db: Session, auth_data: SocialAuthRequest, provider_data: dict) -> User:
-        email = provider_data.get('email')
-        user = user_repo.get_by_email(db, email)
-        
-        if not user:
-            user = User(
-                name=provider_data.get('name', email),
-                email=email,
-                social_provider=auth_data.provider,
-                social_id=provider_data.get('social_id'),
-                avatar_url=provider_data.get('avatar_url'),
-                role=auth_data.role or UserRole.REQUESTER,
-                is_active=True
-            )
-            user = user_repo.create_user(db, user)
-        return user
+
 
     @staticmethod
     def create_token_response(user: User) -> dict:

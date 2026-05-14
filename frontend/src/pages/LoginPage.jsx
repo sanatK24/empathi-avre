@@ -7,36 +7,15 @@ import { motion } from 'framer-motion';
 import { apiService } from '../services/apiService';
 
 import { useAppContext } from '../context/AppContext';
-import { useGoogleLogin } from '@react-oauth/google';
 import { saveAuthSession } from '../services/authService';
 
-const GoogleSignInButton = ({ onSocialLogin, loading }) => {
-  const loginWithGoogle = useGoogleLogin({
-    flow: 'auth-code',
-    ux_mode: 'redirect',
-    // The redirect_uri must exactly match the one in Google Console and Backend
-    redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI || 'https://empathi-avre.onrender.com/auth/google/callback',
-  });
-
-  return (
-    <Button
-      variant="secondary"
-      className="w-full h-12 shadow-none border-slate-200"
-      onClick={() => loginWithGoogle()}
-      disabled={loading}
-    >
-      <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
-      Sign in with Google
-    </Button>
-  );
-};
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { updateProfile } = useAppContext();
   const navigate = useNavigate();
-  const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -91,48 +70,7 @@ const LoginPage = () => {
   };
 
 
-  const handleSocialLogin = async (token, provider) => {
-    setLoading(true);
-    try {
-      const tokenData = await apiService.socialLogin(token, provider);
-      const accessToken = tokenData.access_token;
-      const userProfile = await apiService.getMe(accessToken);
 
-      // Save session for persistence
-      saveAuthSession({ accessToken: accessToken, user: userProfile });
-
-      updateProfile({
-        fullName: userProfile.name,
-        email: userProfile.email,
-        backendRole: userProfile.role,
-        userRole: userProfile.role?.toLowerCase() === 'requester' ? 'donor' : userProfile.role?.toLowerCase(),
-        isAuthenticated: true,
-        accessToken: accessToken,
-        backendUserId: userProfile.id,
-        avatarUrl: userProfile.avatar_url,
-        isVerified: userProfile.is_active
-      });
-
-
-      // 5. Redirect based on role
-      const role = userProfile.role?.toLowerCase();
-      if (role === 'vendor') {
-        navigate('/vendor/dashboard');
-      } else if (role === 'requester' || role === 'donor' || role === 'user') {
-        navigate('/user/dashboard');
-      } else if (role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/user/dashboard');
-      }
-
-    } catch (error) {
-      console.error(`${provider} login failed:`, error);
-      alert(error.message || `${provider} login failed.`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex">
@@ -190,26 +128,7 @@ const LoginPage = () => {
             </Button>
           </form>
 
-          <div className="mt-8 relative text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-100"></div>
-            </div>
-            <span className="relative bg-white px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Or continue with</span>
-          </div>
 
-          <div className="mt-8">
-            {hasGoogleClientId ? (
-              <GoogleSignInButton onSocialLogin={handleSocialLogin} loading={loading} />
-            ) : (
-              <Button
-                variant="secondary"
-                className="w-full h-12 shadow-none border-slate-200"
-                disabled
-              >
-                Google Sign-In unavailable
-              </Button>
-            )}
-          </div>
 
 
 

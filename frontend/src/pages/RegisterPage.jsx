@@ -8,77 +8,17 @@ import { Card } from '../components/ui/Card';
 import { cn } from '../utils/cn';
 import { apiService } from '../services/apiService';
 import { useAppContext } from '../context/AppContext';
-import { useGoogleLogin } from '@react-oauth/google';
 import { saveAuthSession } from '../services/authService';
 
-const GoogleSignUpButton = ({ onSocialLogin, loading }) => {
-  const loginWithGoogle = useGoogleLogin({
-    onSuccess: (codeResponse) => onSocialLogin(codeResponse.access_token, 'google'),
-    onError: (error) => console.log('Google Login Failed:', error)
-  });
-
-  return (
-    <Button
-      variant="secondary"
-      className="w-full h-12 shadow-none border-slate-200"
-      onClick={() => loginWithGoogle()}
-      disabled={loading}
-    >
-      <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
-      Sign up with Google
-    </Button>
-  );
-};
 
 const RegisterPage = () => {
   const [role, setRole] = useState('requester');
   const [loading, setLoading] = useState(false);
   const { updateProfile } = useAppContext();
   const navigate = useNavigate();
-  const hasGoogleClientId = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
-
-  const handleSocialLogin = async (token, provider) => {
-    setLoading(true);
-    try {
-      // Pass the selected role for registration
-      const tokenData = await apiService.socialLogin(token, provider, role.toUpperCase());
-      const accessToken = tokenData.access_token;
-      const userProfile = await apiService.getMe(accessToken);
-
-      // Save session for persistence
-      saveAuthSession({ accessToken: accessToken, user: userProfile });
-
-      updateProfile({
-        fullName: userProfile.name,
-        email: userProfile.email,
-        backendRole: userProfile.role,
-        userRole: userProfile.role?.toLowerCase() === 'requester' ? 'donor' : userProfile.role?.toLowerCase(),
-        isAuthenticated: true,
-        accessToken: accessToken,
-        backendUserId: userProfile.id,
-        avatarUrl: userProfile.avatar_url,
-        isVerified: userProfile.is_active
-      });
 
 
-      const role = userProfile.role?.toLowerCase();
-      if (role === 'vendor') {
-        navigate('/vendor/dashboard');
-      } else if (role === 'requester' || role === 'donor' || role === 'user') {
-        navigate('/user/dashboard');
-      } else if (role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/user/dashboard');
-      }
 
-    } catch (error) {
-      console.error(`${provider} registration failed:`, error);
-      alert(error.message || `${provider} registration failed.`);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -196,26 +136,7 @@ const RegisterPage = () => {
             </Button>
           </form>
 
-          <div className="mt-8 relative text-center">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-100"></div>
-            </div>
-            <span className="relative bg-white px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Or continue with</span>
-          </div>
 
-          <div className="mt-8">
-            {hasGoogleClientId ? (
-              <GoogleSignUpButton onSocialLogin={handleSocialLogin} loading={loading} />
-            ) : (
-              <Button
-                variant="secondary"
-                className="w-full h-12 shadow-none border-slate-200"
-                disabled
-              >
-                Google Sign-Up unavailable
-              </Button>
-            )}
-          </div>
 
 
           <p className="mt-8 text-center text-sm font-medium text-slate-500">
