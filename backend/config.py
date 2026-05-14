@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     SECRET_KEY: str = os.getenv("SECRET_KEY", "DEVELOPMENT_ONLY_INSECURE_KEY")
     DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'empathi.db')}")
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://empathi-frontend.onrender.com")
+    
+    # Google OAuth Settings
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "https://empathi-avre.onrender.com/auth/google/callback")
     
     # ML Settings
     MODEL_PATH: str = "backend/ml/model.pkl"

@@ -12,8 +12,10 @@ import { saveAuthSession } from '../services/authService';
 
 const GoogleSignInButton = ({ onSocialLogin, loading }) => {
   const loginWithGoogle = useGoogleLogin({
-    onSuccess: (codeResponse) => onSocialLogin(codeResponse.access_token, 'google'),
-    onError: (error) => console.log('Google Login Failed:', error)
+    flow: 'auth-code',
+    ux_mode: 'redirect',
+    // The redirect_uri must exactly match the one in Google Console and Backend
+    redirect_uri: import.meta.env.VITE_GOOGLE_REDIRECT_URI || 'https://empathi-avre.onrender.com/auth/google/callback',
   });
 
   return (
