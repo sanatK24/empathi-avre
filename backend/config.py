@@ -17,9 +17,9 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://empathi-frontend.onrender.com")
     
     # Google OAuth Settings
-    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", os.getenv("VITE_GOOGLE_CLIENT_ID", ""))
     GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
-    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "https://empathi-avre.onrender.com/auth/google/callback")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", os.getenv("VITE_GOOGLE_REDIRECT_URI", "https://empathi-avre.onrender.com/auth/google/callback"))
     
     # ML Settings
     MODEL_PATH: str = "backend/ml/model.pkl"
