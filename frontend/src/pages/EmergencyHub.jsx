@@ -5,8 +5,7 @@ import {
   Siren, MapPin, Phone, Shield, Navigation, Search, 
   AlertTriangle, Zap, Heart, Droplets, Activity, Truck,
   ChevronRight, PhoneCall, ExternalLink, Info, Filter,
-  Stethoscope, Cross, Tent, LifeBuoy, User, Clock, Star,
-  Bot, Send, Loader2
+  Stethoscope, Cross, Tent, LifeBuoy, User, Clock, Star
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -37,9 +36,6 @@ const EmergencyHub = () => {
     const [locError, setLocError] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
     const [watchId, setWatchId] = useState(null);
-    const [triageInput, setTriageInput] = useState('');
-    const [isTriaging, setIsTriaging] = useState(false);
-    const [triageError, setTriageError] = useState(null);
     const navigate = useNavigate();
 
     const reverseGeocode = async (lat, lng) => {
@@ -144,37 +140,7 @@ const EmergencyHub = () => {
         }
     };
 
-    const handleTriageSubmit = async (e) => {
-        e.preventDefault();
-        if (!triageInput.trim()) return;
 
-        try {
-            setIsTriaging(true);
-            setTriageError(null);
-            
-            // Call the local Ollama backend endpoint
-            const result = await apiService.triageEmergency(profile.accessToken, triageInput);
-            
-            // Redirect to CreateRequest with auto-filled state
-            navigate('/user/create', { 
-                state: { 
-                    triageData: {
-                        resource_name: result.subtype || result.resource_type,
-                        category: result.resource_type,
-                        urgency_level: result.urgency_level,
-                        city: result.city || locationName || profile.city,
-                        quantity: result.quantity || 1,
-                        notes: `[AI TRIAGE PARSED]\nOriginal Request: ${triageInput}`
-                    }
-                } 
-            });
-        } catch (err) {
-            console.error("Triage failed:", err);
-            setTriageError("Failed to analyze emergency. Please use the standard request form.");
-        } finally {
-            setIsTriaging(false);
-        }
-    };
 
     const renderSOSGrid = () => (
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4 mb-8 md:mb-10">
@@ -459,47 +425,6 @@ const EmergencyHub = () => {
                     </div>
                 </div>
             </div>
-
-            {/* AI Natural Language Triage Bar */}
-            <Card className="bg-slate-900 border-none shadow-2xl overflow-hidden relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 opacity-50"></div>
-                <CardContent className="p-6 md:p-8 relative z-10">
-                    <div className="flex flex-col md:flex-row gap-6 items-center">
-                        <div className="flex items-center gap-4 text-white shrink-0">
-                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                                <Bot className="w-6 h-6 text-blue-400" />
-                            </div>
-                            <div>
-                                <h3 className="font-black text-lg uppercase tracking-tight">AI Emergency Triage</h3>
-                                <p className="text-xs text-white/50 font-medium">Type what you need, we'll auto-fill the rest.</p>
-                            </div>
-                        </div>
-                        
-                        <form onSubmit={handleTriageSubmit} className="flex-1 w-full relative">
-                            <input
-                                type="text"
-                                value={triageInput}
-                                onChange={(e) => setTriageInput(e.target.value)}
-                                disabled={isTriaging}
-                                placeholder="e.g. My father had an accident, we need O-negative blood immediately!"
-                                className="w-full bg-white/10 border border-white/20 text-white placeholder:text-white/40 h-14 pl-6 pr-16 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-white/20 transition-all font-medium"
-                            />
-                            <button 
-                                type="submit"
-                                disabled={isTriaging || !triageInput.trim()}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-blue-600 hover:bg-blue-500 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-xl flex items-center justify-center transition-colors shadow-lg"
-                            >
-                                {isTriaging ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
-                            </button>
-                        </form>
-                    </div>
-                    {triageError && (
-                        <p className="text-red-400 text-xs font-bold mt-3 ml-16 flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" /> {triageError}
-                        </p>
-                    )}
-                </CardContent>
-            </Card>
 
             {renderSOSGrid()}
 

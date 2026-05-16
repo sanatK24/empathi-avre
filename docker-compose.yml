@@ -22,25 +22,6 @@ services:
     networks:
       - empathi-network
 
-  # --- Messaging Service (RabbitMQ) ---
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: empathi-rabbitmq
-    restart: always
-    ports:
-      - "5672:5672"   # AMQP
-      - "15672:15672" # Management UI
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - empathi-network
-
   # --- Backend Service (FastAPI) ---
   backend:
     build:
@@ -54,14 +35,10 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-empathi_user}:${POSTGRES_PASSWORD:-empathi_password}@db:5432/${POSTGRES_DB:-empathi_db}
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
       - SECRET_KEY=${SECRET_KEY:-DEVELOPMENT_ONLY_INSECURE_KEY}
       - DEBUG=${DEBUG:-True}
-      - ENABLE_RABBITMQ=True
     depends_on:
       db:
-        condition: service_healthy
-      rabbitmq:
         condition: service_healthy
     networks:
       - empathi-network

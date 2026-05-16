@@ -38,7 +38,7 @@ class MatchingService:
                 db.add(match)
                 matches.append(match)
                 
-                # No notification side-effect for now (RabbitMQ removed)
+                # No notification side-effect for now
                 pass 
             
             db.commit()
@@ -76,9 +76,6 @@ class MatchingService:
         match_repo.cancel_other_matches(db, request.id, vendor_id)
         
         db.commit()
-        
-        # No side effects for now (RabbitMQ removed)
-        pass
         
         return match
 

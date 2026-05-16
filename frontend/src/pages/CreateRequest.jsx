@@ -36,30 +36,7 @@ const CreateRequest = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  React.useEffect(() => {
-    if (location.state?.triageData) {
-      const td = location.state.triageData;
-      // Map the raw category to a valid dropdown option
-      let mappedCat = '';
-      const rawCat = (td.category || '').toLowerCase();
-      if (rawCat.includes('medic') || rawCat.includes('surg') || rawCat.includes('blood') || rawCat.includes('bed')) mappedCat = 'medical';
-      else if (rawCat.includes('pharma') || rawCat.includes('drug') || rawCat.includes('pill')) mappedCat = 'pharma';
-      else if (rawCat.includes('food') || rawCat.includes('water') || rawCat.includes('consum')) mappedCat = 'consumables';
-      else mappedCat = 'emergency';
 
-      setFormData(prev => ({
-        ...prev,
-        resourceName: td.resource_name || '',
-        category: mappedCat,
-        location: td.city || '',
-        urgency: td.urgency_level || 'critical',
-        quantity: td.quantity ? String(td.quantity) : '1',
-        notes: td.notes || ''
-      }));
-      // Auto-advance to next step if mostly filled
-      if (td.resource_name) setStep(2);
-    }
-  }, [location.state]);
 
   const handleNext = () => setStep(s => s + 1);
   const handlePrev = () => setStep(s => s - 1);

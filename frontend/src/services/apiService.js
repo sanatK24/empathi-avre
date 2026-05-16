@@ -284,11 +284,7 @@ export const apiService = {
         token,
         body: JSON.stringify(data)
     }),
-    triageEmergency: (token, query) => request('/emergency/triage', {
-        method: 'POST',
-        token,
-        body: JSON.stringify({ query })
-    }),
+
     getHelplines: (token, city) => request(`/emergency/helplines${city ? '?city=' + city : ''}`, { token }),
     getFacilities: async (token, { lat, lng, type, radius = 5000 }) => {
         const queryParams = new URLSearchParams();
