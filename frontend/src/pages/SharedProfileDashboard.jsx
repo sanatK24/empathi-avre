@@ -48,6 +48,14 @@ const SharedProfileDashboard = () => {
         bio: '',
         city: '',
         address: '',
+        addressLine1: '',
+        addressLine2: '',
+        locality: '',
+        stateProvince: '',
+        postalCode: '',
+        countryCode: '',
+        lat: null,
+        lng: null,
         language: 'English',
         timezone: 'UTC+5:30',
         
@@ -102,6 +110,14 @@ const SharedProfileDashboard = () => {
                 bio: profile.bio || '',
                 city: profile.city || '',
                 address: profile.address || '',
+                addressLine1: profile.addressLine1 || '',
+                addressLine2: profile.addressLine2 || '',
+                locality: profile.locality || '',
+                stateProvince: profile.stateProvince || '',
+                postalCode: profile.postalCode || '',
+                countryCode: profile.countryCode || '',
+                lat: profile.lat || null,
+                lng: profile.lng || null,
                 bloodGroup: profile.bloodGroup || '',
                 preferredHospital: profile.preferredHospital || '',
                 emergencyContacts: profile.emergency_contacts || [],
@@ -137,8 +153,80 @@ const SharedProfileDashboard = () => {
         }
     };
 
+    const [loadingGeo, setLoadingGeo] = useState(false);
+    const [geoError, setGeoError] = useState('');
+
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleDetectLocation = () => {
+        if (!navigator.geolocation) {
+            setGeoError('Geolocation is not supported by your browser.');
+            return;
+        }
+
+        setLoadingGeo(true);
+        setGeoError('');
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const response = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+                    );
+                    if (!response.ok) throw new Error('Geocoding server error');
+                    const data = await response.json();
+                    const addr = data.address || {};
+
+                    // Map Nominatim fields:
+                    const road = addr.road || addr.pedestrian || '';
+                    const houseNumber = addr.house_number || '';
+                    const line1 = [houseNumber, road].filter(Boolean).join(' ').trim() || addr.suburb || '';
+                    const line2 = addr.suburb || addr.neighbourhood || addr.residential || addr.commercial || '';
+                    const locality = addr.suburb || addr.village || addr.neighbourhood || addr.county || '';
+                    const city = addr.city || addr.town || addr.village || addr.suburb || 'Mumbai';
+                    const state = addr.state || addr.region || '';
+                    const postcode = addr.postcode || '';
+                    const countryCodeRaw = (addr.country_code || 'IND').toUpperCase();
+                    const countryCode = countryCodeRaw === 'IN' ? 'IND' : countryCodeRaw.substring(0, 3);
+
+                    // Fully formatted full address for backward compatibility
+                    const fullParts = [line1, line2, locality, city, state, postcode, countryCode].filter(Boolean);
+                    const addressStr = fullParts.join(', ');
+
+                    setFormData(prev => ({
+                        ...prev,
+                        addressLine1: line1,
+                        addressLine2: line2,
+                        locality: locality,
+                        city: city,
+                        stateProvince: state,
+                        postalCode: postcode,
+                        countryCode: countryCode,
+                        address: addressStr,
+                        lat: latitude,
+                        lng: longitude
+                    }));
+                } catch (err) {
+                    console.error('Reverse geocoding failed', err);
+                    setGeoError('Could not auto-detect detailed address. You can enter it manually.');
+                    setFormData(prev => ({
+                        ...prev,
+                        lat: latitude,
+                        lng: longitude
+                    }));
+                } finally {
+                    setLoadingGeo(false);
+                }
+            },
+            (err) => {
+                console.error('Geolocation error', err);
+                setGeoError('Location permission denied or lookup failed. Please enter manually.');
+                setLoadingGeo(false);
+            }
+        );
     };
 
     const handleNestedChange = (parent, field, value) => {
@@ -205,6 +293,27 @@ const SharedProfileDashboard = () => {
         try {
             let backendUser;
             if (profile.role === 'vendor') {
+                // Update User table detailed fields for vendor
+                await updateMyProfile({
+                    name: formData.fullName,
+                    email: formData.email,
+                    phone: formData.phone,
+                    organizationName: formData.shopName || formData.organizationName,
+                    bio: formData.bio,
+                    city: formData.city,
+                    address: formData.address,
+                    addressLine1: formData.addressLine1,
+                    addressLine2: formData.addressLine2,
+                    locality: formData.locality,
+                    stateProvince: formData.stateProvince,
+                    postalCode: formData.postalCode,
+                    countryCode: formData.countryCode,
+                    lat: formData.lat || 19.0760,
+                    lng: formData.lng || 72.8777,
+                    accessToken: profile.accessToken,
+                });
+
+                // Update Vendor table fields
                 backendUser = await apiService.updateVendorProfile(profile.accessToken, {
                     shop_name: formData.shopName || formData.organizationName,
                     category: formData.businessCategory,
@@ -217,8 +326,8 @@ const SharedProfileDashboard = () => {
                     lead_time: formData.leadTime,
                     opening_hours: formData.operatingHours,
                     is_active: formData.isActive,
-                    lat: profile.lat || 19.0760,
-                    lng: profile.lng || 72.8777
+                    lat: formData.lat || 19.0760,
+                    lng: formData.lng || 72.8777
                 });
             } else {
                 backendUser = await updateMyProfile({
@@ -233,6 +342,14 @@ const SharedProfileDashboard = () => {
                     preferredHospital: formData.preferredHospital,
                     personal_categories: formData.personalCategories.join(','),
                     accessibilityNeeds: formData.accessibilityNeeds,
+                    addressLine1: formData.addressLine1,
+                    addressLine2: formData.addressLine2,
+                    locality: formData.locality,
+                    stateProvince: formData.stateProvince,
+                    postalCode: formData.postalCode,
+                    countryCode: formData.countryCode,
+                    lat: formData.lat,
+                    lng: formData.lng,
                     accessToken: profile.accessToken,
                 });
             }
@@ -252,7 +369,15 @@ const SharedProfileDashboard = () => {
                 personal_categories: backendUser?.personal_categories || formData.personalCategories.join(','),
                 emergency_contacts: formData.emergencyContacts, // Locally synced
                 shopName: backendUser?.shop_name || formData.shopName,
-                businessCategory: backendUser?.category || formData.businessCategory
+                businessCategory: backendUser?.category || formData.businessCategory,
+                addressLine1: formData.addressLine1,
+                addressLine2: formData.addressLine2,
+                locality: formData.locality,
+                stateProvince: formData.stateProvince,
+                postalCode: formData.postalCode,
+                countryCode: formData.countryCode,
+                lat: formData.lat,
+                lng: formData.lng
             });
 
             setStatus({ type: 'success', message: 'Profile updated successfully!' });
@@ -453,23 +578,104 @@ const SharedProfileDashboard = () => {
             </Card>
 
             <Card className="p-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-emerald-500" />
-                    Location & Contact
-                </h3>
-                <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-emerald-500 animate-pulse" />
+                        Location Profile
+                    </h3>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleDetectLocation}
+                        loading={loadingGeo}
+                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200/50 hover:border-emerald-300 font-bold transition-all duration-300 shadow-sm shadow-emerald-100/50 flex items-center gap-2"
+                        icon={<MapPin className="w-3.5 h-3.5" />}
+                    >
+                        {loadingGeo ? 'Detecting...' : 'Detect Location'}
+                    </Button>
+                </div>
+
+                {geoError && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-start gap-3 text-rose-700 text-xs font-semibold"
+                    >
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>{geoError}</div>
+                    </motion.div>
+                )}
+
+                {formData.lat && formData.lng && (
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mb-6 p-3 bg-slate-50 border border-slate-100 rounded-xl flex flex-wrap gap-4 items-center justify-between text-xs text-slate-500 font-semibold"
+                    >
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                            <span className="text-slate-700 font-bold">Coordinates Verified</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className="bg-slate-100 px-2.5 py-1 rounded-lg">Lat: <span className="font-mono text-slate-800">{Number(formData.lat).toFixed(6)}</span></span>
+                            <span className="bg-slate-100 px-2.5 py-1 rounded-lg">Lng: <span className="font-mono text-slate-800">{Number(formData.lng).toFixed(6)}</span></span>
+                        </div>
+                    </motion.div>
+                )}
+
+                <div className="space-y-4">
                     <Input 
-                        label="City" 
-                        value={formData.city}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
-                        icon={<MapPin className="w-4 h-4" />}
+                        label="Address Line 1" 
+                        value={formData.addressLine1}
+                        onChange={(e) => handleInputChange('addressLine1', e.target.value)}
+                        placeholder="Building name, Flat/House number, Street"
+                        icon={<Home className="w-4 h-4 text-slate-400" />}
                     />
                     <Input 
-                        label="Full Address" 
-                        value={formData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        icon={<Home className="w-4 h-4" />}
+                        label="Address Line 2" 
+                        value={formData.addressLine2}
+                        onChange={(e) => handleInputChange('addressLine2', e.target.value)}
+                        placeholder="Landmark, sector, or area"
+                        icon={<Building2 className="w-4 h-4 text-slate-400" />}
                     />
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input 
+                            label="Locality" 
+                            value={formData.locality}
+                            onChange={(e) => handleInputChange('locality', e.target.value)}
+                            placeholder="Sub-neighborhood / village"
+                        />
+                        <Input 
+                            label="City / Town" 
+                            value={formData.city}
+                            onChange={(e) => handleInputChange('city', e.target.value)}
+                            placeholder="City, town, or district"
+                        />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Input 
+                            label="State / Province" 
+                            value={formData.stateProvince}
+                            onChange={(e) => handleInputChange('stateProvince', e.target.value)}
+                            placeholder="State or region"
+                        />
+                        <Input 
+                            label="Postal Code (PIN/ZIP)" 
+                            value={formData.postalCode}
+                            onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                            placeholder="e.g., 400703"
+                        />
+                    </div>
+                    <Input 
+                        label="Country Code (ISO 3-Letter)" 
+                        value={formData.countryCode}
+                        onChange={(e) => handleInputChange('countryCode', e.target.value)}
+                        placeholder="e.g., IND"
+                        maxLength={3}
+                        icon={<Globe className="w-4 h-4 text-slate-400" />}
+                    />
+                    <input type="hidden" value={formData.address} />
                 </div>
             </Card>
 

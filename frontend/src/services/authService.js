@@ -170,6 +170,7 @@ export async function updateMyProfile({
   city, address, bloodGroup, preferredHospital, 
   emergencyContactName, emergencyContactPhone, accessibilityNeeds,
   personal_categories, 
+  addressLine1, addressLine2, locality, stateProvince, postalCode, countryCode, lat, lng,
   accessToken 
 }) {
   if (!accessToken) {
@@ -190,6 +191,14 @@ export async function updateMyProfile({
     emergency_contact_name: emergencyContactName,
     emergency_contact_phone: emergencyContactPhone,
     accessibility_needs: accessibilityNeeds,
-    personal_categories
+    personal_categories,
+    address_line_1: addressLine1,
+    address_line_2: addressLine2,
+    locality,
+    state_province: stateProvince,
+    postal_code: postalCode,
+    country_code: countryCode,
+    lat,
+    lng
   }, accessToken)
 }

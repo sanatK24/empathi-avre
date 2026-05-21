@@ -28,6 +28,16 @@ class UserBase(BaseModel):
     saved_addresses: Optional[str] = None
     accessibility_needs: Optional[str] = None
     personal_categories: Optional[str] = None
+    
+    # Detailed Address Profile Fields
+    address_line_1: Optional[str] = None
+    address_line_2: Optional[str] = None
+    locality: Optional[str] = None
+    state_province: Optional[str] = None
+    postal_code: Optional[str] = None
+    country_code: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
 
     @field_validator('role', mode='before')
     @classmethod
@@ -52,6 +62,16 @@ class UserUpdate(BaseModel):
     saved_addresses: Optional[str] = None
     accessibility_needs: Optional[str] = None
     personal_categories: Optional[str] = None
+    
+    # Detailed Address Profile Fields
+    address_line_1: Optional[str] = None
+    address_line_2: Optional[str] = None
+    locality: Optional[str] = None
+    state_province: Optional[str] = None
+    postal_code: Optional[str] = None
+    country_code: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
 
 class UserResponse(UserBase):
     id: int

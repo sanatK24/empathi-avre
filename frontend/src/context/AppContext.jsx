@@ -76,6 +76,14 @@ function getInitialProfile() {
     accessToken: '',
     backendUserId: null,
     backendRole: '',
+    addressLine1: '',
+    addressLine2: '',
+    stateProvince: '',
+    postalCode: '',
+    countryCode: '',
+    lat: null,
+    lng: null,
+    address: '',
     isAuthenticated: false,
   }
 }
@@ -139,6 +147,14 @@ export function AppProvider({ children }) {
         accessToken: '',
         backendUserId: null,
         backendRole: '',
+        addressLine1: '',
+        addressLine2: '',
+        stateProvince: '',
+        postalCode: '',
+        countryCode: '',
+        lat: null,
+        lng: null,
+        address: '',
         isAuthenticated: false,
       }
 
@@ -199,6 +215,15 @@ export function AppProvider({ children }) {
             session.user.preferred_hospital,
           canSwitchRole: session.user.can_switch_role,
           isVendor: session.user.is_vendor,
+          addressLine1: session.user.address_line_1 || '',
+          addressLine2: session.user.address_line_2 || '',
+          locality: session.user.locality || '',
+          stateProvince: session.user.state_province || '',
+          postalCode: session.user.postal_code || '',
+          countryCode: session.user.country_code || '',
+          lat: session.user.lat,
+          lng: session.user.lng,
+          address: session.user.address || '',
           isAuthenticated: true,
         }
 

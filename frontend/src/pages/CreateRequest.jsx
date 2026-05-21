@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, 
@@ -42,6 +42,28 @@ const CreateRequest = () => {
   const handlePrev = () => setStep(s => s - 1);
 
   const { profile } = useAppContext();
+
+  useEffect(() => {
+    if (profile) {
+      const fullAddress = [
+        profile.addressLine1,
+        profile.addressLine2,
+        profile.locality,
+        profile.city,
+        profile.stateProvince,
+        profile.postalCode,
+        profile.countryCode
+      ].filter(Boolean).join(', ');
+      
+      if (fullAddress) {
+        setFormData(prev => ({
+          ...prev,
+          location: prev.location || fullAddress
+        }));
+      }
+    }
+  }, [profile]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -51,9 +73,9 @@ const CreateRequest = () => {
         resource_name: formData.resourceName,
         category: formData.category,
         quantity: parseInt(formData.quantity) || 0,
-        location_lat: 19.0760, // Default to Mumbai lat for now
-        location_lng: 72.8777, // Default to Mumbai lng for now
-        city: "Mumbai",
+        location_lat: (profile.lat !== null && profile.lat !== undefined) ? profile.lat : 19.0760,
+        location_lng: (profile.lng !== null && profile.lng !== undefined) ? profile.lng : 72.8777,
+        city: profile.city || "Mumbai",
         urgency_level: formData.urgency,
         notes: formData.notes
       });

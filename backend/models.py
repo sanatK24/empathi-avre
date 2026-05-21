@@ -90,6 +90,14 @@ class User(Base):
     accessibility_needs = Column(Text, nullable=True)
     personal_categories = Column(Text, nullable=True) # Comma separated custom categories
 
+    # Detailed Address Profile Fields
+    address_line_1 = Column(String(100), nullable=True)
+    address_line_2 = Column(String(100), nullable=True)
+    locality = Column(String(60), nullable=True)
+    state_province = Column(String(50), nullable=True)
+    postal_code = Column(String(10), nullable=True)
+    country_code = Column(String(3), nullable=True)
+
     requests = relationship("Request", back_populates="requester")
     vendor = relationship("Vendor", uselist=False, back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="actor")

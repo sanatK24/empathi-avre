@@ -27,7 +27,8 @@ import {
   ReceiptText,
   ChevronDown,
   UserCircle,
-  RefreshCw
+  RefreshCw,
+  MapPin
 } from 'lucide-react';
 
 import { cn } from '../../utils/cn';
@@ -243,6 +244,16 @@ const DashboardLayout = ({ role = 'requester' }) => {
                 </button>
 
                 <NotificationBell />
+                
+                {profile.city && (
+                  <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-slate-600">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="truncate max-w-[150px]" title={[profile.addressLine1, profile.locality, profile.city].filter(Boolean).join(', ')}>
+                      {profile.locality ? `${profile.locality}, ${profile.city}` : profile.city}
+                    </span>
+                  </div>
+                )}
+
                 <div className="h-8 w-px bg-slate-200 mx-1 md:mx-2 hidden sm:block"></div>
 
                 {/* Profile Dropdown */}
