@@ -60,7 +60,7 @@ class DataGenerator:
                 "name": f"Admin {i+1}",
                 "email": f"admin{i+1}@avre.in",
                 "password_hash": HASHED_PASSWORD,
-                "role": "admin",
+                "role": "ADMIN",
                 "phone": f"+91-{random.randint(7000000000, 9999999999)}",
                 "city": city,
                 "is_active": True,
@@ -71,7 +71,7 @@ class DataGenerator:
         for i in range(self.counts["users"]):
             name = fake.name()
             email = fake.email()
-            role = random.choice(["requester", "vendor"])
+            role = random.choice(["REQUESTER", "VENDOR"])
             city = random.choice(list(INDIAN_CITIES.keys()))
             users.append({
                 "name": name,
@@ -102,7 +102,7 @@ class DataGenerator:
                 "reliability_score": round(random.uniform(0.7, 1.0), 2),
                 "avg_response_time": random.randint(5, 45),
                 "service_radius": random.uniform(5.0, 25.0),
-                "verification_status": random.choice(["verified", "verified", "pending"]),
+                "verification_status": random.choice(["VERIFIED", "VERIFIED", "PENDING"]),
                 "opening_hours": "09:00-21:00",
                 "is_active": True,
                 "total_completed_orders": random.randint(0, 500),
@@ -145,7 +145,7 @@ class DataGenerator:
             resource = random.choice(CATEGORIES[category])
             
             created_at = datetime.now() - timedelta(days=random.randint(0, 30))
-            status = random.choice(["pending", "matched", "accepted", "completed", "cancelled"])
+            status = random.choice(["PENDING", "MATCHED", "ACCEPTED", "COMPLETED", "CANCELLED"])
             
             requests.append({
                 "user_id": uid,
@@ -155,7 +155,7 @@ class DataGenerator:
                 "location_lat": lat,
                 "location_lng": lng,
                 "city": city,
-                "urgency_level": random.choice(["low", "medium", "high", "critical"]),
+                "urgency_level": random.choice(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
                 "preferred_eta": random.randint(30, 240),
                 "notes": f"Need {resource} urgently for home use.",
                 "special_instructions": "Please call before arriving.",
@@ -194,8 +194,8 @@ class DataGenerator:
                         "vendor_rating": v["rating"]
                     }),
                     "response_eta": random.randint(15, 60),
-                    "selected_flag": True if req["status"] in ["accepted", "completed"] and random.random() > 0.5 else False,
-                    "status": "pending",
+                    "selected_flag": True if req["status"] in ["ACCEPTED", "COMPLETED"] and random.random() > 0.5 else False,
+                    "status": "PENDING",
                     "created_at": req["created_at"] + timedelta(minutes=random.randint(1, 20))
                 })
         return matches

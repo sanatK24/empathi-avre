@@ -20,6 +20,7 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
+import { getFallbackImage, handleImageError, getInitials } from '../utils/imageUtils';
 
 const VendorStorefront = () => {
   const { id } = useParams();
@@ -136,9 +137,10 @@ const VendorStorefront = () => {
         <div className="bg-white rounded-[2rem] md:rounded-[3rem] p-6 md:p-12 shadow-premium ring-1 ring-slate-100 mb-12 flex flex-col md:flex-row gap-8 items-center">
           <div className="w-32 h-32 md:w-40 md:h-40 rounded-3xl md:rounded-[2.5rem] overflow-hidden flex-shrink-0 bg-slate-50 border border-slate-100 shadow-inner">
             <img 
-              src={vendor.image_url || `https://images.unsplash.com/photo-${1580000000000 + (vendor.id * 1000)}?auto=format&fit=crop&w=400&h=400&q=80`} 
+              src={vendor.image_url || getFallbackImage('vendor')}
               alt={vendor.shop_name}
               className="w-full h-full object-cover"
+              onError={handleImageError('vendor')}
             />
           </div>
           <div className="flex-1 text-center md:text-left space-y-4">
@@ -184,13 +186,18 @@ const VendorStorefront = () => {
             About the Owner
           </h3>
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-            {vendor.user.avatar_url && (
+            {vendor.user.avatar_url ? (
               <div className="w-32 h-32 rounded-[2rem] overflow-hidden flex-shrink-0 bg-white border border-slate-200 shadow-md">
                 <img
                   src={vendor.user.avatar_url}
                   alt={vendor.user.name}
                   className="w-full h-full object-cover"
+                  onError={handleImageError('default')}
                 />
+              </div>
+            ) : (
+              <div className="w-32 h-32 rounded-[2rem] flex-shrink-0 bg-primary-50 border border-primary-100 shadow-md flex items-center justify-center">
+                <span className="text-3xl font-black text-primary-400">{getInitials(vendor.user.name)}</span>
               </div>
             )}
             <div className="flex-1 text-center md:text-left">
@@ -259,9 +266,10 @@ const VendorStorefront = () => {
                 <Card className="group rounded-[2.5rem] border-none shadow-premium hover:shadow-2xl transition-all duration-500 overflow-hidden bg-white flex flex-col h-full">
                   <div className="aspect-square relative overflow-hidden bg-slate-50">
                     <img 
-                      src={item.image_url || `https://images.unsplash.com/photo-${1587854692152-cbe660dbde88}?w=400&h=400&fit=crop`} 
+                      src={item.image_url || getFallbackImage(item.category || 'medical')}
                       alt={item.resource_name}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      onError={handleImageError(item.category || 'medical')}
                     />
                     <div className="absolute top-4 left-4">
                       <Badge className="bg-white/90 text-slate-900 border-none shadow-lg backdrop-blur-sm">
@@ -341,8 +349,19 @@ const VendorStorefront = () => {
                   cart.map((item) => (
                     <div key={item.id} className="flex gap-4 group">
                       <div className="w-20 h-20 rounded-2xl overflow-hidden bg-slate-50 flex-shrink-0">
-                         <img src={item.image_url} alt={item.resource_name} className="w-full h-full object-cover" />
-                      </div>
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt={item.resource_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { e.target.src = getFallbackImage(item.category || 'medical'); }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-400">
+                            <ShoppingBag className="w-6 h-6" />
+                          </div>
+                        )}
+                     </div>
                       <div className="flex-1 space-y-2">
                          <div className="flex justify-between">
                            <h4 className="text-sm font-black text-slate-900 uppercase truncate">{item.resource_name}</h4>

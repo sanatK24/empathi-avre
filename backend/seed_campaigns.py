@@ -121,18 +121,18 @@ def seed():
             }
         ]
 
-        # Campaign cover images - mix of URLs and base64 data URIs
+        # Campaign cover images - high-resolution unique Unsplash URLs tailored to each campaign
         campaign_images = [
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7lNqGG9gO3ME2IkIfOnimUseI6nTX5OQn0kXssEwek4vH7p1z99-_hn2W&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5ff5yLzXQi45_5K55DWkYWQSg9tQgIoE-sOj59EjdBBsHGD3m9glKCsdE&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRoGSejQNQn4aZ6Di_K8GXGwI6M0mmo4JkkTdPYTvqKkvBCI5oMD3H43zkV&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQJgYd_R1F7RCP3I5tid_YSbzwbrnVX2l2PtCaE7v_A4Umm0o-U3GQIfaw&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCg3-Mne9xDGhs5-ZBOph-HGfqM6JPiLbeaBDeXaioL5N9FsUdEsw9WaY2&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7lNqGG9gO3ME2IkIfOnimUseI6nTX5OQn0kXssEwek4vH7p1z99-_hn2W&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS5ff5yLzXQi45_5K55DWkYWQSg9tQgIoE-sOj59EjdBBsHGD3m9glKCsdE&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRoGSejQNQn4aZ6Di_K8GXGwI6M0mmo4JkkTdPYTvqKkvBCI5oMD3H43zkV&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRQJgYd_R1F7RCP3I5tid_YSbzwbrnVX2l2PtCaE7v_A4Umm0o-U3GQIfaw&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTCg3-Mne9xDGhs5-ZBOph-HGfqM6JPiLbeaBDeXaioL5N9FsUdEsw9WaY2&s"
+            "https://images.unsplash.com/photo-1547683905-f686c993aae5?w=800&h=500&fit=crop", # Flood / Disaster Relief
+            "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=800&h=500&fit=crop", # Medical Camp / Healthcare
+            "https://images.unsplash.com/photo-1509141011663-d34346985a93?w=800&h=500&fit=crop", # Clean Water / Sanitation
+            "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=800&h=500&fit=crop", # Rural Students / Education
+            "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&h=500&fit=crop", # Vaccination / Healthcare
+            "https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&h=500&fit=crop", # Elderly Care / Senior Home
+            "https://images.unsplash.com/photo-1527156979194-719530f5160e?w=800&h=500&fit=crop", # Mindfulness / Mental Health
+            "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&h=500&fit=crop", # Street Children / Social Welfare
+            "https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=800&h=500&fit=crop", # Reforestation / Environment
+            "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&h=500&fit=crop"  # Skill Training / Women Empowerment
         ]
 
         requester_names = [

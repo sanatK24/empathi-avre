@@ -51,6 +51,16 @@ class DonationStatus(str, enum.Enum):
     FAILED = "FAILED"
     REFUNDED = "REFUNDED"
 
+class TransactionStatus(str, enum.Enum):
+    INITIATED     = "INITIATED"
+    ESCROW_HELD   = "ESCROW_HELD"
+    VERIFIED      = "VERIFIED"
+    RELEASED      = "RELEASED"
+    FAILED        = "FAILED"
+    DISPUTED      = "DISPUTED"
+    REFUNDED      = "REFUNDED"
+    FRAUD_FLAGGED = "FRAUD_FLAGGED"
+
 # ============ USERS TABLE ============
 class User(Base):
     __tablename__ = "users"
@@ -114,7 +124,9 @@ class Vendor(Base):
     opening_hours = Column(String, nullable=True) # e.g. "09:00-21:00"
     is_active = Column(Boolean, default=True)
     total_completed_orders = Column(Integer, default=0)
-    fairness_penalty = Column(Float, default=0.0)  # Used by AVRE to prevent monopoly
+    fairness_penalty = Column(Float, default=0.0, index=True)  # Used by EmpathI Engine to prevent candidate monopoly
+    total_impressions = Column(Integer, default=0)
+    total_selections = Column(Integer, default=0)
     image_url = Column(String, nullable=True)
     created_at = Column(DateTime, default=func.now())
 
@@ -172,6 +184,10 @@ class Request(Base):
 # ============ MATCHES TABLE ============
 class Match(Base):
     __tablename__ = "matches"
+    
+    __table_args__ = (
+        Index('ix_matches_request_id_score', 'request_id', 'score'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     request_id = Column(Integer, ForeignKey("requests.id"), index=True)
@@ -179,10 +195,17 @@ class Match(Base):
     score = Column(Float)
     ml_score = Column(Float, nullable=True)
     rule_score = Column(Float, nullable=True)
+    lgbm_score = Column(Float, nullable=True)
+    fairness_penalty_applied = Column(Float, nullable=True)
+    rank_position = Column(Integer, nullable=True)
     explanation_json = Column(Text, nullable=True) # Story behind the match
     response_eta = Column(Integer, nullable=True) # vendor's quoted time
     selected_flag = Column(Boolean, default=False)
     status = Column(Enum(MatchStatus), default=MatchStatus.PENDING)
+    # Phase 2: Trust scoring fields (nullable, non-breaking)
+    trust_score = Column(Float, nullable=True)               # Composite trust score [0.0-1.0]
+    fulfillment_probability = Column(Float, nullable=True)   # P(vendor fulfills)
+    risk_adjusted_score = Column(Float, nullable=True)       # Final score after trust adjustment
     created_at = Column(DateTime, default=func.now())
 
     request = relationship("Request", back_populates="matches")
@@ -417,3 +440,61 @@ class NewsArticle(Base):
     sentiment = Column(String, nullable=True)
     published_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=func.now())
+
+# ============ VENDOR TRUST PROFILES TABLE (Phase 2) ============
+class VendorTrustProfile(Base):
+    __tablename__ = "vendor_trust_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    vendor_id = Column(Integer, ForeignKey("vendors.id"), unique=True, index=True)
+
+    # Decomposed trust probabilities (all 0.0-1.0)
+    fulfillment_probability = Column(Float, default=0.85)  # P(vendor fulfills order)
+    cancellation_risk       = Column(Float, default=0.10)  # P(vendor cancels)
+    dispute_probability     = Column(Float, default=0.05)  # P(dispute raised)
+    refund_likelihood       = Column(Float, default=0.05)  # P(refund issued)
+    delivery_reliability    = Column(Float, default=0.80)  # P(on-time delivery)
+
+    # Anomaly / fraud signal
+    anomaly_score    = Column(Float, default=0.0)          # Isolation Forest score (higher = more anomalous)
+    is_fraud_flagged = Column(Boolean, default=False)
+
+    # Composite trust score for ranking multiplier
+    composite_trust_score = Column(Float, default=0.80)    # 0.0-1.0
+
+    # Audit metadata
+    model_version    = Column(String, default="v1")
+    is_heuristic     = Column(Boolean, default=True)       # True if derived from heuristics (no ML model)
+    last_computed_at = Column(DateTime, default=func.now())
+    created_at       = Column(DateTime, default=func.now())
+
+    vendor = relationship("Vendor", backref="trust_profile", uselist=False)
+
+# ============ TRANSACTIONS TABLE (Phase 2 Simulated Escrow) ============
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id                = Column(Integer, primary_key=True, index=True)
+    match_id          = Column(Integer, ForeignKey("matches.id"), unique=True, index=True)
+    vendor_id         = Column(Integer, ForeignKey("vendors.id"), index=True)
+    requester_user_id = Column(Integer, ForeignKey("users.id"), index=True)
+
+    status           = Column(Enum(TransactionStatus), default=TransactionStatus.INITIATED)
+    simulated_amount = Column(Float, nullable=True)         # Simulated value in INR
+
+    # Lifecycle timestamps
+    initiated_at  = Column(DateTime, default=func.now())
+    escrow_held_at = Column(DateTime, nullable=True)
+    verified_at   = Column(DateTime, nullable=True)
+    released_at   = Column(DateTime, nullable=True)
+    failed_at     = Column(DateTime, nullable=True)
+
+    # Risk metadata
+    risk_score       = Column(Float, nullable=True)         # 0.0-1.0 from trust model at initiation
+    fraud_flag       = Column(Boolean, default=False)
+    dispute_reason   = Column(Text, nullable=True)
+    simulation_notes = Column(Text, nullable=True)          # JSON array of event log entries
+
+    match     = relationship("Match", backref="transaction", uselist=False)
+    vendor    = relationship("Vendor", foreign_keys=[vendor_id])
+    requester = relationship("User", foreign_keys=[requester_user_id])

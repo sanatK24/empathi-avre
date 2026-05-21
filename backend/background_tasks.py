@@ -244,19 +244,19 @@ class BackgroundTasks:
             logger.error(f"Error processing image for campaign {campaign_id}: {str(e)}")
 
     @staticmethod
-    def rebuild_avre_rankings(db: Session):
+    def rebuild_empathi_rankings(db: Session):
         """
-        Rebuild AVRE ranking scores for all active requests.
+        Rebuild EmpathI ranking scores for all active requests.
         ML feature engineering and batch scoring.
 
         Args:
             db: Database session
         """
         try:
-            from models import Request, RequestStatus, Match
-            from services.empathi_engine import EmpathiEngine
+            from models import Request, RequestStatus
+            from services.matching_service import MatchingService
 
-            logger.info("Rebuilding AVRE rankings for all active requests")
+            logger.info("Rebuilding EmpathI rankings for all active requests")
 
             # Get all active requests
             active_requests = db.query(Request).filter(
@@ -264,17 +264,17 @@ class BackgroundTasks:
             ).all()
 
             for request in active_requests:
-                # Run AVRE on each request
+                # Run matching service on each request
                 try:
-                    matches = EmpathiEngine.match_request(db, request)
+                    matches = MatchingService.get_or_generate_matches(db, request)
                     logger.info(f"Rebuilt matches for request {request.id}: {len(matches)} matches")
                 except Exception as e:
                     logger.error(f"Error rebuilding matches for request {request.id}: {str(e)}")
 
-            logger.info(f"AVRE rankings rebuilt for {len(active_requests)} requests")
+            logger.info(f"EmpathI rankings rebuilt for {len(active_requests)} requests")
 
         except Exception as e:
-            logger.error(f"Error rebuilding AVRE rankings: {str(e)}")
+            logger.error(f"Error rebuilding EmpathI rankings: {str(e)}")
 
     @staticmethod
     def cleanup_expired_data(db: Session):

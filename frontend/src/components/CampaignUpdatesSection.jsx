@@ -6,6 +6,7 @@ import { apiService } from '../services/apiService';
 import UpdateCard from './UpdateCard';
 import UpdateForm from './UpdateForm';
 import CommentsModal from './CommentsModal';
+import { handleImageError } from '../utils/imageUtils';
 import Button from './ui/Button';
 import { Card } from './ui/Card';
 
@@ -104,6 +105,7 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
               src={pinnedUpdate.image_url} 
               alt="Pinned update" 
               className="w-full h-40 object-cover rounded-lg mb-3"
+              onError={handleImageError('default')}
             />
           )}
           <p className="text-xs text-slate-500">

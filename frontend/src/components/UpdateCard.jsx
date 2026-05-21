@@ -2,6 +2,7 @@ import React from 'react';
 import { Heart, MessageCircle, Share2, Pin, PinOff, Trash2, MoreVertical } from 'lucide-react';
 import { Card, CardContent } from './ui/Card';
 import { motion } from 'framer-motion';
+import { handleImageError, getInitials } from '../utils/imageUtils';
 
 const UpdateCard = ({ 
   update, 
@@ -33,12 +34,17 @@ const UpdateCard = ({
       {/* Header */}
       <div className="bg-slate-50 px-6 py-4 flex items-center justify-between border-b border-slate-100">
         <div className="flex items-center gap-3">
-          {update.creator?.avatar_url && (
+          {update.creator?.avatar_url ? (
             <img
               src={update.creator.avatar_url}
               alt={update.creator.name}
               className="w-10 h-10 rounded-full object-cover"
+              onError={handleImageError('default')}
             />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-black text-primary-600">{getInitials(update.creator?.name || '?')}</span>
+            </div>
           )}
           <div>
             <p className="font-bold text-slate-900">{update.creator?.name}</p>
@@ -111,6 +117,7 @@ const UpdateCard = ({
             src={update.image_url}
             alt="Update"
             className="w-full rounded-xl max-h-96 object-cover"
+            onError={handleImageError('default')}
           />
         )}
 

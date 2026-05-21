@@ -8,7 +8,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./avre.db
+      - DATABASE_URL=sqlite:///./empathi.db
       - SECRET_KEY=DEVELOPMENT_ONLY_INSECURE_KEY
       - NODE_ENV=development
     restart: always

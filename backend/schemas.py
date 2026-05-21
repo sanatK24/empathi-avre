@@ -216,6 +216,8 @@ class RankedVendor(BaseModel):
     relevance_score: float
     ml_score: Optional[float] = None
     rule_score: Optional[float] = None
+    lgbm_score: Optional[float] = None
+    fairness_penalty_applied: Optional[float] = None
     explanation: str
     response_eta: Optional[int] = None
 

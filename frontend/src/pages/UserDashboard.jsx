@@ -12,10 +12,10 @@ import {
   Users,
   TrendingUp,
   Heart,
-  Siren,
   Sparkles,
   ShoppingBag,
-  Megaphone
+  Megaphone,
+  ReceiptText
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -23,9 +23,10 @@ import Badge from '../components/ui/Badge';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import { Link } from 'react-router-dom';
+import { formatCurrency, formatNumber } from '../utils/formatNumber';
 
 const UserDashboard = () => {
-  const { profile } = useAppContext();
+  const { profile, statsRefreshTrigger } = useAppContext();
   const [stats, setStats] = useState({
     active_requests: 0,
     matched_vendors: 0,
@@ -42,20 +43,29 @@ const UserDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [statsData, histData, donationData] = await Promise.all([
+        const [statsData, histData, donationData, recommendationsData] = await Promise.all([
           apiService.getRequesterStats(profile.accessToken).catch(() => ({})),
           apiService.getRequestHistory(profile.accessToken).catch(() => []),
-          apiService.getDonationHistory(profile.accessToken).catch(() => [])
+          apiService.getDonationHistory(profile.accessToken).catch(() => []),
+          apiService.getPersonalizedCampaigns(profile.accessToken).catch(() => [])
         ]);
+
+        const totalReq = statsData.total_requests || 0;
+        const resolvedReq = statsData.resolved_requests || 0;
+        const matchedVendors = statsData.matched_vendors || 0;
 
         setStats({
           active_requests: statsData.active_requests || 0,
-          matched_vendors: statsData.matched_vendors || 0,
+          matched_vendors: matchedVendors,
           active_campaigns: statsData.active_campaigns || 0,
-          donations_made: statsData.donations_made || 0,
+          donations_made: (donationData || []).reduce((sum, d) => sum + (d.amount || 0), 0),
           emergency_requests: statsData.emergency_requests || 0,
-          recommendations_available: statsData.recommendations_available || 0
+          recommendations_available: statsData.recommendations_available || (recommendationsData ? recommendationsData.length : 0),
+          lives_impacted: resolvedReq,
+          goal_progress: totalReq > 0 ? Math.round(((resolvedReq + matchedVendors) / totalReq) * 100) : 0
         });
+
+        setRecommendations(recommendationsData || []);
 
         // Transform history to activity format
         const requests = (histData || []).map(item => ({
@@ -69,8 +79,8 @@ const UserDashboard = () => {
 
         const donations = (donationData || []).map(item => ({
           type: 'donation',
-          title: `Donated to ${item.campaign_title}`,
-          status: `₹${item.amount.toLocaleString()}`,
+          title: `Donated to ${item.campaign_title || 'Humanitarian Campaign'}`,
+          status: formatCurrency(item.amount),
           date: new Date(item.created_at),
           time: new Date(item.created_at).toLocaleDateString(),
           level: 'medium'
@@ -92,22 +102,22 @@ const UserDashboard = () => {
     if (profile.accessToken) {
       fetchData();
     }
-  }, [profile.accessToken]);
+  }, [profile.accessToken, statsRefreshTrigger]);
 
   const overviewCards = [
-    { label: 'Active Requests', value: stats.active_requests, icon: Zap, color: 'text-primary-500', bg: 'bg-primary-50' },
-    { label: 'Matched Vendors', value: stats.matched_vendors, icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { label: 'Active Campaigns', value: stats.active_campaigns, icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { label: 'Donations Made', value: `₹${stats.donations_made.toLocaleString()}`, icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { label: 'Emergencies', value: stats.emergency_requests, icon: Siren, color: 'text-red-500', bg: 'bg-red-50' },
-    { label: 'Recommendations', value: stats.recommendations_available, icon: Sparkles, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { label: 'Active Requests', value: formatNumber(stats.active_requests), icon: Zap, color: 'text-primary-500', bg: 'bg-primary-50' },
+    { label: 'Matched Vendors', value: formatNumber(stats.matched_vendors), icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { label: 'Active Campaigns', value: formatNumber(stats.active_campaigns), icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { label: 'Donations Made', value: formatCurrency(stats.donations_made), icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { label: 'Urgent Needs', value: formatNumber(stats.emergency_requests), icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
+    { label: 'Recommendations', value: formatNumber(stats.recommendations_available), icon: Sparkles, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];
 
   const quickActions = [
     { label: 'Marketplace', icon: ShoppingBag, path: '/user/marketplace', color: 'bg-primary-500' },
     { label: 'Create Campaign', icon: Megaphone, path: '/user/campaigns/create', color: 'bg-amber-500' },
-    { label: 'Emergency Help', icon: Siren, path: '/user/emergency', color: 'bg-red-600' },
-    { label: 'Smart Feed', icon: Sparkles, path: '/user/recommendations', color: 'bg-indigo-500' },
+    { label: 'Transactions', icon: ReceiptText, path: '/user/transactions', color: 'bg-slate-700' },
+    { label: 'Community Feed', icon: Sparkles, path: '/user/smart-feed', color: 'bg-indigo-500' },
   ];
 
   if (loading) {
@@ -219,7 +229,7 @@ const UserDashboard = () => {
                           {item.type === 'request' && <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5" />}
                           {item.type === 'donation' && <Heart className="w-4 h-4 sm:w-5 sm:h-5" />}
                           {item.type === 'match' && <Users className="w-4 h-4 sm:w-5 sm:h-5" />}
-                          {item.type === 'emergency' && <Siren className="w-4 h-4 sm:w-5 sm:h-5" />}
+                          {item.type === 'emergency' && <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />}
                         </div>
                         <div className="min-w-0">
                           <h4 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-tight truncate">{item.title}</h4>
@@ -264,11 +274,54 @@ const UserDashboard = () => {
               <CardDescription className="text-slate-400 font-medium">Smart AI curated opportunities for you</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 relative z-10">
-              <div className="p-6 sm:p-12 text-center text-slate-500 bg-white/5 rounded-2xl border border-white/10">
-                <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-4 opacity-20" />
-                <p className="font-bold uppercase text-[10px] tracking-widest text-white/60">No recommendations yet</p>
-                <p className="text-[10px] mt-2 font-medium italic text-slate-400">Recommendations will appear after your first activity.</p>
-              </div>
+              {recommendations && recommendations.length > 0 ? (
+                <div className="space-y-3">
+                  {recommendations.slice(0, 3).map((item, idx) => (
+                    <Link to={`/user/campaigns/${item.id}`} key={idx} className="block">
+                      <div className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 space-y-2 group/rec">
+                        <div className="flex justify-between items-start gap-2">
+                          <h4 className="text-xs font-black uppercase tracking-tight text-white line-clamp-1 flex-1 group-hover/rec:text-primary-400 transition-colors">
+                            {item.title}
+                          </h4>
+                          {item.score && (
+                            <span className="text-[8px] font-black text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-md shrink-0">
+                              {Math.round(item.score)}% Match
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[9px] text-slate-400 font-bold uppercase tracking-wider">
+                          <span className="bg-primary-500/20 text-primary-400 px-1.5 py-0.5 rounded">
+                            {item.category}
+                          </span>
+                          <span>•</span>
+                          <span>{item.city}</span>
+                        </div>
+                        {item.reason && (
+                          <p className="text-[9px] text-amber-400/80 font-medium italic">
+                            ★ {item.reason}
+                          </p>
+                        )}
+                        {/* Progress Bar */}
+                        <div className="space-y-1 pt-1">
+                          <div className="flex justify-between text-[8px] font-bold text-slate-400 uppercase tracking-widest">
+                            <span>Progress</span>
+                            <span>{item.progress || 0}%</span>
+                          </div>
+                          <div className="h-1 w-full bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-primary-500 rounded-full" style={{ width: `${Math.min(100, item.progress || 0)}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 sm:p-12 text-center text-slate-500 bg-white/5 rounded-2xl border border-white/10">
+                  <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-4 opacity-20" />
+                  <p className="font-bold uppercase text-[10px] tracking-widest text-white/60">No recommendations yet</p>
+                  <p className="text-[10px] mt-2 font-medium italic text-slate-400">Recommendations will appear after your first activity.</p>
+                </div>
+              )}
               <Button 
                 onClick={() => window.location.href='/user/recommendations'}
                 className="w-full bg-white text-slate-900 hover:bg-slate-100 shadow-none font-black text-[10px] uppercase tracking-widest py-4 rounded-xl"

@@ -182,7 +182,7 @@ const LoginPage = () => {
           <div className="mt-12 text-center max-w-sm">
              <h2 className="text-2xl font-display font-bold text-slate-900 mb-4">Mastering Predictive Resource Intelligence</h2>
              <p className="text-slate-500 font-medium">
-                Our engine combines historical data with real-time variables to provide 
+                Our engine combines historical data with dynamic variables to provide 
                 the most accurate resource coordination in the industry.
              </p>
           </div>

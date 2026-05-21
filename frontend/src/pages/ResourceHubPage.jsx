@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   PlusCircle, 
@@ -17,18 +17,46 @@ import {
 import { Card, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
+import { useAppContext } from '../context/AppContext';
+import { apiService } from '../services/apiService';
 
 const ResourceHubPage = () => {
   const navigate = useNavigate();
+  const { profile } = useAppContext();
+  const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        setLoading(true);
+        const data = await apiService.discoverVendors(profile.accessToken, { city: 'Mumbai' });
+        setVendors(data);
+      } catch (err) {
+        console.error("Failed to fetch vendors", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (profile.accessToken) {
+      fetchVendors();
+    }
+  }, [profile.accessToken]);
 
   const categories = [
-    { name: 'Medical Equipment', icon: Activity, count: '1.2k+', color: 'text-blue-500', bg: 'bg-blue-50' },
-    { name: 'Pharmaceuticals', icon: Droplet, count: '850+', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { name: 'Blood Bank', icon: Thermometer, count: 'Active', color: 'text-rose-500', bg: 'bg-rose-50' },
-    { name: 'Diagnostic Tools', icon: Stethoscope, count: '420+', color: 'text-amber-500', bg: 'bg-amber-50' },
-    { name: 'Emergency Kits', icon: Package, count: '2.4k+', color: 'text-purple-500', bg: 'bg-purple-50' },
-    { name: 'Global Logistics', icon: Globe, count: 'Verified', color: 'text-indigo-500', bg: 'bg-indigo-50' },
+    { name: 'Medical Equipment', icon: Activity, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { name: 'Pharmaceuticals', icon: Droplet, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { name: 'Blood Bank', icon: Thermometer, color: 'text-rose-500', bg: 'bg-rose-50' },
+    { name: 'Diagnostic Tools', icon: Stethoscope, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { name: 'Emergency Kits', icon: Package, color: 'text-purple-500', bg: 'bg-purple-50' },
+    { name: 'Global Logistics', icon: Globe, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];
+
+  const getCategoryCount = (categoryName) => {
+    if (loading) return '...';
+    const count = vendors.filter(v => v.category === categoryName).length;
+    return `${count} active`;
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 md:space-y-12 pb-20 px-4">
@@ -91,7 +119,7 @@ const ResourceHubPage = () => {
               </div>
               <h3 className="text-xl md:text-2xl font-display font-black uppercase mb-3 md:mb-4 tracking-tight text-slate-900">Request History</h3>
               <p className="text-slate-500 font-medium text-sm md:text-base mb-6 md:mb-8 flex-grow">
-                Track your active and previous resource requests in real-time.
+                Track your active and previous resource requests dynamically.
               </p>
               <div className="flex items-center text-primary-600 font-black uppercase tracking-widest text-[10px] md:text-xs group-hover:gap-2 transition-all">
                 View History <ArrowRight className="w-3 md:w-4 h-3 md:h-4 ml-1" />
@@ -131,7 +159,7 @@ const ResourceHubPage = () => {
                   </div>
                   <div>
                     <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-tight leading-none mb-0.5 truncate px-1">{cat.name}</p>
-                    <p className={`text-[9px] md:text-xs font-black ${cat.color}`}>{cat.count}</p>
+                    <p className={`text-[9px] md:text-xs font-black ${cat.color}`}>{getCategoryCount(cat.name)}</p>
                   </div>
                 </CardContent>
               </Card>

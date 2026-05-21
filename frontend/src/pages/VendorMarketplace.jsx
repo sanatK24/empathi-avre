@@ -11,6 +11,7 @@ import {
   Zap,
   ShoppingBag
 } from 'lucide-react';
+import { getFallbackImage, handleImageError } from '../utils/imageUtils';
 import { Card, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -28,9 +29,10 @@ const VendorCard = ({ vendor, navigate }) => (
     <Card className={`overflow-hidden rounded-[2.5rem] border-none shadow-premium hover:shadow-2xl transition-all duration-500 group ${!vendor.is_active || !vendor.is_available ? 'grayscale opacity-70' : ''}`}>
       <div className="aspect-[16/10] relative overflow-hidden bg-slate-100">
         <img 
-          src={vendor.image_url || `https://images.unsplash.com/photo-${1580000000000 + (vendor.id * 1000)}?auto=format&fit=crop&w=800&q=80`} 
+          src={vendor.image_url || getFallbackImage('vendor')}
           alt={vendor.shop_name}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          onError={handleImageError('vendor')}
         />
         <div className="absolute top-4 left-4 z-10">
           <Badge className={`${vendor.is_active && vendor.is_available ? 'bg-emerald-500' : 'bg-slate-500'} text-white border-none shadow-lg backdrop-blur-md bg-opacity-90`}>
@@ -161,15 +163,7 @@ const VendorMarketplace = () => {
         {/* Category Chips */}
         <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide mt-4">
           {categories.map(cat => {
-            const counts = {
-              "All": "",
-              "Medical Equipment": "1.2k+",
-              "Pharmaceuticals": "850+",
-              "Blood Bank": "Active",
-              "Diagnostic Tools": "420+",
-              "Emergency Kits": "2.4k+",
-              "Global Logistics": "Verified"
-            };
+            const count = cat === 'All' ? vendors.length : vendors.filter(v => v.category === cat).length;
             return (
               <button
                 key={cat}
@@ -181,13 +175,11 @@ const VendorMarketplace = () => {
                 }`}
               >
                 {cat}
-                {counts[cat] && (
-                  <span className={`px-2 py-0.5 rounded-md text-[8px] ${
-                    selectedCategory === cat ? 'bg-primary-500 text-white' : 'bg-slate-100 text-slate-400'
-                  }`}>
-                    {counts[cat]}
-                  </span>
-                )}
+                <span className={`px-2 py-0.5 rounded-md text-[8px] ${
+                  selectedCategory === cat ? 'bg-primary-500 text-white' : 'bg-slate-100 text-slate-400'
+                }`}>
+                  {loading ? '...' : count}
+                </span>
               </button>
             );
           })}
@@ -208,48 +200,68 @@ const VendorMarketplace = () => {
           </div>
         ) : (
           <div className="space-y-12">
-            {/* Medical Providers Section */}
-            {(selectedCategory === 'All' || selectedCategory === 'Medical Equipment') && (
+            {selectedCategory === 'All' ? (
+              <div className="space-y-12">
+                {/* Medical Providers Section */}
+                <section className="space-y-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
+                    <h2 className="text-lg md:text-xl font-display font-black text-slate-900 uppercase tracking-tight">
+                      Medical Providers in <span className="text-primary-500">{profile.area || profile.city || 'Your Area'}</span>
+                    </h2>
+                    {filteredVendors.filter(v => v.category === 'Medical Equipment').length > 3 && (
+                      <button 
+                        onClick={() => setShowAllMedical(!showAllMedical)}
+                        className="text-primary-500 font-black text-xs uppercase tracking-widest hover:underline"
+                      >
+                        {showAllMedical ? 'View Less' : 'View More'}
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredVendors
+                      .filter(v => v.category === 'Medical Equipment')
+                      .slice(0, !showAllMedical ? 3 : undefined)
+                      .map((vendor) => (
+                        <VendorCard key={vendor.id} vendor={vendor} navigate={navigate} />
+                      ))}
+                  </div>
+                </section>
+
+                {/* Other Categories Section */}
+                <section className="space-y-8 pt-8 border-t border-slate-100">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-lg md:text-xl font-display font-black text-slate-900 uppercase tracking-tight">
+                      Other Resources in <span className="text-primary-500">{profile.area || profile.city || 'Your Area'}</span>
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredVendors
+                      .filter(v => v.category !== 'Medical Equipment')
+                      .map((vendor) => (
+                        <VendorCard key={vendor.id} vendor={vendor} navigate={navigate} />
+                      ))}
+                  </div>
+                </section>
+              </div>
+            ) : (
+              /* Selected Category Section */
               <section className="space-y-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
                   <h2 className="text-lg md:text-xl font-display font-black text-slate-900 uppercase tracking-tight">
-                    Medical Providers in <span className="text-primary-500">{profile.area || profile.city || 'Your Area'}</span>
-                  </h2>
-                  {selectedCategory === 'All' && filteredVendors.filter(v => v.category === 'Medical Equipment').length > 3 && (
-                    <button 
-                      onClick={() => setShowAllMedical(!showAllMedical)}
-                      className="text-primary-500 font-black text-xs uppercase tracking-widest hover:underline"
-                    >
-                      {showAllMedical ? 'View Less' : 'View More'}
-                    </button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredVendors
-                    .filter(v => v.category === 'Medical Equipment' || selectedCategory !== 'All')
-                    .slice(0, (selectedCategory === 'All' && !showAllMedical) ? 3 : undefined)
-                    .map((vendor) => (
-                      <VendorCard key={vendor.id} vendor={vendor} navigate={navigate} />
-                    ))}
-                </div>
-              </section>
-            )}
-
-            {/* Other Categories Section */}
-            {selectedCategory === 'All' && (
-              <section className="space-y-8 pt-8 border-t border-slate-100">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg md:text-xl font-display font-black text-slate-900 uppercase tracking-tight">
-                    Other Resources in <span className="text-primary-500">{profile.area || profile.city || 'Your Area'}</span>
+                    {selectedCategory} Providers in <span className="text-primary-500">{profile.area || profile.city || 'Your Area'}</span>
                   </h2>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {filteredVendors
-                    .filter(v => v.category !== 'Medical Equipment')
-                    .map((vendor) => (
+                {filteredVendors.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredVendors.map((vendor) => (
                       <VendorCard key={vendor.id} vendor={vendor} navigate={navigate} />
                     ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 shadow-soft">
+                    <p className="text-slate-500 font-medium italic">No providers found in this category in your area.</p>
+                  </div>
+                )}
               </section>
             )}
           </div>

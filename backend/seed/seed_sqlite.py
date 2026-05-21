@@ -41,7 +41,7 @@ def seed_db(scale="small", clear=False):
     print(f"Inserted {len(db_users)} users.")
 
     # 2. Vendors
-    vendor_user_ids = [u.id for u in db_users if u.role == "vendor"]
+    vendor_user_ids = [u.id for u in db_users if str(u.role).upper().endswith("VENDOR")]
     vendor_data = gen.generate_vendors(vendor_user_ids)
     db_vendors = [Vendor(**v) for v in vendor_data]
     session.add_all(db_vendors)
@@ -58,7 +58,7 @@ def seed_db(scale="small", clear=False):
     print(f"Inserted {len(db_inventory)} inventory items.")
 
     # 4. Requests
-    requester_ids = [u.id for u in db_users if u.role == "requester"]
+    requester_ids = [u.id for u in db_users if str(u.role).upper().endswith("REQUESTER")]
     request_data = gen.generate_requests(requester_ids)
     db_requests = [Request(**r) for r in request_data]
     session.add_all(db_requests)

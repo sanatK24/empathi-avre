@@ -13,15 +13,33 @@ class RankerInference:
         self._load_assets()
 
     def _load_assets(self):
-        try:
-            if os.path.exists(self.model_path):
-                with open(self.model_path, "rb") as f:
-                    self.model = pickle.load(f)
-                with open(self.features_path, "rb") as f:
-                    self.feature_names = pickle.load(f)
-                print(f"Loaded Ranker Model from {self.model_path}")
-        except Exception as e:
-            print(f"Failed to load ML Ranker: {e}")
+        # Search paths: exact model_path, backend/model_path, or parent/model_path
+        paths_to_check = [
+            (self.model_path, self.features_path),
+            (os.path.join("backend", self.model_path), os.path.join("backend", self.features_path)),
+            (os.path.join("..", self.model_path), os.path.join("..", self.features_path)),
+            (os.path.join("backend/ml", "model.pkl"), None)  # Try RF as deep fallback
+        ]
+        
+        for m_path, f_path in paths_to_check:
+            if os.path.exists(m_path):
+                try:
+                    with open(m_path, "rb") as f:
+                        self.model = pickle.load(f)
+                    
+                    if f_path and os.path.exists(f_path):
+                        with open(f_path, "rb") as f:
+                            self.feature_names = pickle.load(f)
+                    else:
+                        # Fallback feature list for RandomForest if loaded as model.pkl
+                        self.feature_names = [
+                            "distance_km", "stock_ratio", "vendor_rating", "reliability_score",
+                            "avg_response_time", "category_match", "urgency_level", "freshness_score", "price"
+                        ]
+                    print(f"Loaded Ranker Model from {m_path}")
+                    return
+                except Exception as e:
+                    print(f"Failed loading candidate model from {m_path}: {e}")
 
     def predict_scores(self, features_list: List[Dict[str, float]]) -> Optional[np.ndarray]:
         if not self.model or not features_list:

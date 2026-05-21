@@ -1,7 +1,13 @@
 import os
+import sys
 import pickle
 import lightgbm as lgb
 import numpy as np
+
+# Ensure backend and ml directories are in Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from datasets import RankingDataset
 from sklearn.metrics import ndcg_score
 

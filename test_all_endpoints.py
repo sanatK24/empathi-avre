@@ -165,7 +165,8 @@ def test_inventory_endpoints(vnd_token):
     
     # PUT /inventory/{id}
     if item_id:
-        r = requests.put(f"{BASE}/inventory/{item_id}?quantity=60&price=550", 
+        r = requests.put(f"{BASE}/inventory/{item_id}", 
+            json={"quantity": 60, "price": 550.0},
             headers=auth_headers(vnd_token))
         log("updateInventory", "PUT", f"/inventory/{item_id}", r.status_code, r.ok,
             f"- {r.text[:100]}" if not r.ok else "")
@@ -317,40 +318,7 @@ def test_campaign_endpoints(req_token):
     
     return campaign_id
 
-# ============ EMERGENCY ============
-def test_emergency_endpoints(req_token):
-    print("\n🔵 EMERGENCY ENDPOINTS")
-    
-    # GET /emergency/active (public)
-    r = requests.get(f"{BASE}/emergency/active")
-    log("getActiveEmergencies", "GET", "/emergency/active", r.status_code, r.ok)
-    
-    # POST /emergency/request
-    r = requests.post(f"{BASE}/emergency/request", headers=auth_headers(req_token),
-        json={
-            "resource_name": "Blood O+",
-            "category": "medical",
-            "quantity": 2,
-            "location_lat": 19.076,
-            "location_lng": 72.877,
-            "city": "Mumbai",
-            "urgency_level": "CRITICAL",
-            "notes": "Emergency blood needed"
-        })
-    log("reportEmergency", "POST", "/emergency/request", r.status_code, r.ok,
-        f"- {r.text[:150]}" if not r.ok else "")
-    
-    # GET /emergency/helplines
-    r = requests.get(f"{BASE}/emergency/helplines")
-    log("getHelplines", "GET", "/emergency/helplines", r.status_code, r.ok)
-    
-    # GET /emergency/helplines?city=Mumbai
-    r = requests.get(f"{BASE}/emergency/helplines?city=Mumbai")
-    log("getHelplines (city)", "GET", "/emergency/helplines?city=Mumbai", r.status_code, r.ok)
-    
-    # GET /emergency/facilities
-    r = requests.get(f"{BASE}/emergency/facilities?city=Mumbai&lat=19.076&lng=72.877&type=Hospital")
-    log("getFacilities", "GET", "/emergency/facilities?city=Mumbai", r.status_code, r.ok)
+
 
 # ============ ADMIN ============
 def test_admin_endpoints(adm_token, campaign_id):
@@ -441,7 +409,6 @@ def main():
     request_id = test_request_endpoints(req_token)
     test_match_endpoints(vnd_token)
     campaign_id = test_campaign_endpoints(req_token)
-    test_emergency_endpoints(req_token)
     test_admin_endpoints(adm_token, campaign_id)
     
     # 4. Summary

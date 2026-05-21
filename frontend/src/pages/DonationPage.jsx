@@ -15,6 +15,7 @@ import { useAppContext } from '../context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import { formatNumber } from '../utils/formatNumber';
 
 const DonationPage = () => {
   const { profile } = useAppContext();
@@ -65,9 +66,9 @@ const DonationPage = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         {[
-          { label: 'Total Donated', value: `$${stats.totalDonated.toLocaleString()}`, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { label: 'Campaigns Support', value: stats.campaignsSupported, icon: TrendingUp, color: 'text-primary-500', bg: 'bg-primary-50' },
-          { label: 'Impact Score', value: stats.impactScore, icon: ShieldCheck, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+          { label: 'Total Donated', value: `$${formatNumber(stats.totalDonated)}`, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { label: 'Campaigns Support', value: formatNumber(stats.campaignsSupported), icon: TrendingUp, color: 'text-primary-500', bg: 'bg-primary-50' },
+          { label: 'Impact Score', value: formatNumber(stats.impactScore), icon: ShieldCheck, color: 'text-indigo-500', bg: 'bg-indigo-50' },
           { label: 'Donor Rank', value: stats.rank, icon: Badge, iconComp: <Badge variant="secondary" className="bg-amber-50 text-amber-600 border-none">{stats.rank}</Badge>, isCustom: true }
         ].map((item, i) => (
           <Card key={i} className="border-none ring-1 ring-slate-100 shadow-soft">
@@ -126,7 +127,7 @@ const DonationPage = () => {
                       <div className="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5 md:mt-1">ID: {don.id}</div>
                     </td>
                     <td className="px-3 md:px-8 py-4 md:py-6 text-xs md:text-sm font-semibold text-slate-500">{don.date}</td>
-                    <td className="px-3 md:px-8 py-4 md:py-6 text-xs md:text-sm font-black text-slate-900">${don.amount.toLocaleString()}</td>
+                    <td className="px-3 md:px-8 py-4 md:py-6 text-xs md:text-sm font-black text-slate-900">${formatNumber(don.amount)}</td>
                     <td className="px-3 md:px-8 py-4 md:py-6">
                       <Badge variant="success" className="bg-emerald-50 text-emerald-600">
                         <CheckCircle2 className="w-3 h-3 mr-1" /> {don.status}

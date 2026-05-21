@@ -1,153 +1,162 @@
 from sqlalchemy.orm import Session
 from models import Vendor, Request, Inventory, ScoringConfig, Match
-from services.feature_builder import FeatureBuilder
 from services.rules import BusinessRules
-from services.fairness import FairnessManager
+from services.feature_store import FeatureStore
+from services.lgbm_service import LGBMService
+from services.fairness_reranker import FairnessReranker
+from services.trust_service import TrustService
 from core.location import LocationUtils
+from config import settings
 import os
-import pickle
 import json
 from typing import List, Dict, Any
 
 class EmpathIEngine:
     def __init__(self):
-        # Path configuration
-        self.model_dir = "ml"
-        self.model_filename = "model.pkl"
-        self.features_filename = "feature_columns.json"
-        
-        self.model_path = os.path.join(self.model_dir, self.model_filename)
-        self.features_path = os.path.join("ml_artifacts", self.features_filename)
-        
-        self.model = None
-        self.feature_names = []
-        self._load_assets()
-
-    def _load_assets(self):
-        """Load model and feature names safely with version fallback."""
-        try:
-            if os.path.exists(self.model_path):
-                with open(self.model_path, "rb") as f:
-                    self.model = pickle.load(f)
-            if os.path.exists(self.features_path):
-                with open(self.features_path, "r") as f:
-                    self.feature_names = json.load(f)
-            else:
-                self.feature_names = [
-                    "distance_km", "stock_ratio", "vendor_rating", "reliability_score",
-                    "avg_response_time", "category_match", "urgency_level", "freshness_score", "price"
-                ]
-        except Exception as e:
-            print(f"Initialization Error in EmpathIEngine: {e}")
-
-    def get_ml_scores_batch(self, features_list: List[Dict[str, Any]]) -> List[float]:
-        if not self.model or not features_list:
-            return [0.5] * len(features_list)
-        
-        all_values = []
-        for features in features_list:
-            values = [features.get(name, 0) for name in self.feature_names]
-            all_values.append(values)
-            
-        try:
-            predictions = self.model.predict(all_values)
-            return [float(p) for p in predictions]
-        except Exception:
-            return [0.5] * len(features_list)
+        # Initialize modern LGBM Inference Service
+        self.lgbm_service = LGBMService()
 
     def match(self, db: Session, request: Request) -> List[Dict[str, Any]]:
-        # 1. Fetch eligible vendors WITH inventory using fuzzy matching for resource_name
-        resource_search = request.resource_name  # Plain Python string
+        """
+        Executes the modern 4-stage ranking pipeline:
+        1. Candidate Retrieval (Geo filtering + category/resource fuzzy filtering + eligibility rules)
+        2. Feature Store (Builds 11 standardized query-candidate features)
+        3. LightGBM / RF Inference (Scores features, with robust fallbacks)
+        4. Fairness-aware Post-processing Reranking & dynamic penalty updates
+        """
+        # --- STAGE 1: Candidate Retrieval + Trust Fraud Hard-Filter ---
+        resource_search = request.resource_name if request.resource_name else ""
         results = db.query(Vendor, Inventory).join(Inventory, Vendor.id == Inventory.vendor_id).filter(
             Vendor.is_active == True,
             Inventory.quantity >= request.quantity,
-            # Handle pluralization and casing (e.g., "Mask" vs "masks")
+            # Casing & pluralization handling via fuzzy ilike
             Inventory.resource_name.ilike(f"%{resource_search}%")
         ).all()
-        
-        # 2. Config
-        config = db.query(ScoringConfig).first()
-        if not config:
-            config = ScoringConfig(ml_weight=0.4, urgency_weight=0.2, fairness_weight=0.1, stock_weight=0.2, freshness_weight=0.1)
-            
+
         candidates_data = []
         for vendor, inventory in results:
             if not BusinessRules.is_eligible(request, vendor, inventory):
                 continue
-            
-            # Use LocationUtils for distance calculation
-            dist_km = LocationUtils.haversine_distance(request.location_lat, request.location_lng, vendor.lat, vendor.lng)
-            
-            # Heuristic features for fallback
-            features = FeatureBuilder.build_features(request, vendor, inventory, success_rate=vendor.reliability_score)
-            features["distance_km"] = dist_km
-            
+
+            # Phase 2: Hard-filter fraud-flagged vendors before any scoring
+            if TrustService.is_fraud_flagged(db, vendor):
+                continue
+
+            dist_km = LocationUtils.haversine_distance(
+                request.location_lat, request.location_lng,
+                vendor.lat, vendor.lng
+            )
+
             candidates_data.append({
                 "vendor": vendor,
                 "inventory": inventory,
-                "distance_km": dist_km,
-                "features": features
+                "distance_km": dist_km
             })
-            
+
         if not candidates_data:
             return []
-            
-        # 3. ML Prediction
-        ml_scores = self.get_ml_scores_batch([c["features"] for c in candidates_data])
-        
-        ranked_results = []
-        for i, candidate in enumerate(candidates_data):
-            vendor = candidate["vendor"]
-            dist_km = candidate["distance_km"]
-            features = candidate["features"]
-            ml_prediction = ml_scores[i]
-            
-            # Apply location-intelligent penalties
-            from config import settings
-            dist_penalty = 0.5 if dist_km > settings.MAX_MATCH_DISTANCE_KM else 1.0
-            proximity_boost = LocationUtils.get_proximity_score(dist_km)
-            
-            final_score = (
-                config.ml_weight * ml_prediction +
-                config.urgency_weight * (features["speed_score"] if request.urgency_level.value.lower() in ["high", "critical"] else 0.5) +
-                config.fairness_weight * (FairnessManager.calculate_fairness_boost(vendor) + proximity_boost)/2 +
-                config.stock_weight * features["availability_score"] +
-                config.freshness_weight * features["freshness_score"]
-            ) * dist_penalty
-            
-            ranked_results.append({
-                "vendor_id": vendor.id,
-                "shop_name": vendor.shop_name,
-                "distance_km": dist_km,
-                "relevance_score": round(final_score * 100, 2),
-                "explanation": self.generate_explanation(dist_km, features, final_score),
-                "eta": f"{vendor.avg_response_time} mins",
-                "rating": round(vendor.rating, 1),
-                "reviews": vendor.total_completed_orders,
-                "price": f"₹{features.get('price', 0)}",
-                "available_stock": features.get("stock_quantity", 0),
-                "image_url": inventory.image_url,
-                "description": inventory.description
-            })
-            
-        ranked_results.sort(key=lambda x: x["relevance_score"], reverse=True)
-        for i, res in enumerate(ranked_results):
-            res["rank"] = i + 1
-            
-        return ranked_results
 
-    def generate_explanation(self, dist_km: float, features: Dict[str, Any], score: float) -> str:
+        # --- STAGE 2 & 3: Feature Store & LGBM/RF Scoring ---
+        # Features are computed in vectorize_batch inside score_candidates
+        raw_scores, model_used, features_list = self.lgbm_service.score_candidates(request, candidates_data)
+
+        # Attach computed features to candidates for downstream processing
+        for i, candidate in enumerate(candidates_data):
+            candidate["features"] = features_list[i]
+
+        # --- STAGE 4: Trust Prediction Layer (Phase 2) ---
+        # Batch trust scoring — cached per vendor, heuristic fallback if no model loaded
+        trust_scores = TrustService.score_candidates(db, candidates_data)
+
+        # Get system scoring config weights
+        config = db.query(ScoringConfig).first()
+        if not config:
+            config = ScoringConfig(
+                ml_weight=0.4,
+                urgency_weight=0.2,
+                fairness_weight=0.1,
+                stock_weight=0.2,
+                freshness_weight=0.1
+            )
+
+        # --- STAGE 5: Fairness-aware Re-ranking (trust-adjusted) ---
+        reranked_candidates = FairnessReranker.rerank_candidates(
+            db, request, candidates_data, raw_scores, config,
+            trust_scores=trust_scores
+        )
+
+        # Format outputs and assign final 1-indexed ranks
+        final_results = []
+        for i, item in enumerate(reranked_candidates):
+            features = item["features"]
+            dist_km = item["distance_km"]
+            final_relevance = item["relevance_score"]
+            vendor_id = item["vendor"].id
+
+            explanation = self.generate_explanation(dist_km, features, final_relevance / 100.0, model_used)
+
+            # Phase 2: Attach decomposed trust scores
+            trust = trust_scores.get(vendor_id)
+
+            final_results.append({
+                "vendor_id": vendor_id,
+                "shop_name": item["vendor"].shop_name,
+                "distance_km": dist_km,
+                "relevance_score": final_relevance,
+                "raw_ml_score": item["raw_ml_score"],
+                "lgbm_score": item["raw_ml_score"],  # alias for backward-compatibility
+                "fairness_penalty_applied": item["fairness_penalty_applied"],
+                "explanation": explanation,
+                "eta": item["eta"],
+                "rating": item["rating"],
+                "reviews": item["reviews"],
+                "price": item["price"],
+                "available_stock": item["available_stock"],
+                "image_url": item["image_url"],
+                "description": item["description"],
+                "features": features,
+                # Phase 2 trust fields (decomposed, all nullable)
+                "trust_score": round(trust.composite_trust_score, 3) if trust else None,
+                "fulfillment_score": round(trust.fulfillment_probability, 3) if trust else None,
+                "dispute_risk": round(trust.dispute_probability, 3) if trust else None,
+                "refund_risk": round(trust.refund_likelihood, 3) if trust else None,
+                "delivery_reliability": round(trust.delivery_reliability, 3) if trust else None,
+                "anomaly_risk": round(trust.anomaly_score, 3) if trust else None,
+            })
+
+        # Sort and assign ranks
+        final_results.sort(key=lambda x: x["relevance_score"], reverse=True)
+        for idx, res in enumerate(final_results):
+            res["rank"] = idx + 1
+
+        # --- Dynamic Impression Updates (Top-3) ---
+        top_3_vendor_ids = [res["vendor_id"] for res in final_results[:3]]
+        FairnessReranker.apply_impression_penalty(db, top_3_vendor_ids)
+
+        return final_results
+
+    def generate_explanation(
+        self,
+        dist_km: float,
+        features: Dict[str, Any],
+        score: float,
+        model_used: str
+    ) -> str:
+        """
+        Generates contextual description and highlights key reasons for recommendation.
+        """
         reasons = []
-        if dist_km < 2.0:
+        if dist_km < settings.ULTRA_PROXIMITY_THRESHOLD_KM:
             reasons.append("Ultra-proximity (<2km)")
-        elif dist_km < 5.0:
+        elif dist_km < settings.PROXIMITY_THRESHOLD_KM:
             reasons.append("Nearby location")
-            
-        if features.get("availability_score", 0) > 0.9:
+
+        if features.get("availability_score", 0.0) > 0.9:
             reasons.append("High stock availability")
-        if features.get("speed_score", 0) > 0.8:
+        if features.get("speed_score", 0.0) > 0.8:
             reasons.append("Fast responder")
-        if features.get("freshness_score", 0) > 0.9:
-            reasons.append("Fresh data")
-            
-        return " | ".join(reasons) if reasons else "Balanced match"
+        if features.get("freshness_score", 0.0) > 0.9:
+            reasons.append("Fresh inventory data")
+
+        base_explanation = " | ".join(reasons) if reasons else "Balanced match"
+        return f"{base_explanation} (via {model_used})"

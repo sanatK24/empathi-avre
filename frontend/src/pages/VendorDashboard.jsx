@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   TrendingUp,
   CheckCircle2,
+  ShieldCheck,
   Clock,
   ArrowRight,
   Target,
@@ -26,6 +27,7 @@ const VendorDashboard = () => {
   });
   const [matches, setMatches] = useState([]);
   const [marketAnalytics, setMarketAnalytics] = useState(null);
+  const [trustMetrics, setTrustMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [matchesError, setMatchesError] = useState(null);
 
@@ -59,6 +61,23 @@ const VendorDashboard = () => {
         // Generate market analytics from stats if available
         if (statsData?.market_analytics) {
           setMarketAnalytics(statsData.market_analytics);
+        }
+
+        // Load trust metrics from transactions
+        try {
+          const txns = await apiService.getTransactions(profile.accessToken);
+          if (Array.isArray(txns) && txns.length > 0) {
+            const completed = txns.filter(t => t.status === 'RELEASED');
+            const avgTrust = txns.reduce((sum, t) => sum + (t.trust_score || 0), 0) / txns.length;
+            setTrustMetrics({
+              score: avgTrust,
+              total: txns.length,
+              completed: completed.length,
+              fulfillmentRate: txns.length > 0 ? ((completed.length / txns.length) * 100).toFixed(0) : '0',
+            });
+          }
+        } catch (txErr) {
+          console.warn('Failed to load trust metrics:', txErr);
         }
       } catch (error) {
         console.error('Failed to load dashboard stats:', error);
@@ -102,6 +121,14 @@ const VendorDashboard = () => {
       color: 'text-emerald-500',
       bg: 'bg-emerald-50',
       trend: `${matches.length} new matches found`,
+    },
+    {
+      label: 'Trust Score',
+      value: trustMetrics ? `${(trustMetrics.score * 100).toFixed(0)}%` : 'N/A',
+      icon: ShieldCheck,
+      color: 'text-primary-500',
+      bg: 'bg-primary-50',
+      trend: trustMetrics ? `${trustMetrics.completed}/${trustMetrics.total} fulfilled` : 'No transaction data',
     },
   ];
 
@@ -149,7 +176,7 @@ const VendorDashboard = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {statCards.map((s, i) => (
           <motion.div
             key={i}
@@ -266,7 +293,7 @@ const VendorDashboard = () => {
               </p>
             ) : (
               <p className="text-slate-400 font-medium mb-10 leading-relaxed">
-                Track market trends and demand patterns for your inventory in real-time.
+                Track market trends and demand patterns for your inventory dynamically.
               </p>
             )}
             <div className="mt-auto flex items-center gap-6">
@@ -283,7 +310,7 @@ const VendorDashboard = () => {
                   Reliability
                 </p>
                 <p className="text-2xl font-display font-black text-emerald-400">
-                  {stats.reliability_score || 'N/A'}
+                  {trustMetrics ? `${trustMetrics.fulfillmentRate}%` : (stats.reliability_score || 'N/A')}
                 </p>
               </div>
             </div>

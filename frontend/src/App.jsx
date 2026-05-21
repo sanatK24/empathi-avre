@@ -25,11 +25,10 @@ import CampaignDetailPage from './pages/CampaignDetailPage';
 import CampaignAnalyticsDashboard from './pages/CampaignAnalyticsDashboard';
 import PublicProfilePage from './pages/PublicProfilePage';
 
-// Donation and Emergency Pages
+// Donation and Feed Pages
 import DonationPage from './pages/DonationPage';
-import RecommendationsPage from './pages/RecommendationsPage';
-import EmergencyHub from './pages/EmergencyHub';
 import SmartFeedPage from './pages/SmartFeedPage';
+import TransactionHistory from './pages/TransactionHistory';
 
 // Vendor Pages
 import InventoryManagement from './pages/InventoryManagement';
@@ -43,6 +42,18 @@ import AdminCampaigns from './pages/AdminCampaigns';
 import SharedProfileDashboard from './pages/SharedProfileDashboard';
 
 import { useAppContext } from './context/AppContext';
+import { useLocation } from 'react-router-dom';
+
+// Global scroll-to-top handler on route changes
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 const ProtectedRoute = ({ children, allowedRole = null }) => {
   const { profile, authInitialized } = useAppContext();
@@ -79,6 +90,7 @@ const ProtectedRoute = ({ children, allowedRole = null }) => {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Routes>
         {/* Public Routes */}
         <Route element={<PublicLayout />}>
@@ -99,15 +111,15 @@ function App() {
           <Route path="results" element={<MatchResults />} />
           <Route path="history" element={<RequestHistory />} />
           <Route path="matches" element={<MatchResults />} />
+          <Route path="transactions" element={<TransactionHistory />} />
           <Route path="campaigns" element={<CampaignsFeedPage />} />
           <Route path="campaigns/:id" element={<CampaignDetailPage />} />
           <Route path="campaigns/create" element={<CampaignCreationPage />} />
           <Route path="campaigns/my" element={<CampaignAnalyticsDashboard />} />
           <Route path="profiles/:user_id" element={<PublicProfilePage />} />
           <Route path="donations" element={<DonationPage />} />
-          <Route path="emergency" element={<EmergencyHub />} />
           <Route path="smart-feed" element={<SmartFeedPage />} />
-          <Route path="recommendations" element={<RecommendationsPage />} />
+          <Route path="recommendations" element={<SmartFeedPage />} />
           <Route path="marketplace" element={<VendorMarketplace />} />
           <Route path="vendor/:id" element={<VendorStorefront />} />
           <Route path="profile" element={<SharedProfileDashboard />} />

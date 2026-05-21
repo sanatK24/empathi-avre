@@ -62,6 +62,7 @@ def get_matches(
     # Format matches for API consistency with existing frontend
     from services.feature_builder import FeatureBuilder
     from models import MatchStatus
+    import json
     results = []
     
     # We sort by score descending
@@ -74,6 +75,26 @@ def get_matches(
             vendor.lat, vendor.lng
         )
         
+        # Safely parse explanation_json
+        explanation_text = match.explanation_json
+        if match.explanation_json:
+            try:
+                exp_data = json.loads(match.explanation_json)
+                if isinstance(exp_data, dict) and "text" in exp_data:
+                    explanation_text = exp_data["text"]
+            except Exception:
+                pass
+        
+        # Phase 2: parse trust signals from explanation_json if available
+        trust_data = {}
+        if match.explanation_json:
+            try:
+                exp_obj = json.loads(match.explanation_json)
+                if isinstance(exp_obj, dict) and "trust" in exp_obj:
+                    trust_data = exp_obj["trust"] or {}
+            except Exception:
+                pass
+
         results.append({
             "rank": rank,
             "match_id": match.id,
@@ -85,8 +106,16 @@ def get_matches(
             "distance": round(distance, 2),
             "eta": vendor.avg_response_time,
             "score": round(match.score, 2),
-            "rating": round(vendor.rating, 2),
-            "explanation": match.explanation_json
+            "rating": round(vendor.rating, 2) if vendor.rating is not None else 3.5,
+            "explanation": explanation_text,
+            "lgbm_score": match.lgbm_score,
+            "fairness_penalty_applied": match.fairness_penalty_applied,
+            # Phase 2: decomposed trust signals (nullable — backward compatible)
+            "trust_score": match.trust_score,
+            "fulfillment_score": trust_data.get("fulfillment_score"),
+            "dispute_risk": trust_data.get("dispute_risk"),
+            "delivery_reliability": trust_data.get("delivery_reliability"),
+            "anomaly_risk": trust_data.get("anomaly_risk"),
         })
         
     return results

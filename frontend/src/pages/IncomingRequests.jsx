@@ -12,6 +12,7 @@ import {
 import { Card, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import TrustBadge from '../components/ui/TrustBadge';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 
@@ -82,6 +83,7 @@ const IncomingRequests = () => {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Match Score</p>
                     <div className="text-3xl font-display font-black text-primary-500">{req.score}%</div>
                     <Badge variant="primary" className="mt-2 text-[10px]">Rank #1</Badge>
+                    <TrustBadge score={req.trust_score} className="mt-1 text-[9px]" />
                   </div>
 
                   <div className="flex-grow p-8">
@@ -164,7 +166,7 @@ const IncomingRequests = () => {
                 <Inbox className="w-10 h-10" />
              </div>
              <h3 className="text-xl font-bold text-slate-900 mb-2">In-box is empty</h3>
-             <p className="text-slate-500 max-w-xs mx-auto">New requests from EmpathI will appear here in real-time.</p>
+             <p className="text-slate-500 max-w-xs mx-auto">New requests from EmpathI will appear here as they are matched.</p>
           </div>
         )}
       </div>

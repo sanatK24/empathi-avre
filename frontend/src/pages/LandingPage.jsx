@@ -38,7 +38,7 @@ const LandingPage = () => {
               EmpathI: Coordination & <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-primary-700">Matching Intelligence</span>
             </h1>
             <p className="text-lg md:text-xl text-slate-500 mb-12 max-w-2xl mx-auto leading-relaxed">
-              Match urgent resource requests with the most relevant vendors in real-time.
+              Match urgent resource requests with the most relevant vendors seamlessly.
               Powered by an intelligent ranking system that learns from every interaction.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6 w-full px-4 sm:px-0">
@@ -103,7 +103,7 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               { title: 'Smart Matching', desc: 'AI-driven ranking based on proximity, stock levels, and historical performance.', icon: Target },
-              { title: 'Real-time Analytics', desc: 'Track request fulfillment rates and vendor response times instantly.', icon: TrendingUp },
+              { title: 'Dynamic Analytics', desc: 'Track request fulfillment rates and vendor response times dynamically.', icon: TrendingUp },
               { title: 'Secure & Reliable', desc: 'Enterprise-grade security and 99.9% uptime for critical resource allocation.', icon: Shield },
               { title: 'Predictive Insights', desc: 'Anticipate resource shortages before they happen with EmpathI.', icon: Cpu },
               { title: 'Lightning Fast', desc: 'Milliseconds count in emergencies. Our engine is optimized for high-speed matching.', icon: Clock },

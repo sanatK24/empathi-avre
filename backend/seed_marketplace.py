@@ -14,22 +14,24 @@ sys.path.append(os.getcwd())
 sys.path.append(os.path.join(os.getcwd(), "backend"))
 
 def seed():
-    # Complete database reset
+    # Targeted database reset to preserve campaigns and general tables
+    db = SessionLocal()
     try:
-        # Import all models to ensure they are registered with Base.metadata
-        from models import Base
-        Base.metadata.drop_all(bind=engine)
-        print("Dropped all existing tables.")
-        Base.metadata.create_all(bind=engine)
-        print("Database tables re-initialized from scratch.")
+        print("Cleaning existing vendors, inventory, and default users to prevent unique constraints...")
+        db.query(Inventory).delete()
+        db.query(Vendor).delete()
+        # Delete vendor users and the default testing accounts
+        db.query(User).filter(User.role == UserRole.VENDOR).delete()
+        db.query(User).filter(User.email.in_(["admin@empathi.com", "user@empathi.com"])).delete()
+        db.commit()
+        print("Existing marketplace and user tables pruned successfully.")
     except Exception as e:
-        print(f"Error during database reset: {e}")
+        db.rollback()
+        print(f"Error during marketplace table pruning: {e}")
+        db.close()
         return
 
-    db = SessionLocal()
-    
     try:
-
         # Create default Admin
         admin = User(
             email="admin@empathi.com",
@@ -83,17 +85,18 @@ def seed():
         ]
 
         images = [
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSyZi1iLUycABLQcdyWhSp4EKRlPmodn-3UOua5nlTBFPTpdgtdVl5GONg0&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRHGhDhIezpf2GB9V4z2gP1-OxyF96Egr2Hc-R4fDXTAhWelcbGrFKUBLOM&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsgO4VB6v31wC5r5YdzyG6ATuZMSiFr3_19y6TWPIWyKp26XVFKwZlJQl7&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_76wRX8OfW8G_DoqbDpRNM6GHyn8-EVjK7Zkt1LFer1DG1_lvFuy9V85D&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQy6Bx-0B2CZRrej4TB3T7r_dUtzb7JvqrJd7OHENl6AGyFuBtAuhldk5x5&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSyZi1iLUycABLQcdyWhSp4EKRlPmodn-3UOua5nlTBFPTpdgtdVl5GONg0&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRHGhDhIezpf2GB9V4z2gP1-OxyF96Egr2Hc-R4fDXTAhWelcbGrFKUBLOM&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsgO4VB6v31wC5r5YdzyG6ATuZMSiFr3_19y6TWPIWyKp26XVFKwZlJQl7&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_76wRX8OfW8G_DoqbDpRNM6GHyn8-EVjK7Zkt1LFer1DG1_lvFuy9V85D&s",
-            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQy6Bx-0B2CZRrej4TB3T7r_dUtzb7JvqrJd7OHENl6AGyFuBtAuhldk5x5&s"
-            ]
+            "https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?w=800&h=500&fit=crop", # Medical Equipment
+            "https://images.unsplash.com/photo-1586015555751-63bb77f4322a?w=800&h=500&fit=crop", # Pharmaceuticals
+            "https://images.unsplash.com/photo-1615461066870-40b124f2a784?w=800&h=500&fit=crop", # Blood Bank
+            "https://images.unsplash.com/photo-1579152163273-917ad0a13dc4?w=800&h=500&fit=crop", # Diagnostic Tools
+            "https://images.unsplash.com/photo-1603398938378-e54eab446dde?w=800&h=500&fit=crop", # Emergency Kits
+            "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=800&h=500&fit=crop", # Global Logistics
+            "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&h=500&fit=crop", # Medical Equipment (2)
+            "https://images.unsplash.com/photo-1631549916768-4119b255f946?w=800&h=500&fit=crop", # Pharmaceuticals (2)
+            "https://images.unsplash.com/photo-1536856136534-bb348c263cc4?w=800&h=500&fit=crop", # Blood Bank (2)
+            "https://images.unsplash.com/photo-1584483766114-2cea6facdf57?w=800&h=500&fit=crop"  # Emergency Kits (2)
+        ]
+
 
         for i in range(10):
             email = f"vendor{i+1}@empathi.com"

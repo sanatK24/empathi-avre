@@ -6,9 +6,7 @@ export const ROLE_PERMISSIONS = {
     'donate',
     'view_recommendations',
     'track_donations',
-    'view_emergency_fund',
     'view_impact_updates',
-    'manage_emergency_fund_settings',
   ],
   [USER_ROLES.NGO]: [
     'view_feed',
@@ -28,15 +26,10 @@ export const ROLE_PERMISSIONS = {
   ],
   [USER_ROLES.ADMIN]: [
     'view_feed',
-    'declare_emergency',
-    'unlock_fund',
-    'allocate_funds',
-    'manage_crises',
     'view_audit_log',
     'view_users',
     'manage_verifiers',
     'override_allocations',
-    'access_crisis_signals',
   ],
   [USER_ROLES.VENDOR]: [
     'view_feed',
@@ -62,11 +55,7 @@ export const ROLE_ROUTE_ACCESS = {
   '/resource/declare': [USER_ROLES.VENDOR, USER_ROLES.NGO],
   '/resource/request': [USER_ROLES.NGO, USER_ROLES.VENDOR],
   '/admin': [USER_ROLES.ADMIN],
-  '/admin/emergency': [USER_ROLES.ADMIN],
-  '/admin/crisis': [USER_ROLES.ADMIN],
-  '/admin/fund': [USER_ROLES.ADMIN],
   '/vendor/dashboard': [USER_ROLES.VENDOR],
-  '/donor/fund-status': [USER_ROLES.DONOR],
   '/notifications': [
     USER_ROLES.DONOR,
     USER_ROLES.NGO,

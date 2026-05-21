@@ -1,6 +1,10 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from models import User, Request, RequestStatus, Match, MatchStatus
+from sqlalchemy import func
+from models import (
+    User, Request, RequestStatus, Match, MatchStatus,
+    Donation, DonationStatus, Campaign, CampaignStatus, UrgencyLevel
+)
 from schemas import RequestCreate
 from repositories.request_repo import request_repo
 from repositories.match_repo import match_repo
@@ -66,11 +70,55 @@ class RequestService:
         total = db.query(Request).filter(Request.user_id == user.id).count()
         active = request_repo.get_active_count_by_user(db, user.id)
         resolved = request_repo.get_resolved_count_by_user(db, user.id)
-        
+
+        # Matched vendors: distinct vendors matched to user's requests
+        user_request_ids = db.query(Request.id).filter(Request.user_id == user.id).subquery()
+        matched_vendors = db.query(func.count(func.distinct(Match.vendor_id))).filter(
+            Match.request_id.in_(db.query(Request.id).filter(Request.user_id == user.id)),
+            Match.status.in_([
+                MatchStatus.ACCEPTED_BY_VENDOR,
+                MatchStatus.ACCEPTED_BY_REQUESTER,
+                MatchStatus.PENDING,
+            ])
+        ).scalar() or 0
+
+        # Donations total
+        donations_made = db.query(func.coalesce(func.sum(Donation.amount), 0)).filter(
+            Donation.user_id == user.id,
+            Donation.status == DonationStatus.COMPLETED,
+        ).scalar() or 0
+
+        # Active campaigns created by user
+        active_campaigns = db.query(Campaign).filter(
+            Campaign.created_by == user.id,
+            Campaign.status == CampaignStatus.ACTIVE,
+        ).count()
+
+        # Emergency requests
+        emergency_requests = db.query(Request).filter(
+            Request.user_id == user.id,
+            Request.urgency_level.in_([UrgencyLevel.CRITICAL, UrgencyLevel.HIGH]),
+        ).count()
+
+        try:
+            from services.campaign_service import CampaignService
+            recommendations_count = len(CampaignService.get_recommendations(db, user))
+        except Exception as e:
+            print("ERROR IN GET_STATS RECOMMENDATIONS:", e)
+            import traceback
+            traceback.print_exc()
+            recommendations_count = 0
+
         return {
             "active_requests": active,
             "resolved_requests": resolved,
             "total_requests": total,
-            "avg_match_time": "Calculated after more matches", # Non-static fallback
-            "pending_response": active
+            "matched_vendors": matched_vendors,
+            "donations_made": float(donations_made),
+            "active_campaigns": active_campaigns,
+            "emergency_requests": emergency_requests,
+            "recommendations_available": recommendations_count,
+            "avg_match_time": "Calculated after more matches",
+            "pending_response": active,
         }
+

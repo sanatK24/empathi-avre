@@ -46,8 +46,6 @@ function Layout({ children }) {
         {userRole === USER_ROLES.ADMIN && (
           <>
             <NavLink to="/admin">Dashboard</NavLink>
-            <NavLink to="/admin/emergency">Emergency</NavLink>
-            <NavLink to="/admin/fund">Emergency Fund</NavLink>
             <NavLink to="/audit-trail">Audit Trail</NavLink>
           </>
         )}

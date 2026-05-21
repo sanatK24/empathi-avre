@@ -84,6 +84,7 @@ export function AppProvider({ children }) {
 
   const [profile, setProfile] = useState(getInitialProfile)
   const [authInitialized, setAuthInitialized] = useState(false)
+  const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0)
 
   const updateProfile = (patch) => {
     setProfile((prev) => {
@@ -261,6 +262,10 @@ export function AppProvider({ children }) {
     window.location.pathname = dashboardPath
   }
 
+  const triggerStatsRefresh = () => {
+    setStatsRefreshTrigger(prev => prev + 1)
+  }
+
   const value = useMemo(
     () => ({
       profile,
@@ -278,6 +283,10 @@ export function AppProvider({ children }) {
       setVerified,
 
       logout,
+
+      triggerStatsRefresh,
+
+      statsRefreshTrigger,
 
       detectLocation: async () => {
         if (!navigator.geolocation) {
@@ -378,6 +387,7 @@ export function AppProvider({ children }) {
       profile,
       permissions,
       authInitialized,
+      statsRefreshTrigger,
     ]
   )
 

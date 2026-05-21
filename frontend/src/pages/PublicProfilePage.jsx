@@ -21,6 +21,7 @@ import Badge from '../components/ui/Badge';
 import Toast from '../components/Toast';
 import UnfollowConfirmationDialog from '../components/UnfollowConfirmationDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { handleImageError } from '../utils/imageUtils';
 
 function PublicProfilePage() {
   const { user_id } = useParams();
@@ -359,6 +360,7 @@ function PublicProfilePage() {
                             src={campaign.cover_image}
                             alt={campaign.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                            onError={handleImageError(campaign.category)}
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">

@@ -71,7 +71,7 @@ const CampaignAnalyticsDashboard = () => {
              <Megaphone className="w-10 h-10 md:w-14 md:h-14 text-primary-500" /> My Campaigns
           </h1>
           <p className="text-slate-500 font-medium text-base md:text-xl mt-3 max-w-xl mx-auto md:mx-0 leading-relaxed">
-            Manage your initiatives and track fundraising performance with real-time predictive insights.
+            Manage your initiatives and track fundraising performance with dynamic predictive insights.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">

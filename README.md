@@ -24,19 +24,19 @@ The **Adaptive Vendor Relevance Engine (AVRE)** is the core intelligence of the 
   - **Urgency Boost**: Prioritizes life-critical requests (Medical, Disaster).
   - **Fairness Penalty**: Prevents a single large vendor from monopolizing all requests, ensuring community-wide distribution.
   - **Stock Confidence**: Prefers vendors with high inventory accuracy and recent updates.
-- **Real-Time Delivery**: Matches are streamed instantly via WebSockets to vendor dashboards.
+- **Fulfillment Pipeline**: Matches are retrieved via REST API and updated dynamically through dashboard interactions.
 
 ### 3. **Campaign Fundraising Ecosystem**
 A comprehensive suite for community-driven aid:
 - **Campaign Creation**: Requesters can launch campaigns with rich descriptions, target goals, and urgency levels.
 - **Verification Workflow**: Sensitive campaigns undergo an admin review process to ensure legitimacy.
-- **Real-Time Analytics**: Owners can track donor counts, funding progress, and daily velocity through dedicated charts.
+- **Interactive Analytics**: Owners can track donor counts, funding progress, and daily velocity through dedicated charts.
 - **Public Preview Mode**: Allows creators to see their campaign exactly as a potential donor would.
 - **Masonry Discovery**: A visually stunning, Pinterest-style grid for exploring campaigns across categories (Medical, Education, Disaster, etc.).
 
 ### 4. **Vendor Marketplace & Storefronts**
 - **Professional Storefronts**: Each vendor has a public-facing store showing their inventory, ratings, and reliability metrics.
-- **Inventory Management**: Real-time stock tracking with expiry date alerts and automated status updates.
+- **Inventory Management**: Structured stock tracking with expiry date alerts and automated status updates.
 - **Vendor Analytics**: Tracks completion rates, response times, and "Fairness Score" within the ecosystem.
 - **Rating & Reputation**: A transparent feedback loop where requesters rate vendors post-fulfillment.
 
@@ -71,7 +71,7 @@ A comprehensive suite for community-driven aid:
 - **State Management**: React Context API for global auth and notification states.
 - **UI/UX**: Tailwind CSS for responsive styling, Framer Motion for premium micro-animations.
 - **Iconography**: Lucide-React for consistent visual language.
-- **Real-Time**: Native WebSocket integration for instant alerts.
+- **Communication**: REST API polling and simulated client-side updates.
 
 ### **Data & Infrastructure**
 - **Database**: PostgreSQL for transactional data; SQLite supported for local lightweight testing.

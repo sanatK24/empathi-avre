@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import Button from './ui/Button';
+import { handleImageError, getInitials } from '../utils/imageUtils';
 
 const CommentsModal = ({ update, campaignId, onClose, onCommentAdded }) => {
   const { profile } = useAppContext();
@@ -122,12 +123,17 @@ const CommentsModal = ({ update, campaignId, onClose, onCommentAdded }) => {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex gap-3"
               >
-                {comment.user?.avatar_url && (
+                {comment.user?.avatar_url ? (
                   <img
                     src={comment.user.avatar_url}
                     alt={comment.user.name}
                     className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                    onError={handleImageError('default')}
                   />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                    <span className="text-xs font-black text-primary-600">{getInitials(comment.user?.name || '?')}</span>
+                  </div>
                 )}
                 <div className="flex-1">
                   <div className="bg-slate-100 rounded-xl p-3">
@@ -163,12 +169,17 @@ const CommentsModal = ({ update, campaignId, onClose, onCommentAdded }) => {
             onSubmit={handleAddComment}
             className="border-t border-slate-100 p-6 flex gap-3"
           >
-            {profile.avatarUrl && (
+            {(profile.avatar_url || profile.avatarUrl) ? (
               <img
-                src={profile.avatarUrl}
-                alt={profile.name}
+                src={profile.avatar_url || profile.avatarUrl}
+                alt={profile.name || profile.fullName}
                 className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                onError={handleImageError('default')}
               />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                <span className="text-xs font-black text-primary-600">{getInitials(profile.name || profile.fullName || '?')}</span>
+              </div>
             )}
             <div className="flex-1 flex gap-2">
               <input

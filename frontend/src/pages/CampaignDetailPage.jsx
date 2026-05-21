@@ -23,11 +23,13 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import DonationModal from '../components/DonationModal';
 import { cn } from '../utils/cn';
+import { formatCurrency } from '../utils/formatNumber';
+import { handleImageError, getFallbackImage } from '../utils/imageUtils';
 
 function CampaignDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAppContext();
+  const { profile, triggerStatsRefresh } = useAppContext();
 
   const [campaign, setCampaign] = useState(null);
   const [donations, setDonations] = useState([]);
@@ -222,6 +224,7 @@ function CampaignDetailPage() {
                     src={campaign.cover_image}
                     alt={campaign.title}
                     className="w-full h-full object-cover"
+                    onError={handleImageError(campaign.category)}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
                 </div>
@@ -278,11 +281,11 @@ function CampaignDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Raised</p>
-                  <p className="text-3xl font-display font-black text-primary-500 tracking-tight">₹{campaign.raised_amount?.toLocaleString() || 0}</p>
+                  <p className="text-3xl font-display font-black text-primary-500 tracking-tight">{formatCurrency(campaign.raised_amount || 0)}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Goal</p>
-                  <p className="text-3xl font-display font-black text-slate-900 tracking-tight">₹{campaign.goal_amount?.toLocaleString() || 0}</p>
+                  <p className="text-3xl font-display font-black text-slate-900 tracking-tight">{formatCurrency(campaign.goal_amount || 0)}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progress</p>
@@ -503,6 +506,7 @@ function CampaignDetailPage() {
           onDonationSuccess={() => {
             setShowDonationModal(false);
             fetchCampaignData();
+            triggerStatsRefresh();
           }}
         />
       )}

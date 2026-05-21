@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MapPin, TrendingUp, AlertTriangle, Info, Clock, ExternalLink, RefreshCw, Bookmark } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
+import { handleImageError } from '../utils/imageUtils';
 
 const formatDistanceToNow = (date) => {
     if (!date) return 'Recently';
@@ -104,7 +105,7 @@ const SmartFeedPage = () => {
                     {/* Image Placeholder or Actual */}
                     <div className="w-24 h-24 sm:w-32 sm:h-32 bg-slate-100 rounded-2xl shrink-0 overflow-hidden relative">
                         {article.image_url ? (
-                            <img src={article.image_url} alt="News" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                            <img src={article.image_url} alt="News" className="w-full h-full object-cover group-hover:scale-105 transition-transform" onError={handleImageError('news')} />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center bg-slate-50 text-slate-300">
                                 {isCritical ? <AlertTriangle className="w-8 h-8 text-red-200" /> : <Info className="w-8 h-8" />}
@@ -169,9 +170,9 @@ const SmartFeedPage = () => {
                         <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1 md:py-1.5 bg-white/10 backdrop-blur-md rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-[0.1em] md:tracking-[0.2em] mb-2 md:mb-4 text-blue-300 border border-white/5">
                             <TrendingUp className="w-2.5 md:w-3 h-2.5 md:h-3" /> Live Community Intelligence
                         </div>
-                        <h1 className="text-2xl md:text-5xl font-display font-black tracking-tight mb-1 md:mb-2">Crisis & News Feed</h1>
+                        <h1 className="text-2xl md:text-5xl font-display font-black tracking-tight mb-1 md:mb-2">Community & Impact Feed</h1>
                         <p className="text-slate-400 font-medium max-w-xl text-xs md:text-base">
-                            Real-time, AI-curated humanitarian updates and local emergencies near {profile.city || 'you'}.
+                            AI-curated updates, alerts, and community needs near {profile.city || 'you'}.
                         </p>
                     </div>
 

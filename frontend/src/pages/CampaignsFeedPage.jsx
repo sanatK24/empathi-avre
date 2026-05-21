@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import { Heart, MapPin, Search, Filter, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DonationModal from '../components/DonationModal';
+import { handleImageError } from '../utils/imageUtils';
 
 function CampaignsFeedPage() {
   const { profile } = useAppContext();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -38,9 +40,21 @@ function CampaignsFeedPage() {
     }
   };
 
+  // Handle ?search= param from global header search
   useEffect(() => {
-    fetchCampaigns();
-  }, [profile?.accessToken]);
+    const urlSearch = searchParams.get('search');
+    if (urlSearch) {
+      setSearchQuery(urlSearch);
+      setLoading(true);
+      setError(null);
+      apiService.searchCampaigns(profile?.accessToken, urlSearch)
+        .then(results => setCampaigns(Array.isArray(results) ? results : []))
+        .catch(err => setError(err.message || 'Search failed'))
+        .finally(() => setLoading(false));
+    } else {
+      fetchCampaigns();
+    }
+  }, [profile?.accessToken, searchParams]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -259,6 +273,7 @@ function CampaignsFeedPage() {
                           src={campaign.cover_image}
                           alt={campaign.title}
                           className="w-full h-full object-cover"
+                          onError={handleImageError(campaign.category)}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-blue-50">

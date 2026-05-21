@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ShieldCheck,
   TrendingUp,
+  Truck,
   Filter,
   Map as MapIcon,
   AlertTriangle
@@ -19,15 +20,19 @@ import {
 import { Card, CardContent } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import TrustBadge from '../components/ui/TrustBadge';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
+import { formatTrustPercent, getRiskLevel, buildExplanationParts, TRUST_SIGNALS } from '../utils/trustMappings';
+import { getFallbackImage, handleImageError } from '../utils/imageUtils';
 
 const MatchResults = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [matches, setMatches] = useState([]);
   const [requestItem, setRequestItem] = useState(null);
+  const [accepting, setAccepting] = useState(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useAppContext();
@@ -112,7 +117,7 @@ const MatchResults = () => {
             </div>
           </div>
         </div>
-        <Button onClick={() => navigate('/requester/create')} variant="secondary">
+        <Button onClick={() => navigate('/user/create')} variant="secondary">
           Create a New Request
         </Button>
       </div>
@@ -128,7 +133,7 @@ const MatchResults = () => {
             We couldn't find any vendors matching your criteria. Try adjusting your request.
           </p>
         </div>
-        <Button onClick={() => navigate('/requester/create')} variant="secondary">
+        <Button onClick={() => navigate('/user/create')} variant="secondary">
           Modify Request
         </Button>
       </div>
@@ -229,16 +234,25 @@ const MatchResults = () => {
                       <div className="flex justify-between items-start mb-6">
                         <div>
                         <div className="flex gap-6">
-                          {vendor.image_url && (
-                            <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 flex-shrink-0 bg-slate-50">
-                              <img src={vendor.image_url} alt="Product" className="w-full h-full object-cover" />
+                          <div className="w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 flex-shrink-0 bg-slate-50">
+                              <img
+                                src={vendor.image_url || getFallbackImage('vendor')}
+                                alt="Product"
+                                className="w-full h-full object-cover"
+                                onError={handleImageError('vendor')}
+                              />
                             </div>
-                          )}
                           <div>
-                            <h3 className="text-xl font-display font-black text-slate-900 group-hover:text-primary-500 transition-colors uppercase tracking-tight">
-                              {getVendorName(vendor)}
-                            </h3>
-                            <div className="flex items-center space-x-4 mt-2">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-xl font-display font-black text-slate-900 group-hover:text-primary-500 transition-colors uppercase tracking-tight">
+                                {getVendorName(vendor)}
+                              </h3>
+                              <TrustBadge score={vendor.trust_score} className="text-[9px] px-2 py-0" />
+                              {vendor.anomaly_risk != null && vendor.anomaly_risk > 0.7 && (
+                                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-4 mt-1">
                               <div className="flex items-center text-amber-500">
                                 <Star className="w-4 h-4 fill-amber-500 mr-1" />
                                 <span className="text-sm font-bold">{getRating(vendor)}</span>
@@ -261,6 +275,11 @@ const MatchResults = () => {
                           <div className="text-3xl font-display font-black text-primary-500 leading-none">
                             {calculateMatchScore(vendor)}%
                           </div>
+                          {vendor.trust_score != null && (
+                            <div className="text-[10px] font-bold text-slate-400 mt-1">
+                              Trust {formatTrustPercent(vendor.trust_score)}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -281,20 +300,20 @@ const MatchResults = () => {
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                            Freshness
+                            Fulfillment
                           </p>
                           <p className="font-bold text-slate-900 flex items-center">
-                            <TrendingUp className="w-3 h-3 mr-1.5 text-emerald-500" />{' '}
-                            {vendor.freshness || 'High'}
+                            <CheckCircle2 className="w-3 h-3 mr-1.5 text-emerald-500" />{' '}
+                            {vendor.fulfillment_score != null ? formatTrustPercent(vendor.fulfillment_score) : 'N/A'}
                           </p>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                            Stock
+                            Delivery
                           </p>
                           <p className="font-bold text-slate-900 flex items-center">
-                            <CheckCircle2 className="w-3 h-3 mr-1.5 text-primary-500" />{' '}
-                            {vendor.available_stock ? `+${vendor.available_stock} units` : '+500 units'}
+                            <Truck className="w-3 h-3 mr-1.5 text-primary-500" />{' '}
+                            {vendor.delivery_reliability != null ? formatTrustPercent(vendor.delivery_reliability) : 'N/A'}
                           </p>
                         </div>
                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -306,7 +325,23 @@ const MatchResults = () => {
                       </div>
 
                       <div className="flex flex-col md:flex-row items-center gap-4">
-                        <Button className="w-full md:w-auto px-10">Select Vendor</Button>
+                        <Button
+                          className="w-full md:w-auto px-10"
+                          disabled={accepting === vendor.vendor_id || !vendor.is_selectable}
+                          onClick={async () => {
+                            if (!requestItem?.id || !vendor.vendor_id) return;
+                            setAccepting(vendor.vendor_id);
+                            try {
+                              await apiService.acceptVendorForRequest(profile.accessToken, requestItem.id, vendor.vendor_id);
+                              navigate('/user/history');
+                            } catch (err) {
+                              console.error('Failed to accept vendor:', err);
+                              setAccepting(null);
+                            }
+                          }}
+                        >
+                          {accepting === vendor.vendor_id ? 'Accepting...' : 'Select Vendor'}
+                        </Button>
                         <Button variant="secondary" className="w-full md:w-auto shadow-none">
                           View Profile
                         </Button>
@@ -344,6 +379,21 @@ const MatchResults = () => {
                       >
                         "{getMatchReason(vendor)}"
                       </p>
+                      {vendor.trust_score != null && (
+                        <div className="mt-4 space-y-2">
+                          {Object.entries(TRUST_SIGNALS).map(([key, cfg]) => {
+                            const val = vendor[key];
+                            if (val == null) return null;
+                            const pct = (val * 100).toFixed(0);
+                            return (
+                              <div key={key} className="flex justify-between items-center">
+                                <span className={cn('text-[10px] font-bold uppercase tracking-widest', i === 0 ? 'text-primary-600' : 'text-slate-500')}>{cfg.label}</span>
+                                <span className={cn('text-[10px] font-black', i === 0 ? 'text-primary-800' : 'text-slate-700')}>{pct}%</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                       {i === 0 && (
                         <div className="mt-4 flex items-center text-primary-600 text-[10px] font-bold uppercase tracking-tighter">
                           <ShieldCheck className="w-3 h-3 mr-1" /> System Recommended
@@ -367,9 +417,10 @@ const MatchResults = () => {
               </p>
               <div className="space-y-4">
                 {[
-                  { label: 'Proximity', weight: 45 },
-                  { label: 'Stock Freshness', weight: 30 },
-                  { label: 'Order History', weight: 15 },
+                  { label: 'Proximity', weight: 35 },
+                  { label: 'Trust Score', weight: 25 },
+                  { label: 'Stock Freshness', weight: 20 },
+                  { label: 'Order History', weight: 10 },
                   { label: 'Pricing', weight: 10 },
                 ].map((w) => (
                   <div key={w.label} className="space-y-1.5">
