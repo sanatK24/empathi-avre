@@ -180,11 +180,18 @@ const SharedProfileDashboard = () => {
                     const data = await response.json();
                     const addr = data.address || {};
 
-                    // Map Nominatim fields:
+                    // Map Nominatim fields for complete address line 2 (Landmark, sector, or area):
+                    const landmark = addr.amenity || addr.building || addr.office || addr.shop || addr.tourism || addr.historic || addr.landmark || addr.leisure || addr.house_name || '';
                     const road = addr.road || addr.pedestrian || '';
-                    const houseNumber = addr.house_number || '';
-                    const line1 = [houseNumber, road].filter(Boolean).join(' ').trim() || addr.suburb || '';
-                    const line2 = addr.suburb || addr.neighbourhood || addr.residential || addr.commercial || '';
+                    const area = addr.suburb || addr.neighbourhood || addr.residential || addr.commercial || addr.industrial || addr.retail || addr.village || addr.hamlet || addr.subdivision || '';
+                    
+                    // Filter empty parts and avoid duplicate descriptors to produce a clean address line 2
+                    const line2Parts = [];
+                    if (landmark) line2Parts.push(landmark);
+                    if (road && road !== landmark) line2Parts.push(road);
+                    if (area && area !== road && area !== landmark) line2Parts.push(area);
+                    const line2 = line2Parts.join(', ');
+
                     const locality = addr.suburb || addr.village || addr.neighbourhood || addr.county || '';
                     const city = addr.city || addr.town || addr.village || addr.suburb || 'Mumbai';
                     const state = addr.state || addr.region || '';
@@ -192,23 +199,25 @@ const SharedProfileDashboard = () => {
                     const countryCodeRaw = (addr.country_code || 'IND').toUpperCase();
                     const countryCode = countryCodeRaw === 'IN' ? 'IND' : countryCodeRaw.substring(0, 3);
 
-                    // Fully formatted full address for backward compatibility
-                    const fullParts = [line1, line2, locality, city, state, postcode, countryCode].filter(Boolean);
-                    const addressStr = fullParts.join(', ');
-
-                    setFormData(prev => ({
-                        ...prev,
-                        addressLine1: line1,
-                        addressLine2: line2,
-                        locality: locality,
-                        city: city,
-                        stateProvince: state,
-                        postalCode: postcode,
-                        countryCode: countryCode,
-                        address: addressStr,
-                        lat: latitude,
-                        lng: longitude
-                    }));
+                    setFormData(prev => {
+                        const existingLine1 = prev.addressLine1 || '';
+                        const fullParts = [existingLine1, line2, locality, city, state, postcode, countryCode].filter(Boolean);
+                        const addressStr = fullParts.join(', ');
+                        
+                        return {
+                            ...prev,
+                            addressLine1: existingLine1, // Keep manual entry intact
+                            addressLine2: line2,
+                            locality: locality,
+                            city: city,
+                            stateProvince: state,
+                            postalCode: postcode,
+                            countryCode: countryCode,
+                            address: addressStr,
+                            lat: latitude,
+                            lng: longitude
+                        };
+                    });
                 } catch (err) {
                     console.error('Reverse geocoding failed', err);
                     setGeoError('Could not auto-detect detailed address. You can enter it manually.');
