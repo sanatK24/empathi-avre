@@ -236,53 +236,6 @@ EmpathI/
 │   │   └── main.jsx                   # React root launcher
 │   ├── package.json                   # Frontend dependencies
 │   └── vite.config.js                 # Vite compiler configurations
-├── stale_docs/                        # Archived legacy documents, test scripts, and backend utilities (Review Folder)
-│   ├── DOWNGRADE_EXECUTION_CHECKLIST.md
-│   ├── DOWNGRADE_IMPLEMENTATION_GUIDE.md
-│   ├── DOWNGRADE_SUMMARY.md
-│   ├── role_schemas.md
-│   ├── PHASE_2_EXECUTION.sh
-│   ├── final_smoke_test.py
-│   ├── seed_test_vendors.py
-│   ├── run_all_tests.py
-│   ├── test_all_endpoints.py
-│   ├── test_all_endpoints_codebase.py
-│   ├── test_ml_hf_and_features.py
-│   ├── check_db.py
-│   ├── fix_db.py (root)
-│   ├── loc_scan.py
-│   ├── read_traceback.py
-│   ├── SESSION_SUMMARY.txt
-│   ├── final_smoke_test.db (root)
-│   ├── Project Handover Links Template.docx
-│   ├── auth.py (legacy auth bridge)
-│   ├── seed_db.py (legacy marketplace seeder)
-│   ├── seed_campaigns.py (legacy campaigns seeder)
-│   ├── seed_marketplace.py (legacy marketplace seeder)
-│   ├── migrate_inventory.py (legacy migration)
-│   ├── migrate_lgbm.py (legacy migration)
-│   ├── migrate_vendors.py (legacy migration)
-│   ├── empathi_engine.py (legacy request orchestrator)
-│   ├── trust_service.py (legacy trust scoring)
-│   ├── orchestrator.py (legacy match orchestrator)
-│   ├── generate_user_activities.py (legacy activities generator)
-│   ├── deduplicate_campaigns.py (legacy database script)
-│   ├── fix_db.py (backend database script)
-│   ├── final_smoke_test.db (backend test database)
-│   ├── smoke_test.db (backend test database)
-│   ├── avre.db (legacy database)
-│   ├── seed/ (legacy marketplace datasets folder)
-│   ├── migrate_addresses.py (legacy SQLite migration)
-│   ├── seed_locations.py (legacy location seeder)
-│   ├── seed_uat.py (legacy UAT seeder)
-│   ├── alembic.ini (legacy migrations config)
-│   ├── alembic/ (legacy migrations folder)
-│   ├── seed_taxonomy.py (legacy db seeder)
-│   ├── backend.env (legacy env)
-│   ├── frontend.env (legacy env)
-│   ├── frontend.env.local (legacy env)
-│   ├── backend.env.example (legacy env template)
-│   └── frontend.env.example (legacy env template)
 ├── .env.example                       # Application environment variables setup template
 ```
 
