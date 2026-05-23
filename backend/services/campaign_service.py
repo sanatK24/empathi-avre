@@ -22,18 +22,27 @@ class CampaignService:
         text_content = f"{data.title}. {data.description}"
         
         ai_summary = hf_services.summarize_campaign(text_content)
-        category_info = hf_services.classify_category(text_content)
+
+        # Prefer the comprehensive AI analyzer for category inference.
+        # This avoids brittle zero-shot classifier failures on HF Router.
+        analysis = hf_services.analyze_campaign_comprehensive(
+            text_content,
+            historical_campaigns=[],
+            taxonomy_str=""
+        )
+
         toxicity = hf_services.detect_toxicity(text_content)
         spam_risk = 0.0 # Placeholder or derived
         embeddings = hf_services.generate_embedding(text_content)
-        
-        # Override user category with AI predicted category if desired, or keep both.
-        # We'll trust the AI for primary category if it has high confidence.
-        final_category = category_info["primary_category"] if category_info["category_confidence"] > 0.6 else data.category
-        
+
+        predicted_category = analysis.get("predicted_category")
+        # If predicted_category is missing, fall back to user-provided category.
+        final_category = predicted_category if predicted_category else data.category
+
         from models import CampaignCategory
         cat_obj = db.query(CampaignCategory).filter(CampaignCategory.name.ilike(final_category)).first() if final_category else None
         category_id = cat_obj.id if cat_obj else data.category_id
+
 
         campaign = Campaign(
             title=data.title,
@@ -50,8 +59,8 @@ class CampaignService:
             
             # Save AI Metadata
             ai_summary=ai_summary,
-            category_tags=json.dumps(category_info.get("category_tags", [])),
-            category_confidence=category_info.get("category_confidence", 0.0),
+            category_tags=json.dumps(analysis.get("predicted_category", None) and [analysis.get("predicted_category")] or []),
+            category_confidence=analysis.get("inferred_urgency") and 0.7 or 0.0,
             toxicity_score=toxicity,
             spam_risk_score=spam_risk,
             embedding_vector=json.dumps(embeddings)
@@ -89,7 +98,7 @@ class CampaignService:
         if user_donations:
             donated_campaign_ids = [d.campaign_id for d in user_donations]
             donated_campaigns = db.query(Campaign).filter(Campaign.id.in_(donated_campaign_ids)).all()
-            user_categories = {c.category for c in donated_campaigns}
+            user_categories = {c.category_id for c in donated_campaigns}
 
         context = {
             'user_city': user.city,
@@ -125,14 +134,14 @@ class CampaignService:
             # Get creator trust for display
             trust_score = 0.5
             try:
-                creator_trust = trust_engine_service.compute_creator_trust(db, campaign.creator_id)
+                creator_trust = trust_engine_service.compute_creator_trust(db, campaign.created_by)
                 trust_score = creator_trust['composite_trust_score'] if creator_trust else 0.5
             except:
                 pass
 
             # Build reasons
             reasons = []
-            if campaign.category in user_categories:
+            if campaign.category_id in user_categories:
                 reasons.append("Matches your interests")
             if user.city and campaign.city and campaign.city.lower() == user.city.lower():
                 reasons.append("In your city")
@@ -146,12 +155,12 @@ class CampaignService:
                 "title": campaign.title,
                 "description": campaign.description,
                 "cover_image": getattr(campaign, 'cover_image', None),
-                "verified": bool(campaign.verified_at),
+                "verified": bool(campaign.verified),
                 "ml_score": round(adjusted_score * 100, 1),
                 "trust_score": round(trust_score * 100, 1),
                 "reason": " • ".join(reasons) if reasons else "Recommended for you",
                 "progress": round((campaign.raised_amount / campaign.goal_amount * 100) if campaign.goal_amount > 0 else 0, 1),
-                "category": campaign.category,
+                "category": campaign.taxonomy_category.name if campaign.taxonomy_category else "General Aid",
                 "city": campaign.city,
                 "urgency_level": campaign.urgency_level.value if campaign.urgency_level else None,
                 "goal_amount": campaign.goal_amount,

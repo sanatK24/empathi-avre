@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Activity, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Activity, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { motion } from 'framer-motion';
@@ -140,36 +140,41 @@ const LoginPage = () => {
 
       {/* Right side - Visual */}
       <div className="hidden lg:block lg:w-1/2 bg-slate-50 p-12 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary-100 rounded-full blur-[120px] opacity-40 translate-x-1/2 -translate-y-1/2"></div>
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent-100 rounded-full blur-[100px] opacity-30 -translate-x-1/2 translate-y-1/2"></div>
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary-100/50 rounded-full blur-[120px] opacity-40 translate-x-1/2 -translate-y-1/2"></div>
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent-100/30 rounded-full blur-[100px] opacity-30 -translate-x-1/2 translate-y-1/2"></div>
         
         <div className="h-full w-full flex flex-col items-center justify-center relative z-10">
-          <div className="p-2 bg-white rounded-3xl shadow-premium max-w-sm">
-             <div className="bg-slate-900 rounded-[1.5rem] p-8 text-white">
+          <div className="p-2 bg-white rounded-[2.5rem] shadow-premium max-w-sm border border-slate-200/50">
+             <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/10 rounded-full blur-2xl"></div>
                 <div className="flex items-center space-x-3 mb-10">
-                    <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                    <div className="w-8 h-8 bg-primary-gradient rounded-xl flex items-center justify-center">
                         <Activity className="w-5 h-5" />
                     </div>
-                    <span className="font-display font-bold text-xl">EmpathI</span>
+                    <span className="font-display font-black text-lg tracking-widest uppercase">EmpathI</span>
                 </div>
                 <div className="space-y-6">
                     <div className="space-y-2">
-                        <div className="h-2 w-20 bg-primary-500/30 rounded"></div>
-                        <div className="h-4 w-full bg-white/10 rounded"></div>
-                        <div className="h-4 w-2/3 bg-white/10 rounded"></div>
+                        <span className="text-[8px] font-black text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded border border-primary-500/20 uppercase tracking-wider">Active Recommendation</span>
+                        <h3 className="text-sm font-black text-white uppercase tracking-tight mt-1">Medical Aid concentrators for Local Hospitals</h3>
                     </div>
-                    <div className="pt-6 border-t border-white/5">
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-xs font-bold text-slate-400">Top Matches</span>
-                            <span className="text-xs text-primary-400">View all</span>
+                    <div className="pt-6 border-t border-white/5 space-y-4">
+                        <div className="flex justify-between items-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Matched Reasons</span>
+                            <span className="text-[8px] font-black text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-md">94% Match</span>
                         </div>
-                        <div className="space-y-3">
-                            {[1, 2].map(i => (
+                        <div className="space-y-2.5">
+                            {[
+                                { title: 'Matches your donation history', label: 'Interests' },
+                                { title: 'Located within your city boundary', label: 'Proximity' }
+                            ].map((item, i) => (
                                 <div key={i} className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/5">
-                                    <div className="w-8 h-8 bg-white/10 rounded-lg"></div>
-                                    <div className="flex-grow space-y-1">
-                                        <div className="h-2 w-24 bg-white/20 rounded"></div>
-                                        <div className="h-1 w-16 bg-white/5 rounded"></div>
+                                    <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                    </div>
+                                    <div className="flex-grow min-w-0">
+                                        <p className="text-[10px] font-bold text-white tracking-tight truncate">{item.title}</p>
+                                        <p className="text-[8px] text-slate-400 uppercase tracking-wider font-bold mt-0.5">{item.label}</p>
                                     </div>
                                 </div>
                             ))}
@@ -180,10 +185,10 @@ const LoginPage = () => {
           </div>
           
           <div className="mt-12 text-center max-w-sm">
-             <h2 className="text-2xl font-display font-bold text-slate-900 mb-4">Mastering Predictive Resource Intelligence</h2>
-             <p className="text-slate-500 font-medium">
-                Our engine combines historical data with dynamic variables to provide 
-                the most accurate resource coordination in the industry.
+             <h2 className="text-2xl font-display font-black text-slate-900 mb-4 uppercase tracking-tight">Empowering Crisis Relief with Fair AI</h2>
+             <p className="text-slate-500 font-semibold text-sm leading-relaxed">
+                Our engine balances user contextual parameters with dynamic impression records, 
+                allocating critical help fairly where it makes the absolute most difference.
              </p>
           </div>
         </div>

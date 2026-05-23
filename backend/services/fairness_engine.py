@@ -8,7 +8,9 @@ Consolidates:
 Purpose: Fairness-aware campaign ranking (prevent top campaigns from monopolizing feed, ensure diversity)
 """
 
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, TYPE_CHECKING
+if TYPE_CHECKING:
+    from models import Campaign
 from datetime import datetime
 from sqlalchemy.orm import Session
 import numpy as np
@@ -132,8 +134,8 @@ class FairnessEngine:
                     f"{max_same_creator}/creator")
 
         for campaign, score in ranked_campaigns:
-            cat = campaign.category
-            creator_id = campaign.creator_id
+            cat = campaign.category_id
+            creator_id = campaign.created_by
 
             cat_current = category_count.get(cat, 0)
             creator_current = creator_count.get(creator_id, 0)

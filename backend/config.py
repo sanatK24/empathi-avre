@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 class Settings(BaseSettings):
     # Model config for Pydantic V2
     model_config = SettingsConfigDict(
-        env_file=os.path.join(BASE_DIR, ".env"), 
+        env_file=os.path.join(os.path.dirname(BASE_DIR), ".env"), 
         extra="ignore"  # Allow extra fields in .env without crashing
     )
 
@@ -17,10 +17,10 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://empathi-frontend.onrender.com")
     
     # Supabase
-    SUPABASE_URL: str | None = None
-    SUPABASE_KEY: str | None = None
+    SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
+    SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
     # ML Settings
-    HUGGINGFACE_API_KEY: str | None = None
+    HUGGINGFACE_API_KEY: str | None = os.getenv("HUGGINGFACE_API_KEY")
     # If loaded via pydantic env_file, also reflect into process env
     # so that other libraries/tools relying on os.environ behave consistently.
 

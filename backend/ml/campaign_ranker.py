@@ -14,7 +14,9 @@ Consolidates:
 Purpose: Single entry point for campaign discovery ranking via LightGBM
 """
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, TYPE_CHECKING
+if TYPE_CHECKING:
+    from models import Campaign
 from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
@@ -133,8 +135,8 @@ class CampaignRankerService:
                     'momentum': self._compute_momentum(campaign),
 
                     # Verification & trust
-                    'is_verified': 1 if campaign.verified_at else 0,
-                    'creator_trust_score': self._get_creator_trust_score(db, campaign.creator_id),
+                    'is_verified': 1 if campaign.verified else 0,
+                    'creator_trust_score': self._get_creator_trust_score(db, campaign.created_by),
 
                     # AI Metadata Features
                     'toxicity_score': getattr(campaign, 'toxicity_score', 0.0) or 0.0,
@@ -245,7 +247,7 @@ class CampaignRankerService:
         """Does campaign match user's preferred category?"""
         if not context or not context.get('preferred_category'):
             return 0.5
-        return 1.0 if campaign.category == context['preferred_category'] else 0.3
+        return 1.0 if campaign.category_id == context['preferred_category'] else 0.3
 
     def _compute_geographic_relevance(self, campaign: 'Campaign', context: Dict = None) -> float:
         """Is campaign in user's city?"""
@@ -277,7 +279,7 @@ class CampaignRankerService:
         scores = []
         for campaign in campaigns:
             momentum = self._compute_momentum(campaign)
-            verification_boost = 0.2 if campaign.verified_at else 0
+            verification_boost = 0.2 if campaign.verified else 0
             base_score = 0.5 + momentum * 0.3 + verification_boost
             scores.append(min(1.0, base_score))
 

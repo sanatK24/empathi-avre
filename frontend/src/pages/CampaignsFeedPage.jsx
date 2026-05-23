@@ -12,6 +12,20 @@ import ProgressBar from '../components/ProgressBar';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 
+// Calculate Haversine distance in km
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c; // Distance in km
+}
+
 function CampaignsFeedPage() {
   const { profile } = useAppContext();
   const navigate = useNavigate();
@@ -30,6 +44,17 @@ function CampaignsFeedPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
+
+  const filteredCampaigns = React.useMemo(() => {
+    return campaigns.filter(campaign => {
+      if (!profile?.lat || !profile?.lng || !campaign.lat || !campaign.lng) return true;
+      const distance = calculateDistance(profile.lat, profile.lng, campaign.lat, campaign.lng);
+      if (profile?.proximityThreshold) {
+        return distance <= profile.proximityThreshold;
+      }
+      return true;
+    });
+  }, [campaigns, profile?.lat, profile?.lng, profile?.proximityThreshold]);
 
   const fetchCampaigns = async (newFilters = filters) => {
     try {
@@ -241,18 +266,23 @@ function CampaignsFeedPage() {
             <div className="py-20">
               <LoadingSpinner text="Discovering campaigns..." />
             </div>
-          ) : campaigns.length === 0 ? (
+          ) : filteredCampaigns.length === 0 ? (
             <div className="py-16">
               <EmptyState 
                 icon={Heart} 
                 title="No campaigns found" 
-                message="Try adjusting your filters or search terms." 
+                message={profile?.proximityThreshold 
+                  ? `No campaigns found within your ${profile.proximityThreshold} km alert radius settings. You can adjust your proximity settings in Settings.`
+                  : "Try adjusting your filters or search terms."
+                } 
               />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-              {campaigns.map((campaign) => {
+              {filteredCampaigns.map((campaign) => {
                 const progress = getProgressPercentage(campaign.raised_amount, campaign.goal_amount);
+                const distance = calculateDistance(profile?.lat, profile?.lng, campaign.lat, campaign.lng);
+
                 return (
                   <motion.div
                     key={campaign.id}
@@ -303,9 +333,16 @@ function CampaignsFeedPage() {
                       </h3>
 
                       <div className="flex justify-between items-center text-[13px] text-slate-500 mb-5" style={{ fontFamily: 'Inter, sans-serif' }}>
-                        <div className="flex items-center gap-1.5 font-medium">
-                          <MapPin className="w-4 h-4 text-blue-500" />
-                          <span className="truncate max-w-[120px]">{campaign.city}</span>
+                        <div className="flex items-center gap-1.5 font-medium text-slate-500 max-w-[60%] truncate">
+                          <MapPin className="w-4 h-4 text-blue-500 shrink-0" />
+                          <span className="truncate" title={`${campaign.city}${distance !== null ? ` - ${distance.toFixed(1)} km away` : ''}`}>
+                            {campaign.city}
+                            {distance !== null && (
+                              <span className="text-[11px] text-emerald-600 font-bold ml-1">
+                                ({distance.toFixed(1)} km)
+                              </span>
+                            )}
+                          </span>
                         </div>
                         <div className="flex items-center font-medium bg-slate-50 px-2.5 py-1 rounded-lg text-slate-700">
                           Goal: ₹{campaign.goal_amount?.toLocaleString()}

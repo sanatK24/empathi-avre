@@ -24,9 +24,9 @@ class CampaignRepo(BaseRepo[Campaign]):
 
     def get_category_stats(self, db: Session):
         return db.query(
-            Campaign.category,
+            Campaign.category_id,
             func.count(Campaign.id).label('count'),
             func.sum(Campaign.raised_amount).label('total_raised')
-        ).group_by(Campaign.category).all()
+        ).group_by(Campaign.category_id).all()
 
 campaign_repo = CampaignRepo()

@@ -222,7 +222,7 @@ class TrustEngine:
         try:
             creator = db.query(User).filter(User.id == creator_id).first()
             campaigns = db.query(Campaign).filter(
-                Campaign.creator_id == creator_id
+                Campaign.created_by == creator_id
             ).all()
 
             if not campaigns:
@@ -233,7 +233,7 @@ class TrustEngine:
                 (c.raised_amount / c.goal_amount) if c.goal_amount > 0 else 0
                 for c in campaigns
             ]
-            categories = [c.category for c in campaigns]
+            categories = [c.category_id for c in campaigns]
 
             features = {
                 'num_campaigns': len(campaigns),

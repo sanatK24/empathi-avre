@@ -37,6 +37,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-empathi_user}:${POSTGRES_PASSWORD:-empathi_password}@db:5432/${POSTGRES_DB:-empathi_db}
       - SECRET_KEY=${SECRET_KEY:-DEVELOPMENT_ONLY_INSECURE_KEY}
       - DEBUG=${DEBUG:-True}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
     depends_on:
       db:
         condition: service_healthy

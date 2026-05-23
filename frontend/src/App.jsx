@@ -24,6 +24,7 @@ import UserProfile from './pages/UserProfile';
 
 // Donation and Feed Pages
 import DonationPage from './pages/DonationPage';
+import SettingsPage from './pages/SettingsPage';
 
 import AdminCampaigns from './pages/AdminCampaigns';
 import AdminUsers from './pages/AdminUsers';
@@ -105,10 +106,7 @@ function App() {
           <Route path="profiles/:user_id" element={<UserProfile />} />
           <Route path="donations" element={<DonationPage />} />
           <Route path="profile" element={<SharedProfileDashboard />} />
-          <Route path="settings" element={<div className="p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-soft">
-            <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Settings</h2>
-            <p className="text-slate-500 font-medium italic">Security and notification preferences coming soon.</p>
-          </div>} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
 
         {/* Admin Routes */}

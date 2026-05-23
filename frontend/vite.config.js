@@ -8,6 +8,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  envDir: '../',
   server: {
     port: 5173,
     strictPort: true, // Fail if 5173 is in use, so you know to close the other one

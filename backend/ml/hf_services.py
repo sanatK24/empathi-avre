@@ -1,4 +1,9 @@
 import os
+
+os.environ["FLAGS_use_mkldnn"] = "0"
+os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
+
+from paddleocr import PaddleOCR
 import re
 import logging
 import requests
@@ -90,13 +95,10 @@ class HFServices:
 
         Payload shape must follow the official SentenceSimilarityPipeline example.
         """
-        model = "sentence-transformers/all-MiniLM-L6-v2"
+        model = "BAAI/bge-small-en-v1.5"
 
         payload = {
-            "inputs": {
-                "source_sentence": text,
-                "sentences": [text]
-            }
+            "inputs": text,
         }
 
         res = self._post_inference(model, payload)
@@ -119,7 +121,7 @@ class HFServices:
 
     # B. CAMPAIGN CATEGORY CLASSIFICATION
     def classify_category(self, text: str) -> Dict[str, Any]:
-        model = "facebook/bart-large-mnli"
+        model = "MoritzLaurer/deberta-v3-base-zeroshot-v1.1-all-33"
         candidate_labels = [
             "medical", "emergency", "disaster relief", "education",
             "animal rescue", "food support", "shelter", "community aid"
@@ -156,51 +158,54 @@ class HFServices:
 
     # D. DOCUMENT OCR
     def extract_document_text(self, image_bytes: bytes) -> str:
-        """Local OCR using TrOCR.
-
-        Notes:
-        - Unit tests may pass tiny/invalid byte streams; fail safe and return "".
-        - Model/processor are loaded lazily and cached in-process.
-        """
         try:
-            # Fail fast on obviously bad input
-            if not image_bytes or len(image_bytes) < 16:
-                return ""
+            import os
+            os.environ["FLAGS_use_mkldnn"] = "0"
+            os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 
-            from transformers import TrOCRProcessor, VisionEncoderDecoderModel
             from PIL import Image
             import io
+            import tempfile
+            
+            
 
-            # Cache on the instance to avoid re-downloading per call
-            if not hasattr(self, "_trocr_processor"):
-                self._trocr_processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-printed")
-            if not hasattr(self, "_trocr_model"):
-                self._trocr_model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-printed")
 
-            processor = self._trocr_processor
-            model = self._trocr_model
+            if not hasattr(self, "_paddle_ocr"):
+                self._paddle_ocr = PaddleOCR(
+                    lang='en',
+                    use_angle_cls=False
+                )
 
-            # Robust image decode
-            try:
-                image = Image.open(io.BytesIO(image_bytes))
-                image = image.convert("RGB")
-            except Exception:
-                return ""
 
-            pixel_values = processor(images=image, return_tensors="pt").pixel_values
+            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-            import torch
+            with tempfile.NamedTemporaryFile(
+                suffix=".png",
+                delete=False
+            ) as tmp:
+                image.save(tmp.name)
 
-            model.eval()
-            with torch.no_grad():
-                generated_ids = model.generate(pixel_values)
+            os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 
-            generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-            return generated_text
+            result = self._paddle_ocr.predict(tmp.name)
+
+
+            extracted = []
+
+            for page in result:
+                for line in page:
+                    if isinstance(line, dict):
+                        text = line.get("text", "")
+                        if text:
+                            extracted.append(text)
+
+
+            return "\n".join(extracted)
 
         except Exception as e:
-            logger.error(f"OCR Error: {e}")
+            logger.error(f"PaddleOCR Error: {e}")
             return ""
+
 
 
 
@@ -266,16 +271,34 @@ class HFServices:
 
     # G. OPTIONAL TOXIC/SPAM DETECTION
     def detect_toxicity(self, text: str) -> float:
-        model = "unitary/toxic-bert"
-        res = self._post_inference(model, {"inputs": text})
+        """Return a numeric toxicity score.
 
-        
-        # toxic-bert returns multiple labels like toxic, severe_toxic, etc.
-        if res and isinstance(res, list) and isinstance(res[0], list):
-            scores = {item['label']: item['score'] for item in res[0]}
-            return scores.get('toxic', 0.0)
-            
+        Fail-safe behavior is important for tests: if HF is slow/unavailable,
+        return 0.0 quickly.
+        """
+        model = "unitary/toxic-bert"
+
+        # Non-blocking / fail-safe: skip remote call when no HF key.
+        if not self.api_key:
+            return 0.0
+
+        # Keep timeout small to prevent test hang.
+        try:
+            res = self._post_inference(model, {"inputs": text}, timeout_s=5)
+        except Exception:
+            return 0.0
+
+        # toxic-bert typically returns: [[{"label": ..., "score": ...}, ...]]
+        if res and isinstance(res, list) and res and isinstance(res[0], list):
+            scores = {item.get('label'): item.get('score') for item in res[0] if isinstance(item, dict)}
+            val = scores.get('toxic')
+            try:
+                return float(val) if val is not None else 0.0
+            except Exception:
+                return 0.0
+
         return 0.0
+
 
     # H. AI-POWERED CAMPAIGN IMPROVEMENT AND EXTRACTION
     def analyze_campaign_comprehensive(self, text: str, historical_campaigns: List[Any] = None, taxonomy_str: str = "") -> Dict[str, Any]:
