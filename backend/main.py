@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from database import get_db, engine, Base
 from api.v1.router import api_router
 from apscheduler.schedulers.background import BackgroundScheduler
-from services.news_service import NewsService
 from database import SessionLocal
 import os
 
@@ -21,27 +20,16 @@ app = FastAPI(
 # Set up Scheduler
 scheduler = BackgroundScheduler()
 
-def scheduled_news_sync():
-    db = SessionLocal()
-    try:
-        print("[Scheduler] Running background news sync...")
-        added = NewsService.sync_news(db)
-        print(f"[Scheduler] Added {added} new articles.")
-    except Exception as e:
-        print(f"[Scheduler] Error syncing news: {e}")
-    finally:
-        db.close()
 
 @app.on_event("startup")
 def start_scheduler():
-    scheduler.add_job(scheduled_news_sync, 'interval', minutes=15)
     scheduler.start()
-    print("[Scheduler] Started RSS feed scheduler.")
+    print("[Scheduler] Started background schedulers.")
 
 @app.on_event("shutdown")
-def stop_scheduler():
+def shutdown_scheduler():
     scheduler.shutdown()
-    print("[Scheduler] Stopped RSS feed scheduler.")
+    print("[Scheduler] Stopped background schedulers.")
 
 # Production + Localhost CORS
 ALLOWED_ORIGINS = [

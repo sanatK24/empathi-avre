@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas import UserCreate, UserResponse, Token, UserUpdate, UserProfileResponse, UserEmergencyContactBase, UserEmergencyContactResponse
+from schemas import UserCreate, UserResponse, Token, UserUpdate, UserProfileResponse
 from services.auth_service import AuthService
 from api.deps import get_current_user, get_active_user
 from models import User
@@ -35,12 +35,6 @@ def get_profile(
     current_user: User = Depends(get_active_user),
     db: Session = Depends(get_db)
 ):
-    from repositories.vendor_repo import vendor_repo
-    vendor = vendor_repo.get_by_user_id(db, current_user.id)
-    
-    # We convert to a dict to add the is_vendor field if it's not a real column
-    # but Pydantic's from_attributes handles it if we add it as an attribute
-    current_user.is_vendor = vendor is not None
     return current_user
 
 @router.put("/profile", response_model=UserProfileResponse)
@@ -68,42 +62,7 @@ def update_profile(
     db.refresh(current_user)
     return current_user
 
-@router.post("/emergency-contacts", response_model=UserEmergencyContactResponse)
-def add_emergency_contact(
-    contact_in: UserEmergencyContactBase,
-    current_user: User = Depends(get_active_user),
-    db: Session = Depends(get_db)
-):
-    from models import UserEmergencyContact
-    contact = UserEmergencyContact(
-        user_id=current_user.id,
-        name=contact_in.name,
-        phone=contact_in.phone,
-        category=contact_in.category
-    )
-    db.add(contact)
-    db.commit()
-    db.refresh(contact)
-    return contact
 
-@router.delete("/emergency-contacts/{contact_id}")
-def delete_emergency_contact(
-    contact_id: int,
-    current_user: User = Depends(get_active_user),
-    db: Session = Depends(get_db)
-):
-    from models import UserEmergencyContact
-    contact = db.query(UserEmergencyContact).filter(
-        UserEmergencyContact.id == contact_id,
-        UserEmergencyContact.user_id == current_user.id
-    ).first()
-    
-    if not contact:
-        raise HTTPException(status_code=404, detail="Contact not found")
-        
-    db.delete(contact)
-    db.commit()
-    return {"status": "deleted"}
 
 @router.delete("/profile")
 def delete_profile(

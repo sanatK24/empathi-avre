@@ -17,7 +17,7 @@ import Badge from '../components/ui/Badge';
 import { cn } from '../utils/cn';
 
 const SharedProfileDashboard = () => {
-    const { profile, updateProfile, logout, switchRole } = useAppContext();
+    const { profile, updateProfile, logout } = useAppContext();
     const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -73,16 +73,6 @@ const SharedProfileDashboard = () => {
             phone: '',
             category: 'Family'
         },
-        
-        // Vendor Specific
-        shopName: '',
-        businessCategory: '',
-        registrationId: '',
-        serviceAreas: '',
-        operatingHours: '',
-        leadTime: '',
-        isActive: true,
-        
         // Security
         currentPassword: '',
         newPassword: '',
@@ -106,7 +96,7 @@ const SharedProfileDashboard = () => {
                 fullName: profile.fullName || '',
                 email: profile.email || '',
                 phone: profile.phone || '',
-                organizationName: profile.organizationName || profile.shopName || '',
+                organizationName: profile.organizationName || '',
                 bio: profile.bio || '',
                 city: profile.city || '',
                 address: profile.address || '',
@@ -122,14 +112,7 @@ const SharedProfileDashboard = () => {
                 preferredHospital: profile.preferredHospital || '',
                 emergencyContacts: profile.emergency_contacts || [],
                 personalCategories: profile.personal_categories ? profile.personal_categories.split(',') : ['Medical', 'Education', 'Food'],
-                accessibilityNeeds: profile.accessibilityNeeds || '',
-                shopName: profile.shopName || '',
-                businessCategory: profile.businessCategory || profile.category || '',
-                registrationId: profile.registrationId || '',
-                serviceAreas: profile.serviceAreas || '',
-                operatingHours: profile.operatingHours || '',
-                leadTime: profile.leadTime || '',
-                isActive: profile.is_active !== undefined ? profile.is_active : true
+                accessibilityNeeds: profile.accessibilityNeeds || ''
             }));
             loadStats();
         }
@@ -138,12 +121,10 @@ const SharedProfileDashboard = () => {
     const loadStats = async () => {
         try {
             let data = null;
-            if (profile.role === 'requester') {
-                data = await apiService.getRequesterStats(profile.accessToken);
-            } else if (profile.role === 'vendor') {
-                data = await apiService.getVendorStats(profile.accessToken);
-            } else if (profile.role === 'admin') {
+            if (profile.role === 'admin') {
                 data = await apiService.getAdminStats(profile.accessToken);
+            } else {
+                data = await apiService.getRequesterStats(profile.accessToken);
             }
             setStats(data);
         } catch (err) {
@@ -300,68 +281,28 @@ const SharedProfileDashboard = () => {
         setStatus({ type: null, message: '' });
 
         try {
-            let backendUser;
-            if (profile.role === 'vendor') {
-                // Update User table detailed fields for vendor
-                await updateMyProfile({
-                    name: formData.fullName,
-                    email: formData.email,
-                    phone: formData.phone,
-                    organizationName: formData.shopName || formData.organizationName,
-                    bio: formData.bio,
-                    city: formData.city,
-                    address: formData.address,
-                    addressLine1: formData.addressLine1,
-                    addressLine2: formData.addressLine2,
-                    locality: formData.locality,
-                    stateProvince: formData.stateProvince,
-                    postalCode: formData.postalCode,
-                    countryCode: formData.countryCode,
-                    lat: formData.lat || 19.0760,
-                    lng: formData.lng || 72.8777,
-                    accessToken: profile.accessToken,
-                });
-
-                // Update Vendor table fields
-                backendUser = await apiService.updateVendorProfile(profile.accessToken, {
-                    shop_name: formData.shopName || formData.organizationName,
-                    category: formData.businessCategory,
-                    phone: formData.phone,
-                    city: formData.city,
-                    address: formData.address,
-                    bio: formData.bio,
-                    registration_id: formData.registrationId,
-                    service_areas: formData.serviceAreas,
-                    lead_time: formData.leadTime,
-                    opening_hours: formData.operatingHours,
-                    is_active: formData.isActive,
-                    lat: formData.lat || 19.0760,
-                    lng: formData.lng || 72.8777
-                });
-            } else {
-                backendUser = await updateMyProfile({
-                    name: formData.fullName,
-                    email: formData.email,
-                    phone: formData.phone,
-                    organizationName: formData.organizationName,
-                    bio: formData.bio,
-                    city: formData.city,
-                    address: formData.address,
-                    bloodGroup: formData.bloodGroup,
-                    preferredHospital: formData.preferredHospital,
-                    personal_categories: formData.personalCategories.join(','),
-                    accessibilityNeeds: formData.accessibilityNeeds,
-                    addressLine1: formData.addressLine1,
-                    addressLine2: formData.addressLine2,
-                    locality: formData.locality,
-                    stateProvince: formData.stateProvince,
-                    postalCode: formData.postalCode,
-                    countryCode: formData.countryCode,
-                    lat: formData.lat,
-                    lng: formData.lng,
-                    accessToken: profile.accessToken,
-                });
-            }
+            let backendUser = await updateMyProfile({
+                name: formData.fullName,
+                email: formData.email,
+                phone: formData.phone,
+                organizationName: formData.organizationName,
+                bio: formData.bio,
+                city: formData.city,
+                address: formData.address,
+                bloodGroup: formData.bloodGroup,
+                preferredHospital: formData.preferredHospital,
+                personal_categories: formData.personalCategories.join(','),
+                accessibilityNeeds: formData.accessibilityNeeds,
+                addressLine1: formData.addressLine1,
+                addressLine2: formData.addressLine2,
+                locality: formData.locality,
+                stateProvince: formData.stateProvince,
+                postalCode: formData.postalCode,
+                countryCode: formData.countryCode,
+                lat: formData.lat,
+                lng: formData.lng,
+                accessToken: profile.accessToken,
+            });
 
             updateProfile({
                 ...profile,
@@ -377,8 +318,6 @@ const SharedProfileDashboard = () => {
                 accessibilityNeeds: backendUser?.accessibility_needs || formData.accessibilityNeeds,
                 personal_categories: backendUser?.personal_categories || formData.personalCategories.join(','),
                 emergency_contacts: formData.emergencyContacts, // Locally synced
-                shopName: backendUser?.shop_name || formData.shopName,
-                businessCategory: backendUser?.category || formData.businessCategory,
                 addressLine1: formData.addressLine1,
                 addressLine2: formData.addressLine2,
                 locality: formData.locality,
@@ -399,61 +338,7 @@ const SharedProfileDashboard = () => {
         }
     };
 
-    const handleDeactivate = async () => {
-        if (!window.confirm('Are you sure you want to deactivate your account? This action cannot be undone.')) return;
-        
-        try {
-            await apiService.deleteProfile(profile.accessToken);
-            alert('Account deactivated. Logging out...');
-            logout();
-            window.location.href = '/login';
-        } catch (error) {
-            console.error('Deactivation failed:', error);
-            setStatus({ type: 'error', message: 'Failed to deactivate account.' });
-        }
-    };
 
-    const handleVendorApplication = async (e) => {
-        e.preventDefault();
-        setSaving(true);
-        try {
-            await apiService.updateVendorProfile(profile.accessToken, {
-                shop_name: formData.shopName || formData.organizationName,
-                category: formData.businessCategory,
-                phone: formData.phone,
-                city: formData.city,
-                address: formData.address,
-                bio: formData.bio,
-                registration_id: formData.registrationId,
-                service_areas: formData.serviceAreas,
-                lead_time: formData.leadTime,
-                opening_hours: formData.operatingHours,
-                is_active: true,
-                lat: profile.lat || 19.0760,
-                lng: profile.lng || 72.8777
-            });
-            
-            // Fetch updated profile with new vendor status
-            const updatedProfile = await apiService.getMe(profile.accessToken);
-            
-            // Update profile with dual-role capability
-            updateProfile({
-                ...profile,
-                isVendor: true,
-                canSwitchRole: true,
-                backendRole: updatedProfile.role,
-                userRole: 'vendor' // Immediately switch to vendor view
-            });
-            
-            setStatus({ type: 'success', message: 'Application submitted! Switching to Vendor view...' });
-            // Navigate to vendor dashboard instead of reloading
-            setTimeout(() => window.location.href = '/vendor/dashboard', 1500);
-        } catch (err) {
-            setStatus({ type: 'error', message: err.message || 'Application failed.' });
-        } finally {
-            setSaving(false);
-        }
-    };
 
     const renderHeader = () => (
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
@@ -474,13 +359,8 @@ const SharedProfileDashboard = () => {
                     <div className="flex items-center justify-center gap-2">
                         <Badge variant={profile.isVerified ? 'success' : 'secondary'} className="h-6">
                             {profile.isVerified ? <ShieldCheck className="w-3 h-3 mr-1" /> : null}
-                            {profile.userRole === 'vendor' ? 'Vendor' : 'User'}
+                            {profile.role === 'admin' ? 'Admin' : 'User'}
                         </Badge>
-                        {profile.isVendor && profile.canSwitchRole && (
-                            <Badge variant="outline" className="bg-primary-50 text-primary-600 border-primary-200 uppercase text-[10px] font-black tracking-tighter">
-                                Dual Role
-                            </Badge>
-                        )}
                     </div>
                 </div>
                 <p className="text-slate-400 font-medium flex items-center justify-center md:justify-start gap-2 text-sm">
@@ -505,17 +385,6 @@ const SharedProfileDashboard = () => {
             >
                 Preview
             </Button>
-            {profile.canSwitchRole && (
-                <Button 
-                    variant="secondary"
-                    fullWidth
-                    className="md:w-auto bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border-indigo-200 h-12"
-                    icon={<Activity className="w-4 h-4" />}
-                    onClick={() => switchRole(profile.userRole === 'vendor' ? 'donor' : 'vendor')}
-                >
-                    Switch Role
-                </Button>
-            )}
             <Button variant="primary" fullWidth className="md:w-auto h-12" icon={<Save className="w-4 h-4" />} loading={saving} onClick={handleSave}>
                 Save Changes
             </Button>
@@ -527,14 +396,9 @@ const SharedProfileDashboard = () => {
         <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-2xl mb-8 overflow-x-auto no-scrollbar">
             {[
                 { id: 'general', label: 'General', icon: User },
-                { id: 'security', label: 'Security', icon: Lock },
-                { id: 'preferences', label: 'Preferences', icon: Bell },
                 { id: 'medical', label: 'Medical Profile', icon: Heart },
                 { id: 'activity', label: 'Activity', icon: TrendingUp },
-                profile.role !== 'vendor' && { id: 'saved_campaigns', label: 'Saved Campaigns', icon: Heart },
-                profile.isVendor
-                    ? { id: 'role', label: 'Vendor Settings', icon: Store }
-                    : { id: 'vendor_application', label: 'Become a Vendor', icon: Sparkles }
+                { id: 'saved_campaigns', label: 'Saved Campaigns', icon: Heart }
             ].filter(Boolean).map(tab => (
                 <button
                     key={tab.id}
@@ -715,105 +579,6 @@ const SharedProfileDashboard = () => {
         </div>
     );
 
-    const renderSecuritySettings = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="p-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                    <Lock className="w-5 h-5 text-amber-500" />
-                    Change Password
-                </h3>
-                <div className="space-y-6">
-                    <Input label="Current Password" type="password" />
-                    <Input label="New Password" type="password" />
-                    <Input label="Confirm New Password" type="password" />
-                    <Button variant="secondary" className="w-full">Update Password</Button>
-                </div>
-            </Card>
-
-            <Card className="p-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-primary-500" />
-                    Privacy & Login
-                </h3>
-                <div className="space-y-8">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="font-bold text-slate-900">Two-Factor Authentication</p>
-                            <p className="text-xs text-slate-500">Add an extra layer of security to your account.</p>
-                        </div>
-                        <Badge variant="ghost" className="bg-slate-100 text-slate-400">Disabled</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="font-bold text-slate-900">Active Sessions</p>
-                            <p className="text-xs text-slate-500">Currently logged in on 2 devices.</p>
-                        </div>
-                        <Button variant="ghost" size="sm" className="text-red-500">Logout All</Button>
-                    </div>
-                </div>
-            </Card>
-        </div>
-    );
-
-    const renderPreferences = () => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="p-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                    <Bell className="w-5 h-5 text-primary-500" />
-                    Notification Preferences
-                </h3>
-                <div className="space-y-6">
-                    {[
-                        { id: 'email', label: 'Email Notifications' },
-                        { id: 'push', label: 'Push Notifications' },
-                        { id: 'sms', label: 'SMS Alerts' },
-                        { id: 'urgencyAlerts', label: 'Urgent Dispatch Alerts' }
-                    ].map(pref => (
-                        <div key={pref.id} className="flex items-center justify-between">
-                            <span className="font-bold text-slate-700">{pref.label}</span>
-                            <div 
-                                onClick={() => handleNestedChange('notifications', pref.id, !formData.notifications[pref.id])}
-                                className={cn(
-                                    "w-12 h-6 rounded-full transition-all cursor-pointer relative",
-                                    formData.notifications[pref.id] ? "bg-primary-500" : "bg-slate-200"
-                                )}
-                            >
-                                <div className={cn(
-                                    "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                                    formData.notifications[pref.id] ? "left-7" : "left-1"
-                                )} />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </Card>
-
-            <Card className="p-8">
-                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-indigo-500" />
-                    Localization & Display
-                </h3>
-                <div className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 ml-1">Interface Language</label>
-                        <select className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-medium">
-                            <option>English</option>
-                            <option>Hindi</option>
-                            <option>Marathi</option>
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-bold text-slate-700 ml-1">Timezone</label>
-                        <select className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-medium">
-                            <option>UTC +5:30 (India Standard Time)</option>
-                            <option>UTC +0:00 (GMT)</option>
-                        </select>
-                    </div>
-                </div>
-            </Card>
-        </div>
-    );
-
     const renderMedicalProfile = () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card className="p-8">
@@ -924,20 +689,60 @@ const SharedProfileDashboard = () => {
                     </Button>
                 </div>
             </Card>
+
+            <Card className="p-8 lg:col-span-2">
+                <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary-500" />
+                    Personal Categories
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mb-6 leading-relaxed">
+                    Define the topics and service areas you care about. These categories influence your feed and emergency discovery.
+                </p>
+                
+                <div className="flex flex-wrap gap-2 mb-8">
+                    <AnimatePresence>
+                        {formData.personalCategories.map(cat => (
+                            <motion.div
+                                key={cat}
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.8 }}
+                            >
+                                <Badge 
+                                    variant="ghost" 
+                                    className="bg-primary-50 text-primary-700 border border-primary-100 flex items-center gap-1 py-1.5"
+                                >
+                                    {cat}
+                                    <Trash2 className="w-3 h-3 ml-1 cursor-pointer hover:text-red-500" onClick={() => handleRemoveCategory(cat)} />
+                                </Badge>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <Input 
+                        placeholder="New category (e.g. Yoga, Cancer Care)" 
+                        value={formData.newCategory}
+                        onChange={e => handleInputChange('newCategory', e.target.value)}
+                        className="flex-grow"
+                    />
+                    <Button size="icon" onClick={handleAddCategory}><Sparkles className="w-4 h-4" /></Button>
+                </div>
+                
+                <div className="mt-8 pt-6 border-t border-slate-50">
+                        <Input label="Alert Threshold Distance (km)" type="number" placeholder="20" icon={<MapPin className="w-4 h-4" />} />
+                </div>
+            </Card>
         </div>
     );
 
     const renderActivitySummary = () => {
         const roleStats = {
-            requester: [
-                { label: 'Active Requests', value: stats?.active_requests || 0, icon: Activity, color: 'text-primary-500' },
+            user: [
+                { label: 'Active Campaigns', value: stats?.active_requests || stats?.active_campaigns || 0, icon: Activity, color: 'text-primary-500' },
                 { label: 'Impact Score', value: stats?.impact_score || 0, icon: TrendingUp, color: 'text-emerald-500' },
                 { label: 'Lives Affected', value: stats?.lives_affected || 0, icon: Heart, color: 'text-rose-500' }
-            ],
-            vendor: [
-                { label: 'Total Sales', value: stats?.total_value || '₹0', icon: TrendingUp, color: 'text-emerald-500' },
-                { label: 'Inventory Items', value: stats?.inventory_count || 0, icon: Package, color: 'text-primary-500' },
-                { label: 'Orders Fulfilled', value: stats?.completed_orders || 0, icon: CheckCircle2, color: 'text-indigo-500' }
             ],
             admin: [
                 { label: 'Audits Performed', value: stats?.audits_count || 0, icon: ShieldCheck, color: 'text-primary-500' },
@@ -946,7 +751,7 @@ const SharedProfileDashboard = () => {
             ]
         };
 
-        const currentStats = roleStats[profile.role] || [];
+        const currentStats = profile.role === 'admin' ? roleStats.admin : roleStats.user;
 
         return (
             <div className="space-y-8">
@@ -1040,315 +845,6 @@ const SharedProfileDashboard = () => {
         );
     };
 
-    const renderRoleSpecific = () => {
-        if (profile.role === 'requester') {
-            return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Card className="p-8">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2 text-rose-600">
-                            <Siren className="w-5 h-5" />
-                            Emergency Profile
-                        </h3>
-                        {/* Health info */}
-                        <div className="grid grid-cols-2 gap-4 mb-8">
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-700 ml-1">Blood Group</label>
-                                <select 
-                                    value={formData.bloodGroup}
-                                    onChange={(e) => handleInputChange('bloodGroup', e.target.value)}
-                                    className="w-full h-11 rounded-xl border border-slate-200 px-4 text-sm font-medium"
-                                >
-                                    <option value="">Select</option>
-                                    {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
-                                </select>
-                            </div>
-                            <Input 
-                                label="Hospital Preference" 
-                                value={formData.preferredHospital}
-                                onChange={(e) => handleInputChange('preferredHospital', e.target.value)}
-                                icon={<Building2 className="w-4 h-4" />}
-                            />
-                        </div>
-
-                        {/* Contacts Management */}
-                        <div className="space-y-6">
-                            <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                <Users className="w-4 h-4" /> Personal Contacts
-                            </h4>
-                            <div className="space-y-3">
-                                {formData.emergencyContacts.map(contact => (
-                                    <div key={contact.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-primary-500">
-                                                <User className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-slate-900 text-sm">{contact.name}</p>
-                                                <p className="text-xs text-slate-500 font-medium">{contact.phone} • <span className="text-primary-600 uppercase font-black tracking-tighter text-[10px]">{contact.category}</span></p>
-                                            </div>
-                                        </div>
-                                        <button onClick={() => handleDeleteContact(contact.id)} className="p-2 text-slate-300 hover:text-red-500 transition-colors">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Add Contact Form */}
-                            <div className="p-6 bg-slate-100/50 rounded-3xl space-y-4">
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Add New Contact</p>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <input 
-                                        placeholder="Name" 
-                                        value={formData.newContact.name}
-                                        onChange={e => handleNestedChange('newContact', 'name', e.target.value)}
-                                        className="px-4 py-2 text-xs font-bold rounded-xl border-none ring-1 ring-slate-200 outline-none focus:ring-primary-500" 
-                                    />
-                                    <input 
-                                        placeholder="Phone" 
-                                        value={formData.newContact.phone}
-                                        onChange={e => handleNestedChange('newContact', 'phone', e.target.value)}
-                                        className="px-4 py-2 text-xs font-bold rounded-xl border-none ring-1 ring-slate-200 outline-none focus:ring-primary-500" 
-                                    />
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <select 
-                                        value={formData.newContact.category}
-                                        onChange={e => handleNestedChange('newContact', 'category', e.target.value)}
-                                        className="flex-1 px-4 py-2 text-xs font-bold rounded-xl border-none ring-1 ring-slate-200 outline-none"
-                                    >
-                                        {['Family', 'Doctor', 'Friend', 'Neighbor', 'Work'].map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                    <Button size="sm" onClick={handleAddContact} loading={saving}>Add Contact</Button>
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-
-                    <Card className="p-8">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                            <Sparkles className="w-5 h-5 text-primary-500" />
-                            Personal Categories
-                        </h3>
-                        <p className="text-xs text-slate-500 font-medium mb-6 leading-relaxed">
-                            Define the topics and service areas you care about. These categories influence your feed and emergency discovery.
-                        </p>
-                        
-                        <div className="flex flex-wrap gap-2 mb-8">
-                            <AnimatePresence>
-                                {formData.personalCategories.map(cat => (
-                                    <motion.div
-                                        key={cat}
-                                        initial={{ opacity: 0, scale: 0.8 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.8 }}
-                                    >
-                                        <Badge 
-                                            variant="ghost" 
-                                            className="bg-primary-50 text-primary-700 border border-primary-100 flex items-center gap-1 py-1.5"
-                                        >
-                                            {cat}
-                                            <Trash2 className="w-3 h-3 ml-1 cursor-pointer hover:text-red-500" onClick={() => handleRemoveCategory(cat)} />
-                                        </Badge>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <Input 
-                                placeholder="New category (e.g. Yoga, Cancer Care)" 
-                                value={formData.newCategory}
-                                onChange={e => handleInputChange('newCategory', e.target.value)}
-                                className="flex-grow"
-                            />
-                            <Button size="icon" onClick={handleAddCategory}><Sparkles className="w-4 h-4" /></Button>
-                        </div>
-                        
-                        <div className="mt-8 pt-6 border-t border-slate-50">
-                             <Input label="Alert Threshold Distance (km)" type="number" placeholder="20" icon={<MapPin className="w-4 h-4" />} />
-                        </div>
-                    </Card>
-                </div>
-            );
-        }
-
-        if (profile.role === 'vendor') {
-            return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Card className="p-8">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                            <Store className="w-5 h-5 text-indigo-500" />
-                            Business Information
-                        </h3>
-                        <div className="space-y-6">
-                            <Input label="Business Category" value={formData.businessCategory} onChange={(e) => handleInputChange('businessCategory', e.target.value)} icon={<Inbox className="w-4 h-4" />} />
-                            <Input label="GST / Registration ID" value={formData.registrationId} onChange={(e) => handleInputChange('registrationId', e.target.value)} icon={<Shield className="w-4 h-4" />} />
-                            <Input label="Operating Hours" value={formData.operatingHours} onChange={(e) => handleInputChange('operatingHours', e.target.value)} icon={<Clock className="w-4 h-4" />} />
-                        </div>
-                    </Card>
-
-                    <Card className="p-8">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                            <Package className="w-5 h-5 text-amber-500" />
-                            Operations
-                        </h3>
-                        <div className="space-y-8">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-bold text-slate-900">Accept New Requests</p>
-                                    <p className="text-xs text-slate-500">Toggle visibility in matching engine.</p>
-                                </div>
-                                <div 
-                                    onClick={() => handleInputChange('isActive', !formData.isActive)}
-                                    className={cn(
-                                        "w-12 h-6 rounded-full transition-all cursor-pointer relative",
-                                        formData.isActive ? "bg-emerald-500" : "bg-slate-200"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                                        formData.isActive ? "left-7" : "left-1"
-                                    )} />
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-bold text-slate-900">Vacation Mode</p>
-                                    <p className="text-xs text-slate-500">Pause all operations temporarily.</p>
-                                </div>
-                                <div 
-                                    onClick={() => handleInputChange('isActive', !formData.isActive)}
-                                    className={cn(
-                                        "w-12 h-6 rounded-full transition-all cursor-pointer relative",
-                                        !formData.isActive ? "bg-amber-500" : "bg-slate-200"
-                                    )}
-                                >
-                                    <div className={cn(
-                                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
-                                        !formData.isActive ? "left-7" : "left-1"
-                                    )} />
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-            );
-        }
-
-        if (profile.role === 'admin') {
-            return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <Card className="p-8">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                            <ShieldCheck className="w-5 h-5 text-primary-500" />
-                            Admin Identity
-                        </h3>
-                        <div className="space-y-6">
-                            <div className="p-4 bg-slate-50 rounded-xl">
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Access Level</p>
-                                <p className="text-lg font-bold text-slate-900">Root Administrator</p>
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Permissions</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {['User Management', 'Vendor Verification', 'Financial Audit', 'System Config'].map(p => (
-                                        <Badge key={p} variant="ghost" className="bg-indigo-50 text-indigo-700">{p}</Badge>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </Card>
-
-                    <Card className="p-8">
-                        <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-                            <AlertCircle className="w-5 h-5 text-amber-500" />
-                            Security Controls
-                        </h3>
-                        <Button variant="secondary" className="w-full justify-start mb-4">View System Access Logs</Button>
-                        <Button variant="outline" className="w-full justify-start text-amber-600 hover:bg-amber-50">Revoke External API Access</Button>
-                    </Card>
-                </div>
-            );
-        }
-        return null;
-    };
-
-    const renderVendorApplication = () => (
-        <Card className="p-8 max-w-2xl mx-auto overflow-hidden relative border-none ring-1 ring-slate-100 shadow-premium">
-            <div className="absolute top-0 right-0 p-8 opacity-5">
-                <Sparkles className="w-32 h-32 text-primary-500" />
-            </div>
-            <div className="relative z-10">
-                <div className="flex items-center gap-5 mb-10">
-                    <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center text-primary-600 shadow-sm">
-                        <Store className="w-8 h-8" />
-                    </div>
-                    <div>
-                        <h3 className="text-2xl font-display font-black text-slate-900 tracking-tight uppercase">Become a Vendor</h3>
-                        <p className="text-slate-500 font-medium italic text-sm">Join the EmpathI network to fulfill critical resource requests.</p>
-                    </div>
-                </div>
-
-                <form onSubmit={handleVendorApplication} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input 
-                            label="Business/Shop Name" 
-                            required
-                            value={formData.shopName || formData.organizationName}
-                            onChange={e => handleInputChange('shopName', e.target.value)}
-                            icon={<Building2 className="w-4 h-4" />}
-                        />
-                        <Input 
-                            label="Business Category" 
-                            placeholder="e.g. Pharmacy, Groceries"
-                            required
-                            value={formData.businessCategory}
-                            onChange={e => handleInputChange('businessCategory', e.target.value)}
-                            icon={<Inbox className="w-4 h-4" />}
-                        />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Input 
-                            label="Registration / License ID" 
-                            value={formData.registrationId}
-                            onChange={e => handleInputChange('registrationId', e.target.value)}
-                            icon={<Shield className="w-4 h-4" />}
-                        />
-                        <Input 
-                            label="Operating Hours" 
-                            placeholder="e.g. 09:00 - 21:00"
-                            value={formData.operatingHours}
-                            onChange={e => handleInputChange('operatingHours', e.target.value)}
-                            icon={<Clock className="w-4 h-4" />}
-                        />
-                    </div>
-                    <Input 
-                        label="Service City" 
-                        required
-                        value={formData.city}
-                        onChange={e => handleInputChange('city', e.target.value)}
-                        icon={<MapPin className="w-4 h-4" />}
-                    />
-                    
-                    <div className="pt-6 border-t border-slate-100">
-                        <Button 
-                            variant="primary" 
-                            className="w-full h-12 text-sm uppercase font-black tracking-widest shadow-xl shadow-primary-500/20"
-                            loading={saving}
-                            type="submit"
-                        >
-                            Submit Application
-                        </Button>
-                        <p className="text-center text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-tighter">
-                            By submitting, you agree to the EmpathI Vendor Terms of Service
-                        </p>
-                    </div>
-                </form>
-            </div>
-        </Card>
-    );
-
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
@@ -1377,23 +873,14 @@ const SharedProfileDashboard = () => {
                         transition={{ duration: 0.2 }}
                     >
                         {activeTab === 'general' && renderGeneralInfo()}
-                        {activeTab === 'security' && renderSecuritySettings()}
-                        {activeTab === 'preferences' && renderPreferences()}
                         {activeTab === 'medical' && renderMedicalProfile()}
                         {activeTab === 'activity' && renderActivitySummary()}
                         {activeTab === 'saved_campaigns' && renderSavedCampaigns()}
-                        {activeTab === 'vendor_application' && renderVendorApplication()}
-                        {activeTab === 'role' && renderRoleSpecific()}
                     </motion.div>
                 </AnimatePresence>
             </div>
 
-            <div className="mt-12 flex items-center justify-between pt-8 border-t border-slate-100">
-                <div className="flex items-center gap-4">
-                    <Button variant="ghost" className="text-red-500 hover:bg-red-50" icon={<Trash2 className="w-4 h-4" />} onClick={handleDeactivate}>
-                        Deactivate Account
-                    </Button>
-                </div>
+            <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-slate-200">
                 <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">
                     EmpathI Profile Engine v1.2 • End-to-End Encrypted
                 </p>

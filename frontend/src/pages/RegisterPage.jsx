@@ -12,7 +12,7 @@ import { saveAuthSession } from '../services/authService';
 
 
 const RegisterPage = () => {
-  const [role, setRole] = useState('requester');
+  const [role, setRole] = useState('USER');
   const [loading, setLoading] = useState(false);
   const { updateProfile } = useAppContext();
   const navigate = useNavigate();
@@ -37,7 +37,7 @@ const RegisterPage = () => {
         name: name,
         email: email,
         password: password,
-        role: role.toUpperCase(),
+        role: role,
         organization_name: orgName,
         city: "Mumbai", // Default or could add field
         is_active: true
@@ -73,28 +73,31 @@ const RegisterPage = () => {
 
           <div className="grid grid-cols-2 gap-4 mb-10">
             <button 
-              onClick={() => setRole('requester')}
+              type="button"
+              onClick={() => setRole('USER')}
               className={cn(
                 "p-4 rounded-2xl border-2 flex flex-col items-center gap-3 transition-all",
-                role === 'requester' 
+                role === 'USER' 
                   ? "border-primary-500 bg-primary-50/50 text-primary-700" 
                   : "border-slate-100 hover:border-slate-200 text-slate-500"
               )}
             >
-              <User className={cn("w-6 h-6", role === 'requester' ? "text-primary-500" : "text-slate-400")} />
-              <span className="font-bold text-sm">User</span>
+              <User className={cn("w-6 h-6", role === 'USER' ? "text-primary-500" : "text-slate-400")} />
+              <span className="font-bold text-xs md:text-sm">User</span>
             </button>
+            
             <button 
-              onClick={() => setRole('vendor')}
+              type="button"
+              onClick={() => setRole('CREATOR')}
               className={cn(
                 "p-4 rounded-2xl border-2 flex flex-col items-center gap-3 transition-all",
-                role === 'vendor' 
+                role === 'CREATOR' 
                   ? "border-primary-500 bg-primary-50/50 text-primary-700" 
                   : "border-slate-100 hover:border-slate-200 text-slate-500"
               )}
             >
-              <Store className={cn("w-6 h-6", role === 'vendor' ? "text-primary-500" : "text-slate-400")} />
-              <span className="font-bold text-sm">Vendor</span>
+              <Building2 className={cn("w-6 h-6", role === 'CREATOR' ? "text-primary-500" : "text-slate-400")} />
+              <span className="font-bold text-xs md:text-sm">Campaign Creator</span>
             </button>
           </div>
 
@@ -105,10 +108,18 @@ const RegisterPage = () => {
             </div>
             
             <Input 
-              label={role === 'requester' ? "Basic Information" : "Vendor Name"} 
-              placeholder={role === 'requester' ? "Full Name / Organization" : "Medical Supplies Inc."} 
+              label={
+                role === 'USER' 
+                  ? "Organization / Background" 
+                  : "Organization / Creator Name"
+              } 
+              placeholder={
+                role === 'USER' 
+                  ? "Optional: NGO Name / Independent" 
+                  : "Hope Foundation / Independent Creator"
+              } 
               autoComplete="organization"
-              required 
+              required={role === 'CREATOR'} 
             />
             
             <Input 

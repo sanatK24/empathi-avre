@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import Button from '../components/ui/Button';
-import { ArrowLeft, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, AlertCircle, Brain, ShieldCheck, RefreshCw } from 'lucide-react';
 
 function CampaignCreationPage() {
   const { profile } = useAppContext();
@@ -11,19 +11,103 @@ function CampaignCreationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [taxonomy, setTaxonomy] = useState([]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'medical',
+    category_id: '',
+    subcategory_id: '',
     city: profile?.city || '',
     goal_amount: '',
-    urgency_level: 'medium',
+    urgency_level: 'MEDIUM',
     cover_image: null,
     deadline: ''
   });
 
-  const categories = ['medical', 'food', 'shelter', 'education', 'infrastructure', 'other'];
-  const urgencies = ['low', 'medium', 'high', 'critical'];
+  const [verificationDocument, setVerificationDocument] = useState(null);
+  const urgencies = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+
+  useEffect(() => {
+    const fetchTaxonomy = async () => {
+      try {
+        const data = await apiService.getTaxonomy();
+        const activeTaxonomy = data.filter(c => c.is_active);
+        setTaxonomy(activeTaxonomy);
+        if (activeTaxonomy.length > 0) {
+            setFormData(prev => ({ 
+              ...prev, 
+              category_id: activeTaxonomy[0].id, 
+              subcategory_id: activeTaxonomy[0].subcategories[0]?.id || '' 
+            }));
+        }
+      } catch (err) {
+        console.error("Failed to load taxonomy", err);
+      }
+    };
+    fetchTaxonomy();
+  }, []);
+
+  const triggerAnalysis = async () => {
+    if (formData.title.trim().length > 5 || formData.description.trim().length > 20) {
+      setAnalyzing(true);
+      try {
+        const analysisData = {
+          ...formData,
+          goal_amount: formData.goal_amount ? parseFloat(formData.goal_amount) : null,
+          category_id: formData.category_id ? parseInt(formData.category_id) : null,
+          subcategory_id: formData.subcategory_id ? parseInt(formData.subcategory_id) : null
+        };
+        const res = await apiService.analyzeCampaign(profile.accessToken, analysisData);
+        setAiSuggestions(res.suggestions);
+        
+        setFormData(prev => {
+          const updates = { ...prev };
+          if (res.extracted_goal && !prev.goal_amount) {
+            updates.goal_amount = res.extracted_goal.toString();
+          }
+          if (res.inferred_urgency && prev.urgency_level === 'MEDIUM') {
+            updates.urgency_level = res.inferred_urgency;
+          }
+          if (res.predicted_category && taxonomy.length > 0) {
+             const cat = taxonomy.find(c => c.name.toLowerCase() === res.predicted_category.toLowerCase());
+             if (cat) {
+               updates.category_id = cat.id;
+               if (res.predicted_subcategory) {
+                 const subcat = cat.subcategories.find(s => s.name.toLowerCase() === res.predicted_subcategory.toLowerCase());
+                 if (subcat) updates.subcategory_id = subcat.id;
+               }
+             }
+          }
+          return updates;
+        });
+      } catch(e) {
+        console.warn("Auto-analyze failed:", e);
+      } finally {
+        setAnalyzing(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      triggerAnalysis();
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [formData.title, formData.description, profile.accessToken, taxonomy]);
+
+  const handleCategoryChange = (e) => {
+    const catId = parseInt(e.target.value);
+    const cat = taxonomy.find(c => c.id === catId);
+    setFormData(prev => ({
+        ...prev, 
+        category_id: catId, 
+        subcategory_id: cat?.subcategories[0]?.id || '' 
+    }));
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -38,6 +122,13 @@ function CampaignCreationPage() {
         setFormData(prev => ({ ...prev, cover_image: reader.result }));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDocumentUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setVerificationDocument(file);
     }
   };
 
@@ -69,7 +160,8 @@ function CampaignCreationPage() {
       const campaignData = {
         title: formData.title,
         description: formData.description,
-        category: formData.category,
+        category_id: parseInt(formData.category_id),
+        subcategory_id: parseInt(formData.subcategory_id),
         city: formData.city,
         goal_amount: parseFloat(formData.goal_amount),
         urgency_level: formData.urgency_level,
@@ -78,6 +170,16 @@ function CampaignCreationPage() {
       };
 
       const newCampaign = await apiService.createCampaign(profile.accessToken, campaignData);
+      
+      if (verificationDocument) {
+        try {
+          await apiService.uploadCampaignDocument(profile.accessToken, newCampaign.id, verificationDocument);
+        } catch (docErr) {
+          console.warn("Campaign created, but document upload failed:", docErr);
+          // Don't throw, we still want to navigate to the created campaign
+        }
+      }
+
       navigate(`/user/campaigns/${newCampaign.id}`);
     } catch (err) {
       console.error('Campaign creation failed:', err);
@@ -133,9 +235,35 @@ function CampaignCreationPage() {
 
         {/* Campaign Description */}
         <div>
-          <label className="block text-xs md:text-sm font-semibold text-slate-900 mb-1.5 md:mb-2">
-            Description <span className="text-red-600">*</span>
-          </label>
+          <div className="flex justify-between items-center mb-1.5 md:mb-2">
+            <label className="block text-xs md:text-sm font-semibold text-slate-900">
+              Description <span className="text-red-600">*</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <div className="text-xs flex items-center gap-1 text-primary-600 font-medium bg-primary-50 px-2 py-1 rounded-md transition-colors">
+                {analyzing ? (
+                  <>
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    AI is analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="w-3 h-3" />
+                    Auto-Review Active
+                  </>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={triggerAnalysis}
+                disabled={analyzing}
+                className="text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 p-1 rounded-md transition-colors disabled:opacity-50"
+                title="Refresh AI Analysis"
+              >
+                <RefreshCw className={`w-3 h-3 ${analyzing ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+          </div>
           <textarea
             name="description"
             value={formData.description}
@@ -145,7 +273,16 @@ function CampaignCreationPage() {
             rows="5"
             className="w-full px-3 md:px-4 py-2 md:py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none text-sm"
           />
-          <p className="text-[10px] md:text-xs text-slate-500 mt-1">{formData.description.length}/5000 characters</p>
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-[10px] md:text-xs text-slate-500">{formData.description.length}/5000 characters</p>
+          </div>
+          
+          {aiSuggestions && (
+            <div className="mt-3 p-3 md:p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-sm text-indigo-900 shadow-sm animate-fade-in">
+              <p className="font-bold mb-1.5 flex items-center gap-1.5"><Brain className="w-4 h-4"/> AI Suggestions:</p>
+              <p className="whitespace-pre-line leading-relaxed">{aiSuggestions}</p>
+            </div>
+          )}
         </div>
 
         {/* Cover Image */}
@@ -179,6 +316,35 @@ function CampaignCreationPage() {
           </div>
         </div>
 
+        {/* Verification Document */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-900 mb-2">
+            Verification Documents (Optional)
+          </label>
+          <p className="text-xs text-slate-500 mb-3">
+            Upload official documents (medical bills, estimates) to boost your campaign's Trust Score. AI verification pipelines will process them immediately after campaign creation.
+          </p>
+          <div className="border border-slate-300 rounded-lg p-4 bg-slate-50 relative">
+            <input
+              type="file"
+              accept=".pdf,image/*"
+              onChange={handleDocumentUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+            <div className="flex items-center gap-3">
+              <Upload size={20} className="text-slate-500" />
+              <div className="flex-1 overflow-hidden">
+                <p className="text-sm font-medium text-slate-900 truncate">
+                  {verificationDocument ? verificationDocument.name : 'Select a document to upload...'}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {verificationDocument ? `${(verificationDocument.size / 1024 / 1024).toFixed(2)} MB` : 'PDF, JPG, PNG up to 5MB'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Campaign Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Category */}
@@ -187,17 +353,59 @@ function CampaignCreationPage() {
               Category <span className="text-red-600">*</span>
             </label>
             <select
-              name="category"
-              value={formData.category}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              name="category_id"
+              value={formData.category_id}
+              onChange={handleCategoryChange}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
             >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>
-                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              {taxonomy.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Subcategory */}
+          <div>
+            <label className="block text-sm font-semibold text-slate-900 mb-2">
+              Subcategory <span className="text-red-600">*</span>
+            </label>
+            <select
+              name="subcategory_id"
+              value={formData.subcategory_id}
+              onChange={handleInputChange}
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+            >
+              {taxonomy.find(c => c.id === parseInt(formData.category_id))?.subcategories.map(sub => (
+                <option key={sub.id} value={sub.id}>
+                  {sub.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          {/* AI Rules Display (Full Width) */}
+          <div className="md:col-span-2">
+            {taxonomy.find(c => c.id === parseInt(formData.category_id))?.ai_rules.length > 0 && (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 animate-fade-in shadow-inner">
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldCheck className="w-5 h-5 text-indigo-500" />
+                  <h3 className="font-semibold text-slate-900 text-sm">Active AI Verification Pipelines</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {taxonomy.find(c => c.id === parseInt(formData.category_id))?.ai_rules.map(rule => (
+                    <div key={rule.id} className="flex items-start gap-2 bg-white border border-slate-100 p-2.5 rounded-md shadow-sm">
+                      <Brain className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-slate-700">{rule.capability}</p>
+                        <p className="text-[10px] text-slate-500 capitalize leading-tight mt-0.5">{rule.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Urgency Level */}

@@ -67,8 +67,7 @@ const DashboardLayout = ({ role = 'requester' }) => {
     clearTimeout(searchTimeout.current);
     if (val.trim().length > 1) {
       searchTimeout.current = setTimeout(() => {
-        const basePath = location.pathname.startsWith('/vendor') ? '/vendor' :
-                         location.pathname.startsWith('/admin') ? '/admin' : '/user';
+        const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/user';
         navigate(`${basePath}/campaigns?search=${encodeURIComponent(val.trim())}`);
       }, 500);
     }
@@ -78,29 +77,19 @@ const DashboardLayout = ({ role = 'requester' }) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     clearTimeout(searchTimeout.current);
-    const basePath = location.pathname.startsWith('/vendor') ? '/vendor' :
-                     location.pathname.startsWith('/admin') ? '/admin' : '/user';
+    const basePath = location.pathname.startsWith('/admin') ? '/admin' : '/user';
     navigate(`${basePath}/campaigns?search=${encodeURIComponent(searchQuery.trim())}`);
     setSearchQuery('');
     setIsMobileSearchOpen(false);
   }, [searchQuery, navigate, location.pathname]);
 
   const navItems = {
-    requester: [
+    user: [
       { label: 'Dashboard', icon: LayoutDashboard, path: '/user/dashboard' },
-      { label: 'Resource Hub', icon: Zap, path: '/user/resources' },
       { label: 'Campaign Center', icon: TrendingUp, path: '/user/campaigns' },
       { label: 'My Campaigns', icon: Heart, path: '/user/campaigns/my' },
-      { label: 'Community Feed', icon: Megaphone, path: '/user/smart-feed' },
       { label: 'Profile', icon: User, path: '/user/profile' },
       { label: 'Settings', icon: Settings, path: '/user/settings' },
-    ],
-    vendor: [
-      { label: 'Dashboard', icon: LayoutDashboard, path: '/vendor/dashboard' },
-      { label: 'Inventory', icon: Package, path: '/vendor/inventory' },
-      { label: 'Orders', icon: Inbox, path: '/vendor/orders' },
-      { label: 'Analytics', icon: BarChart3, path: '/vendor/analytics' },
-      { label: 'Profile', icon: User, path: '/vendor/profile' },
     ],
     admin: [
       { label: 'Overview', icon: ShieldCheck, path: '/admin/dashboard' },
@@ -114,15 +103,13 @@ const DashboardLayout = ({ role = 'requester' }) => {
 
   // Determine role dynamically: use context role or derive from URL path
   let activeRole = role;
-  if (location.pathname.startsWith('/vendor')) {
-    activeRole = 'vendor';
-  } else if (location.pathname.startsWith('/admin')) {
+  if (location.pathname.startsWith('/admin')) {
     activeRole = 'admin';
-  } else if (location.pathname.startsWith('/user')) {
-    activeRole = 'requester';
+  } else {
+    activeRole = 'user';
   }
 
-  const currentNav = navItems[activeRole] || navItems.requester;
+  const currentNav = navItems[activeRole] || navItems.user;
 
   const userInitials = profile.fullName ? profile.fullName.split(' ').map(n => n[0]).join('').toUpperCase() : 'GU';
 
@@ -265,7 +252,7 @@ const DashboardLayout = ({ role = 'requester' }) => {
                   >
                     <div className="text-right hidden sm:block">
                       <p className="text-sm font-bold text-slate-900 leading-none">{profile.fullName || 'Guest User'}</p>
-                      <p className="text-xs font-medium text-slate-500 mt-1 capitalize">{role === 'requester' ? 'User' : role}</p>
+                      <p className="text-xs font-medium text-slate-500 mt-1 capitalize">{role === 'admin' ? 'Admin' : 'User'}</p>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-primary-gradient flex items-center justify-center text-white font-bold shadow-lg shadow-primary-500/20 flex-shrink-0">
                       {userInitials}
@@ -281,14 +268,14 @@ const DashboardLayout = ({ role = 'requester' }) => {
                         <p className="text-sm font-black text-slate-900 truncate">{profile.fullName || 'Guest User'}</p>
                         <p className="text-xs font-medium text-slate-500 truncate mt-0.5">{profile.email}</p>
                         <span className="inline-block mt-2 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 bg-primary-50 text-primary-600 rounded-md">
-                          {role === 'requester' ? 'User' : role}
+                          {role === 'admin' ? 'Admin' : 'User'}
                         </span>
                       </div>
 
                       {/* Nav Links */}
                       <nav className="py-2">
                         <Link
-                          to={`/${location.pathname.startsWith('/vendor') ? 'vendor' : location.pathname.startsWith('/admin') ? 'admin' : 'user'}/profile`}
+                          to={`/${location.pathname.startsWith('/admin') ? 'admin' : 'user'}/profile`}
                           onClick={() => setShowProfileMenu(false)}
                           className="flex items-center gap-3 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                         >
@@ -297,35 +284,13 @@ const DashboardLayout = ({ role = 'requester' }) => {
                         </Link>
                         {!location.pathname.startsWith('/admin') && (
                           <Link
-                            to="/user/transactions"
-                            onClick={() => setShowProfileMenu(false)}
-                            className="flex items-center gap-3 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                          >
-                            <ReceiptText className="w-4 h-4" />
-                            Transactions
-                          </Link>
-                        )}
-                        {!location.pathname.startsWith('/admin') && (
-                          <Link
-                            to={`/${location.pathname.startsWith('/vendor') ? 'user' : 'user'}/settings`}
+                            to={`/user/settings`}
                             onClick={() => setShowProfileMenu(false)}
                             className="flex items-center gap-3 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
                           >
                             <Settings className="w-4 h-4" />
                             Settings
                           </Link>
-                        )}
-                        {profile.canSwitchRole && (
-                          <button
-                            onClick={() => {
-                              setShowProfileMenu(false);
-                              switchRole(profile.userRole === 'vendor' ? 'donor' : 'vendor');
-                            }}
-                            className="w-full flex items-center gap-3 px-5 py-3 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                            Switch to {profile.userRole === 'vendor' ? 'User' : 'Vendor'} View
-                          </button>
                         )}
                       </nav>
 

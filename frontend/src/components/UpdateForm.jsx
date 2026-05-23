@@ -60,7 +60,7 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
       onSuccess(newUpdate);
     } catch (err) {
       console.error('Failed to create update:', err);
-      alert('Failed to create update. Please try again.');
+      alert('Failed to create update: ' + err.message);
     } finally {
       setIsSubmitting(false);
     }

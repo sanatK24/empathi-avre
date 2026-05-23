@@ -24,6 +24,15 @@ const ROLE_PERMISSIONS = {
     'request_resources',
     'view_recommendations',
   ],
+  volunteer_ngo: [
+    'view_feed',
+    'create_campaign',
+    'manage_campaigns',
+    'request_resources',
+    'view_recommendations',
+    'track_donations',
+    'post_notices',
+  ],
   verifier: [
     'view_feed',
     'verify_requests',

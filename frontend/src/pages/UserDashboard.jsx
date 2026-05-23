@@ -105,16 +105,12 @@ const UserDashboard = () => {
   }, [profile.accessToken, statsRefreshTrigger]);
 
   const overviewCards = [
-    { label: 'Active Requests', value: formatNumber(stats.active_requests), icon: Zap, color: 'text-primary-500', bg: 'bg-primary-50' },
-    { label: 'Matched Vendors', value: formatNumber(stats.matched_vendors), icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50' },
     { label: 'Active Campaigns', value: formatNumber(stats.active_campaigns), icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50' },
     { label: 'Donations Made', value: formatCurrency(stats.donations_made), icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { label: 'Urgent Needs', value: formatNumber(stats.emergency_requests), icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50' },
     { label: 'Recommendations', value: formatNumber(stats.recommendations_available), icon: Sparkles, color: 'text-indigo-500', bg: 'bg-indigo-50' },
   ];
 
   const quickActions = [
-    { label: 'Marketplace', icon: ShoppingBag, path: '/user/marketplace', color: 'bg-primary-500' },
     { label: 'Create Campaign', icon: Megaphone, path: '/user/campaigns/create', color: 'bg-amber-500' },
     { label: 'Transactions', icon: ReceiptText, path: '/user/transactions', color: 'bg-slate-700' },
     { label: 'Community Feed', icon: Sparkles, path: '/user/smart-feed', color: 'bg-indigo-500' },
@@ -154,7 +150,7 @@ const UserDashboard = () => {
       </div>
 
       {/* Overview Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4">
         {overviewCards.map((stat, i) => (
           <motion.div
             key={i}
@@ -186,7 +182,7 @@ const UserDashboard = () => {
             <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
               <Zap className="w-4 h-4 text-primary-500" /> Quick Actions
             </h2>
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-2 sm:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-4">
               {quickActions.map((action, i) => (
                 <Link to={action.path} key={i}>
                   <Card className="hover:shadow-premium transition-all border-none ring-1 ring-slate-100 text-center group cursor-pointer h-full bg-slate-50/50 hover:bg-white">
@@ -208,9 +204,9 @@ const UserDashboard = () => {
               <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary-500" /> Recent Activity
               </h2>
-              <Link to="/user/marketplace">
+              <Link to="/user/campaigns">
                 <Button variant="ghost" size="sm" className="text-xs font-bold text-primary-500 uppercase tracking-widest">
-                  Browse Marketplace
+                  Browse Campaigns
                 </Button>
               </Link>
             </div>
@@ -344,8 +340,8 @@ const UserDashboard = () => {
                   </div>
                   <div className="w-px h-10 bg-slate-100"></div>
                   <div className="flex-1">
-                    <p className="text-2xl font-black text-slate-900">{stats.matched_vendors}</p>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Successful Matches</p>
+                    <p className="text-2xl font-black text-slate-900">{stats.donations_made ? 1 : 0}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Campaigns Supported</p>
                   </div>
                </div>
                <div className="mt-6 pt-6 border-t border-slate-50">

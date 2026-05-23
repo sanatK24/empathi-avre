@@ -120,15 +120,13 @@ class BackgroundTasks:
             db: Database session
         """
         try:
-            from models import User, UserRole, Campaign, CampaignStatus, Request, Vendor, Donation, DonationStatus
+            from models import User, UserRole, Campaign, CampaignStatus, Donation, DonationStatus
 
             logger.info("Generating admin statistics")
 
             stats = {
                 "users": {
                     "total": db.query(func.count(User.id)).scalar() or 0,
-                    "requesters": db.query(func.count(User.id)).filter(User.role == UserRole.REQUESTER).scalar() or 0,
-                    "vendors": db.query(func.count(User.id)).filter(User.role == UserRole.VENDOR).scalar() or 0,
                     "active": db.query(func.count(User.id)).filter(User.is_active == True).scalar() or 0
                 },
                 "campaigns": {
@@ -136,17 +134,10 @@ class BackgroundTasks:
                     "active": db.query(func.count(Campaign.id)).filter(Campaign.status == CampaignStatus.ACTIVE).scalar() or 0,
                     "completed": db.query(func.count(Campaign.id)).filter(Campaign.status == CampaignStatus.COMPLETED).scalar() or 0,
                 },
-                "requests": {
-                    "total": db.query(func.count(Request.id)).scalar() or 0,
-                },
                 "donations": {
                     "total": db.query(func.count(Donation.id)).scalar() or 0,
                     "completed": db.query(func.count(Donation.id)).filter(Donation.status == DonationStatus.COMPLETED).scalar() or 0,
                     "total_raised": db.query(func.sum(Donation.amount)).filter(Donation.status == DonationStatus.COMPLETED).scalar() or 0
-                },
-                "vendors": {
-                    "total": db.query(func.count(Vendor.id)).scalar() or 0,
-                    "verified": db.query(func.count(Vendor.id)).filter(Vendor.verification_status == "VERIFIED").scalar() or 0
                 },
                 "generated_at": datetime.now().isoformat()
             }
@@ -243,38 +234,7 @@ class BackgroundTasks:
         except Exception as e:
             logger.error(f"Error processing image for campaign {campaign_id}: {str(e)}")
 
-    @staticmethod
-    def rebuild_empathi_rankings(db: Session):
-        """
-        Rebuild EmpathI ranking scores for all active requests.
-        ML feature engineering and batch scoring.
 
-        Args:
-            db: Database session
-        """
-        try:
-            from models import Request, RequestStatus
-            from services.matching_service import MatchingService
-
-            logger.info("Rebuilding EmpathI rankings for all active requests")
-
-            # Get all active requests
-            active_requests = db.query(Request).filter(
-                Request.status.in_([RequestStatus.PENDING, RequestStatus.MATCHED])
-            ).all()
-
-            for request in active_requests:
-                # Run matching service on each request
-                try:
-                    matches = MatchingService.get_or_generate_matches(db, request)
-                    logger.info(f"Rebuilt matches for request {request.id}: {len(matches)} matches")
-                except Exception as e:
-                    logger.error(f"Error rebuilding matches for request {request.id}: {str(e)}")
-
-            logger.info(f"EmpathI rankings rebuilt for {len(active_requests)} requests")
-
-        except Exception as e:
-            logger.error(f"Error rebuilding EmpathI rankings: {str(e)}")
 
     @staticmethod
     def cleanup_expired_data(db: Session):

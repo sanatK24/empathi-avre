@@ -174,3 +174,59 @@ def get_user_campaigns(
     ).offset(skip).limit(limit).all()
 
     return campaigns
+
+@router.get("/me/timeline")
+def get_user_timeline(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_active_user)
+):
+    from models import Donation, UpdateLike, UpdateComment, Campaign
+    
+    timeline = []
+    
+    donations = db.query(Donation).filter(Donation.user_id == current_user.id).all()
+    for d in donations:
+        timeline.append({
+            "id": f"don_{d.id}",
+            "type": "donation",
+            "action": f"Donated ₹{d.amount}",
+            "target": d.campaign.title if d.campaign else "a campaign",
+            "campaign_id": d.campaign_id,
+            "created_at": d.created_at
+        })
+        
+    likes = db.query(UpdateLike).filter(UpdateLike.user_id == current_user.id).all()
+    for l in likes:
+        timeline.append({
+            "id": f"like_{l.id}",
+            "type": "like",
+            "action": "Liked an update on",
+            "target": l.update.campaign.title if l.update and l.update.campaign else "a campaign",
+            "campaign_id": l.update.campaign_id if l.update else None,
+            "created_at": l.created_at
+        })
+        
+    comments = db.query(UpdateComment).filter(UpdateComment.user_id == current_user.id).all()
+    for c in comments:
+        timeline.append({
+            "id": f"comment_{c.id}",
+            "type": "comment",
+            "action": f"Commented '{c.text[:30]}{'...' if len(c.text) > 30 else ''}' on",
+            "target": c.update.campaign.title if c.update and c.update.campaign else "a campaign",
+            "campaign_id": c.update.campaign_id if c.update else None,
+            "created_at": c.created_at
+        })
+
+    campaigns = db.query(Campaign).filter(Campaign.created_by == current_user.id).all()
+    for c in campaigns:
+        timeline.append({
+            "id": f"camp_{c.id}",
+            "type": "campaign_created",
+            "action": "Created campaign",
+            "target": c.title,
+            "campaign_id": c.id,
+            "created_at": c.created_at
+        })
+        
+    timeline.sort(key=lambda x: x["created_at"], reverse=True)
+    return timeline

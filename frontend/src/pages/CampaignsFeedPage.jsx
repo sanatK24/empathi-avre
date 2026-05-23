@@ -6,6 +6,11 @@ import { Heart, MapPin, Search, Filter, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DonationModal from '../components/DonationModal';
 import { handleImageError } from '../utils/imageUtils';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import EmptyState from '../components/ui/EmptyState';
+import ProgressBar from '../components/ProgressBar';
+import Button from '../components/ui/Button';
+import Badge from '../components/ui/Badge';
 
 function CampaignsFeedPage() {
   const { profile } = useAppContext();
@@ -233,27 +238,16 @@ function CampaignsFeedPage() {
           )}
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-[24px] p-3 shadow-sm border border-slate-50 animate-pulse">
-                  <div className="w-full h-48 bg-slate-200 rounded-[20px] mb-4"></div>
-                  <div className="h-6 bg-slate-200 rounded w-3/4 mb-4 ml-2"></div>
-                  <div className="h-4 bg-slate-200 rounded w-1/2 mb-4 ml-2"></div>
-                  <div className="h-2 bg-slate-200 rounded-full w-full mb-4"></div>
-                  <div className="flex gap-3 px-2 pb-2">
-                    <div className="h-12 bg-slate-200 rounded-xl flex-1"></div>
-                    <div className="h-12 bg-slate-200 rounded-xl w-24"></div>
-                  </div>
-                </div>
-              ))}
+            <div className="py-20">
+              <LoadingSpinner text="Discovering campaigns..." />
             </div>
           ) : campaigns.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Heart className="w-10 h-10 text-blue-200" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No campaigns found</h3>
-              <p className="text-sm text-slate-500">Try adjusting your filters or search terms.</p>
+            <div className="py-16">
+              <EmptyState 
+                icon={Heart} 
+                title="No campaigns found" 
+                message="Try adjusting your filters or search terms." 
+              />
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
@@ -326,14 +320,7 @@ function CampaignsFeedPage() {
                           </span>
                           <span className="font-semibold text-blue-600">{Math.round(progress)}%</span>
                         </div>
-                        <div className="w-full h-2 bg-blue-100/50 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-blue-600 rounded-full relative"
-                            style={{ width: `${progress}%` }}
-                          >
-                            <div className="absolute inset-0 bg-white/20"></div>
-                          </div>
-                        </div>
+                        <ProgressBar value={progress} color="bg-blue-600" />
                       </div>
 
                       {/* Actions */}

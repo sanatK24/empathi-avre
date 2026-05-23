@@ -5,7 +5,8 @@ const AUTH_STORAGE_KEY = 'empathi_auth_session'
 
 const ROLE_MAP = {
   donor: 'requester',
-  ngo: 'requester',
+  volunteer_ngo: 'volunteer_ngo',
+  ngo: 'volunteer_ngo',
   verifier: 'requester',
   vendor: 'vendor',
   admin: 'admin',
@@ -13,6 +14,7 @@ const ROLE_MAP = {
 
 const BACKEND_TO_FRONTEND_ROLE = {
   REQUESTER: 'donor',
+  VOLUNTEER_NGO: 'volunteer_ngo',
   VENDOR: 'vendor',
   ADMIN: 'admin',
 }

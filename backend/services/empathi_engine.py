@@ -21,7 +21,7 @@ class EmpathIEngine:
         Executes the modern 4-stage ranking pipeline:
         1. Candidate Retrieval (Geo filtering + category/resource fuzzy filtering + eligibility rules)
         2. Feature Store (Builds 11 standardized query-candidate features)
-        3. LightGBM / RF Inference (Scores features, with robust fallbacks)
+        3. LightGBM Inference (Scores features, with robust Heuristic fallbacks)
         4. Fairness-aware Post-processing Reranking & dynamic penalty updates
         """
         # --- STAGE 1: Candidate Retrieval + Trust Fraud Hard-Filter ---
@@ -56,7 +56,7 @@ class EmpathIEngine:
         if not candidates_data:
             return []
 
-        # --- STAGE 2 & 3: Feature Store & LGBM/RF Scoring ---
+        # --- STAGE 2 & 3: Feature Store & LightGBM Scoring ---
         # Features are computed in vectorize_batch inside score_candidates
         raw_scores, model_used, features_list = self.lgbm_service.score_candidates(request, candidates_data)
 

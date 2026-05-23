@@ -21,6 +21,9 @@ import { apiService } from '../services/apiService';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import StatCard from '../components/ui/StatCard';
+import ProgressBar from '../components/ProgressBar';
+import EmptyState from '../components/ui/EmptyState';
 
 const CampaignAnalyticsDashboard = () => {
   const { profile } = useAppContext();
@@ -103,15 +106,16 @@ const CampaignAnalyticsDashboard = () => {
           { label: 'Supporters', value: stats.totalDonors, icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-50/50' },
           { label: 'Success', value: stats.successRate, icon: CheckCircle2, color: 'text-amber-500', bg: 'bg-amber-50/50' }
         ].map((item, i) => (
-          <Card key={i} className="border-none ring-1 ring-slate-100 shadow-soft hover:shadow-xl transition-all rounded-[2rem] overflow-hidden group">
-            <CardContent className="p-6 md:p-8 flex flex-col items-center text-center">
-              <div className={`w-12 h-12 md:w-16 md:h-16 rounded-[1.25rem] ${item.bg} ${item.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                <item.icon className="w-6 h-6 md:w-8 md:h-8" />
-              </div>
-              <p className="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-2">{item.label}</p>
-              <h3 className="text-xl md:text-3xl font-display font-black text-slate-900 tracking-tight">{item.value}</h3>
-            </CardContent>
-          </Card>
+          <StatCard
+            key={i}
+            label={item.label}
+            value={item.value}
+            icon={item.icon}
+            color={item.color}
+            bg={item.bg}
+            animated={true}
+            animDelay={i * 0.05}
+          />
         ))}
       </div>
 
@@ -178,13 +182,12 @@ const CampaignAnalyticsDashboard = () => {
                             <span className="text-xs font-black text-primary-600 uppercase tracking-[0.2em]">{Math.round(progress)}% PROGRESS</span>
                             <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Goal: ₹{camp.goal_amount.toLocaleString()}</span>
                           </div>
-                          <div className="w-full bg-slate-100 h-3 md:h-4 rounded-full overflow-hidden shadow-inner">
-                            <motion.div 
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min(progress, 100)}%` }}
-                              className="h-full bg-primary-gradient rounded-full shadow-lg"
-                            />
-                          </div>
+                          <ProgressBar 
+                            value={progress}
+                            color="bg-primary-gradient"
+                            height="h-3 md:h-4"
+                            trackColor="bg-slate-100 shadow-inner"
+                          />
                         </div>
                       </div>
                       
@@ -212,14 +215,18 @@ const CampaignAnalyticsDashboard = () => {
               );
             })}
             {myCampaigns.length === 0 && (
-              <div className="py-24 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                 <Megaphone className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                 <h3 className="text-xl font-display font-black text-slate-400 uppercase tracking-tight">No Campaigns Created</h3>
-                 <p className="text-slate-400 font-medium mt-2 mb-8">Start your first initiative to help your community.</p>
-                 <Button size="lg" onClick={() => window.location.href='/user/campaigns/create'}>
-                    <Plus className="w-4 h-4 mr-2" /> Start Now
-                 </Button>
-              </div>
+              <EmptyState
+                icon={Megaphone}
+                title="No Campaigns Created"
+                description="Start your first initiative to help your community."
+                action={
+                  <Button variant="primary" onClick={() => navigate('/user/campaigns/create')}>
+                    <Plus className="w-5 h-5 mr-2" /> Start Now
+                  </Button>
+                }
+                variant="dashed"
+                className="py-24"
+              />
             )}
          </div>
       </div>

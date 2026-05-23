@@ -204,6 +204,12 @@ export const apiService = {
         const queryString = queryParams.toString();
         return request(`/campaigns${queryString ? '?' + queryString : ''}`, { token });
     },
+    getTaxonomy: () => request('/campaigns/taxonomy'),
+    analyzeCampaign: (token, campaignData) => request('/campaigns/analyze', {
+        method: 'POST',
+        token,
+        body: JSON.stringify(campaignData)
+    }),
     getPersonalizedCampaigns: (token) => request('/campaigns/recommendations', { token }),
     searchCampaigns: (token, query) => request(`/campaigns?city=${encodeURIComponent(query)}`, { token }),
     getCampaignDetails: (token, campaignId) => request(`/campaigns/${campaignId}`, { token }),
@@ -247,6 +253,37 @@ export const apiService = {
         token,
         body: JSON.stringify(campaignData)
     }),
+    uploadCampaignDocument: async (token, campaignId, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Custom request logic because FormData shouldn't have 'Content-Type': 'application/json'
+        const response = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/documents`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to upload document (${response.status})`);
+        }
+        return await response.json();
+    },
+    updateCampaign: (token, campaignId, campaignData) => request(`/campaigns/${campaignId}`, {
+        method: 'PUT',
+        token,
+        body: JSON.stringify(campaignData)
+    }),
+    closeCampaign: (token, campaignId) => request(`/campaigns/${campaignId}/close`, {
+        method: 'PUT',
+        token
+    }),
+    deleteCampaign: (token, campaignId) => request(`/campaigns/${campaignId}`, {
+        method: 'DELETE',
+        token
+    }),
     donateToCampaign: (token, campaignId, amount, anonymous = false) => request(`/campaigns/${campaignId}/donate?amount=${amount}&anonymous=${anonymous}`, {
         method: 'POST',
         token
@@ -288,7 +325,7 @@ export const apiService = {
         method: 'PUT',
         token
     }),
-    deleteCampaign: (campaign_id, token) => request(`/admin/campaigns/${campaign_id}`, {
+    adminDeleteCampaign: (campaign_id, token) => request(`/admin/campaigns/${campaign_id}`, {
         method: 'DELETE',
         token
     }),
@@ -320,6 +357,8 @@ export const apiService = {
         const queryParams = new URLSearchParams();
         if (params.city) queryParams.append('city', params.city);
         if (params.category) queryParams.append('category', params.category);
+        if (params.skip !== undefined) queryParams.append('skip', params.skip);
+        if (params.limit !== undefined) queryParams.append('limit', params.limit);
         return request(`/news/feed?${queryParams.toString()}`, { token });
     },
     searchNews: (token, query) => request(`/news/search?q=${encodeURIComponent(query)}`, { token }),
@@ -328,5 +367,35 @@ export const apiService = {
         token
     }),
 
+    // Volunteer / NGO Notices
+    createNotice: (token, noticeData) => request('/news/notices', {
+        method: 'POST',
+        token,
+        body: JSON.stringify(noticeData)
+    }),
+    getNotices: (token, params = {}) => {
+        const queryParams = new URLSearchParams();
+        if (params.city) queryParams.append('city', params.city);
+        if (params.skip !== undefined) queryParams.append('skip', params.skip);
+        if (params.limit !== undefined) queryParams.append('limit', params.limit);
+        return request(`/news/notices?${queryParams.toString()}`, { token });
+    },
+    getAIInsights: (token, city) => {
+        const queryParams = new URLSearchParams();
+        if (city) queryParams.append('city', city);
+        return request(`/news/ai-insights?${queryParams.toString()}`, { token });
+    },
+    getResourceTrends: (token, city) => {
+        const queryParams = new URLSearchParams();
+        if (city) queryParams.append('city', city);
+        return request(`/news/resource-trends?${queryParams.toString()}`, { token });
+    },
 
+    // User Activity
+    getUserTimeline: (token) => request('/users/me/timeline', { token }),
+
+    // Intelligence (Phase 3-6)
+    getCrisisAlerts: (token) => request('/intelligence/crisis-alerts', { token }),
+    getDemandForecast: (token) => request('/intelligence/demand-forecast', { token }),
 };
+

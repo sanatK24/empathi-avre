@@ -18,7 +18,7 @@ class AuthService:
             name=user_in.name,
             email=user_in.email,
             password_hash=get_password_hash(user_in.password),
-            role=user_in.role or UserRole.REQUESTER,
+            role=user_in.role or UserRole.USER,
             is_active=True,
             city=user_in.city or "Mumbai"
         )

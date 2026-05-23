@@ -14,6 +14,9 @@ const UpdateCard = ({
   onTogglePin 
 }) => {
   const [showMenu, setShowMenu] = React.useState(false);
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const maxLength = 150;
+  const isLongText = update.content && update.content.length > maxLength;
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -110,15 +113,45 @@ const UpdateCard = ({
 
       {/* Content */}
       <CardContent className="p-6 space-y-4">
-        <p className="text-slate-800 leading-relaxed">{update.content}</p>
-        
-        {update.image_url && (
-          <img
-            src={update.image_url}
-            alt="Update"
-            className="w-full rounded-xl max-h-96 object-cover"
-            onError={handleImageError('default')}
-          />
+        {/* WHEN NOT EXPANDED: Image first, then Truncated Text */}
+        {!isExpanded ? (
+          <>
+            {update.image_url && (
+              <img
+                src={update.image_url}
+                alt="Update"
+                className="w-full rounded-xl max-h-96 object-cover cursor-pointer"
+                onClick={() => isLongText && setIsExpanded(true)}
+                onError={handleImageError('default')}
+              />
+            )}
+            <div className="text-slate-800 leading-relaxed">
+              {isLongText ? (
+                <p>
+                  {update.content.substring(0, maxLength)}...
+                  <button onClick={() => setIsExpanded(true)} className="text-primary-600 font-bold ml-1 hover:underline">more</button>
+                </p>
+              ) : (
+                <p>{update.content}</p>
+              )}
+            </div>
+          </>
+        ) : (
+          /* WHEN EXPANDED: Full text first, then Full Image */
+          <>
+            <div className="text-slate-800 leading-relaxed">
+              <p>{update.content}</p>
+            </div>
+            {update.image_url && (
+              <img
+                src={update.image_url}
+                alt="Update"
+                className="w-full rounded-xl object-contain cursor-pointer"
+                onClick={() => setIsExpanded(false)}
+                onError={handleImageError('default')}
+              />
+            )}
+          </>
         )}
 
         {/* Stats */}

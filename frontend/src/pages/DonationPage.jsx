@@ -69,7 +69,7 @@ const DonationPage = () => {
           { label: 'Total Donated', value: `$${formatNumber(stats.totalDonated)}`, icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
           { label: 'Campaigns Support', value: formatNumber(stats.campaignsSupported), icon: TrendingUp, color: 'text-primary-500', bg: 'bg-primary-50' },
           { label: 'Impact Score', value: formatNumber(stats.impactScore), icon: ShieldCheck, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-          { label: 'Donor Rank', value: stats.rank, icon: Badge, iconComp: <Badge variant="secondary" className="bg-amber-50 text-amber-600 border-none">{stats.rank}</Badge>, isCustom: true }
+          { label: 'User Rank', value: stats.rank, icon: Badge, iconComp: <Badge variant="secondary" className="bg-amber-50 text-amber-600 border-none">{stats.rank}</Badge>, isCustom: true }
         ].map((item, i) => (
           <Card key={i} className="border-none ring-1 ring-slate-100 shadow-soft">
             <CardContent className="p-3 md:p-6">

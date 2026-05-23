@@ -31,12 +31,12 @@ const PublicLayout = () => {
             
             {profile.isAuthenticated ? (
               <div className="flex items-center space-x-6 pl-4 border-l border-slate-100">
-                <Link to={profile.userRole === 'vendor' ? '/vendor/dashboard' : (profile.userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard')}>
+                <Link to={profile.userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard'}>
                   <Button size="sm" variant="outline" className="border-primary-100 text-primary-600 bg-primary-50 hover:bg-primary-100">
                     Go to Dashboard
                   </Button>
                 </Link>
-                <Link to={profile.userRole === 'vendor' ? '/vendor/profile' : (profile.userRole === 'admin' ? '/admin/profile' : '/user/profile')} className="flex items-center space-x-3 group">
+                <Link to={profile.userRole === 'admin' ? '/admin/profile' : '/user/profile'} className="flex items-center space-x-3 group">
                   <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary-500 to-primary-600 flex items-center justify-center text-white font-bold shadow-md group-hover:scale-105 transition-transform">
                     {profile.fullName ? profile.fullName.charAt(0).toUpperCase() : 'U'}
                   </div>
@@ -76,7 +76,7 @@ const PublicLayout = () => {
               <div className="pt-4 border-t border-slate-100 flex flex-col space-y-3">
                 {profile.isAuthenticated ? (
                   <>
-                    <Link to={profile.userRole === 'vendor' ? '/vendor/dashboard' : (profile.userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard')} onClick={() => setIsMobileMenuOpen(false)}>
+                    <Link to={profile.userRole === 'admin' ? '/admin/dashboard' : '/user/dashboard'} onClick={() => setIsMobileMenuOpen(false)}>
                       <Button size="md" variant="outline" className="w-full border-primary-100 text-primary-600 bg-primary-50">
                         Go to Dashboard
                       </Button>

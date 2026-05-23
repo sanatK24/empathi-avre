@@ -14,13 +14,21 @@ import {
   ArrowLeft,
   Loader2,
   AlertCircle,
+  Target,
+  Image as ImageIcon,
   Edit,
   Trash2,
+  XCircle,
+  Activity,
   MessageSquare,
   Clock
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import ProgressBar from '../components/ProgressBar';
+import TabBar from '../components/ui/TabBar';
+import EmptyState from '../components/ui/EmptyState';
 import DonationModal from '../components/DonationModal';
 import { cn } from '../utils/cn';
 import { formatCurrency } from '../utils/formatNumber';
@@ -121,6 +129,30 @@ function CampaignDetailPage() {
     }
   };
 
+  const handleCloseCampaign = async () => {
+    if (!window.confirm('Are you sure you want to close this campaign? No further donations can be made.')) return;
+    try {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/campaigns/${id}/close`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${profile?.accessToken}` }
+      });
+      fetchCampaignData();
+    } catch (err) {
+      console.error('Failed to close campaign:', err);
+    }
+  };
+
+  const handleDeleteCampaign = async () => {
+    if (!window.confirm('Are you sure you want to delete this campaign permanently?')) return;
+    try {
+      await apiService.deleteCampaign(profile.accessToken, id);
+      navigate(getBackPath());
+    } catch (err) {
+      console.error('Failed to delete campaign:', err);
+      alert('Failed to delete campaign. It might have saved relationships or donations preventing deletion. ' + err.message);
+    }
+  };
+
   const getBackPath = () => {
     const currentPath = window.location.pathname;
     if (currentPath.includes('/user/')) return '/user/campaigns';
@@ -138,14 +170,7 @@ function CampaignDetailPage() {
   };
 
   if (loading) {
-    return (
-      <section className="p-6 max-w-6xl mx-auto">
-        <div className="animate-pulse space-y-4">
-          <div className="h-96 bg-slate-200 rounded-lg"></div>
-          <div className="h-32 bg-slate-200 rounded-lg"></div>
-        </div>
-      </section>
-    );
+    return <LoadingSpinner fullPage />;
   }
 
   if (!campaign) {
@@ -167,7 +192,7 @@ function CampaignDetailPage() {
   }
 
   const progress = (campaign.raised_amount / campaign.goal_amount) * 100;
-  const isCreator = profile?.id === campaign.created_by;
+  const isCreator = profile?.backendUserId ? Number(profile.backendUserId) === Number(campaign.created_by) : false;
   const isFunded = campaign.raised_amount >= campaign.goal_amount;
 
   const getUrgencyColor = (urgency) => {
@@ -186,20 +211,18 @@ function CampaignDetailPage() {
 
   return (
     <section className={cn("bg-slate-50 min-h-screen", isInDashboard && "bg-transparent min-h-0")}>
-      {/* Header Navigation - Hide if in dashboard */}
-      {!isInDashboard && (
-        <div className="bg-white border-b border-slate-200">
-          <div className="max-w-6xl mx-auto px-6 py-4">
-            <button
-              onClick={() => navigate(getBackPath())}
-              className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium"
-            >
-              <ArrowLeft size={20} />
-              Back to Campaigns
-            </button>
-          </div>
+      {/* Header Navigation - Always show back button */}
+      <div className={cn("border-b", isInDashboard ? "bg-transparent border-transparent" : "bg-white border-slate-200")}>
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <button
+            onClick={() => navigate(getBackPath())}
+            className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium"
+          >
+            <ArrowLeft size={20} />
+            Back to Campaigns
+          </button>
         </div>
-      )}
+      </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
         {error && (
@@ -264,11 +287,28 @@ function CampaignDetailPage() {
                   )}
                   {isCreator && (
                     <>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg flex-shrink-0">
+                      <button 
+                        onClick={() => navigate(`/user/campaigns/edit/${campaign.id}`)}
+                        className="p-2 hover:bg-slate-100 rounded-lg flex-shrink-0"
+                        title="Edit Campaign"
+                      >
                         <Edit size={20} className="text-slate-600" />
                       </button>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg flex-shrink-0">
-                        <Share2 size={20} className="text-slate-600" />
+                      {campaign.status !== 'COMPLETED' && (
+                        <button 
+                          onClick={handleCloseCampaign}
+                          className="p-2 hover:bg-slate-100 rounded-lg flex-shrink-0"
+                          title="Close Campaign"
+                        >
+                          <XCircle size={20} className="text-amber-500" />
+                        </button>
+                      )}
+                      <button 
+                        onClick={handleDeleteCampaign}
+                        className="p-2 hover:bg-slate-100 rounded-lg flex-shrink-0"
+                        title="Delete Campaign"
+                      >
+                        <Trash2 size={20} className="text-rose-500" />
                       </button>
                     </>
                   )}
@@ -293,14 +333,13 @@ function CampaignDetailPage() {
                 </div>
               </div>
 
-              <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden mb-6">
-                <motion.div
-                  className="bg-primary-gradient h-full rounded-full"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.min(progress, 100)}%` }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                />
-              </div>
+              <ProgressBar 
+                value={Math.min(progress, 100)} 
+                color="bg-primary-gradient" 
+                trackColor="bg-slate-100" 
+                className="mb-6" 
+                height="h-3"
+              />
 
               {stats && (
                 <div className="flex items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -312,21 +351,16 @@ function CampaignDetailPage() {
 
             {/* Tabs */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-              <div className="flex gap-2 sm:gap-4 border-b border-slate-200 mb-6 overflow-x-auto no-scrollbar whitespace-nowrap">
-                {['overview', 'updates', 'donors'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-3 sm:px-4 py-3 font-medium transition-colors text-sm sm:text-base ${
-                      activeTab === tab
-                        ? 'text-indigo-600 border-b-2 border-indigo-600'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
+              <TabBar
+                tabs={[
+                  { id: 'overview', label: 'Overview' },
+                  { id: 'updates', label: 'Updates' },
+                  { id: 'donors', label: 'Users' }
+                ]}
+                activeTab={activeTab}
+                onChange={setActiveTab}
+                className="mb-6"
+              />
 
               {/* Overview Tab */}
               {activeTab === 'overview' && (
@@ -379,14 +413,17 @@ function CampaignDetailPage() {
                 />
               )}
 
-              {/* Donors Tab */}
+              {/* Users Tab */}
               {activeTab === 'donors' && (
                 <div>
                   {donations.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
-                      <Heart size={32} className="mx-auto text-slate-300 mb-2" />
-                      <p className="text-slate-600">No public donations yet</p>
-                    </div>
+                    <EmptyState
+                      icon={Heart}
+                      title="No donations"
+                      description="No public donations yet"
+                      variant="dashed"
+                      className="py-12"
+                    />
                   ) : (
                     <div className="space-y-3">
                       {donations.map((donation) => (
@@ -459,7 +496,7 @@ function CampaignDetailPage() {
                   <span className="font-semibold">₹{stats?.average_donation?.toFixed(0) || 0}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-600">Unique Donors</span>
+                  <span className="text-slate-600">Unique Users</span>
                   <span className="font-semibold">{stats?.unique_donors || 0}</span>
                 </div>
               </div>

@@ -10,39 +10,29 @@ import RegisterPage from './pages/RegisterPage';
 
 
 // User Pages
+import Dashboard from './pages/Dashboard';
 import UserDashboard from './pages/UserDashboard';
-import CreateRequest from './pages/CreateRequest';
-import MatchResults from './pages/MatchResults';
-import RequestHistory from './pages/RequestHistory';
-import ResourceHubPage from './pages/ResourceHubPage';
-import VendorMarketplace from './pages/VendorMarketplace';
-import VendorStorefront from './pages/VendorStorefront';
+import SharedProfileDashboard from './pages/SharedProfileDashboard';
 
 // Campaign Pages
 import CampaignsFeedPage from './pages/CampaignsFeedPage';
 import CampaignCreationPage from './pages/CampaignCreationPage';
+import CampaignEditPage from './pages/CampaignEditPage';
 import CampaignDetailPage from './pages/CampaignDetailPage';
 import CampaignAnalyticsDashboard from './pages/CampaignAnalyticsDashboard';
-import PublicProfilePage from './pages/PublicProfilePage';
+import UserProfile from './pages/UserProfile';
 
 // Donation and Feed Pages
 import DonationPage from './pages/DonationPage';
-import SmartFeedPage from './pages/SmartFeedPage';
-import TransactionHistory from './pages/TransactionHistory';
 
-// Vendor Pages
-import InventoryManagement from './pages/InventoryManagement';
-import IncomingRequests from './pages/IncomingRequests';
-import VendorDashboard from './pages/VendorDashboard';
-import VendorAnalytics from './pages/VendorAnalytics';
-
-import AdminDashboard from './pages/AdminDashboard';
-import AdminVendorManagement from './pages/AdminVendorManagement';
 import AdminCampaigns from './pages/AdminCampaigns';
-import SharedProfileDashboard from './pages/SharedProfileDashboard';
+import AdminUsers from './pages/AdminUsers';
+import AdminStats from './pages/AdminStats';
+import AdminProfile from './pages/AdminProfile';
 
 import { useAppContext } from './context/AppContext';
 import { useLocation } from 'react-router-dom';
+
 
 // Global scroll-to-top handler on route changes
 function ScrollToTop() {
@@ -75,11 +65,12 @@ const ProtectedRoute = ({ children, allowedRole = null }) => {
 
   // Cross-role protection
   // Active role in session (can be switched by user if dual-role)
-  const activeRole = profile.userRole?.toLowerCase();
-  const requiredRole = allowedRole?.toLowerCase() === 'requester' ? 'donor' : allowedRole?.toLowerCase();
+  const activeRoleRaw = profile.userRole?.toLowerCase();
+  const activeRole = activeRoleRaw === 'admin' ? 'admin' : 'user';
+  const requiredRole = allowedRole?.toLowerCase() === 'admin' ? 'admin' : 'user';
 
   if (requiredRole && activeRole !== requiredRole) {
-    const target = activeRole === 'donor' ? '/user' : `/${activeRole || 'user'}`;
+    const target = activeRole === 'admin' ? '/admin' : '/user';
     return <Navigate to={`${target}/dashboard`} replace />;
   }
 
@@ -103,25 +94,16 @@ function App() {
         </Route>
 
         {/* User Routes (Formerly Requester) */}
-        <Route path="/user" element={<ProtectedRoute allowedRole="REQUESTER"><DashboardLayout role="requester" /></ProtectedRoute>}>
+        <Route path="/user" element={<ProtectedRoute allowedRole="USER"><DashboardLayout role="user" /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<UserDashboard />} />
-          <Route path="create" element={<CreateRequest />} />
-          <Route path="resources" element={<ResourceHubPage />} />
-          <Route path="results" element={<MatchResults />} />
-          <Route path="history" element={<RequestHistory />} />
-          <Route path="matches" element={<MatchResults />} />
-          <Route path="transactions" element={<TransactionHistory />} />
           <Route path="campaigns" element={<CampaignsFeedPage />} />
           <Route path="campaigns/:id" element={<CampaignDetailPage />} />
           <Route path="campaigns/create" element={<CampaignCreationPage />} />
+          <Route path="campaigns/edit/:id" element={<CampaignEditPage />} />
           <Route path="campaigns/my" element={<CampaignAnalyticsDashboard />} />
-          <Route path="profiles/:user_id" element={<PublicProfilePage />} />
+          <Route path="profiles/:user_id" element={<UserProfile />} />
           <Route path="donations" element={<DonationPage />} />
-          <Route path="smart-feed" element={<SmartFeedPage />} />
-          <Route path="recommendations" element={<SmartFeedPage />} />
-          <Route path="marketplace" element={<VendorMarketplace />} />
-          <Route path="vendor/:id" element={<VendorStorefront />} />
           <Route path="profile" element={<SharedProfileDashboard />} />
           <Route path="settings" element={<div className="p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-soft">
             <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">Settings</h2>
@@ -129,31 +111,17 @@ function App() {
           </div>} />
         </Route>
 
-        {/* Vendor Routes */}
-        <Route path="/vendor" element={<ProtectedRoute allowedRole="VENDOR"><DashboardLayout role="vendor" /></ProtectedRoute>}>
-          <Route index element={<Navigate to="dashboard" />} />
-          <Route path="dashboard" element={<VendorDashboard />} />
-          <Route path="inventory" element={<InventoryManagement />} />
-          <Route path="orders" element={<IncomingRequests />} />
-          <Route path="analytics" element={<VendorAnalytics />} />
-          <Route path="profile" element={<SharedProfileDashboard />} />
-        </Route>
-
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute allowedRole="ADMIN"><DashboardLayout role="admin" /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="users" element={<div className="p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-soft">
-            <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">User Management</h2>
-            <p className="text-slate-500 font-medium italic">Security module active. Direct user access restricted to root admin.</p>
-          </div>} />
-          <Route path="vendors" element={<AdminVendorManagement />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="users" element={<AdminUsers />} />
+          
+
           <Route path="campaigns" element={<AdminCampaigns />} />
-          <Route path="stats" element={<div className="p-8 text-center bg-white rounded-2xl border border-slate-100 shadow-soft">
-            <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tight">System Statistics</h2>
-            <p className="text-slate-500 font-medium italic">Server metrics synchronized with cloud instances.</p>
-          </div>} />
-          <Route path="profile" element={<SharedProfileDashboard />} />
+          <Route path="stats" element={<AdminStats />} />
+          <Route path="profile" element={<AdminProfile />} />
+
         </Route>
 
         {/* Catch all */}
