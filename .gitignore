@@ -8,6 +8,8 @@ backend/.env.*
 empathi-frontend/.env
 empathi-frontend/.env.*
 !empathi-frontend/.env.example
+stale_docs/
+
 
 # --- Python / backend ---
 __pycache__/
