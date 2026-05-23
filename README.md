@@ -353,18 +353,6 @@ npm run dev
 Open `http://localhost:5173` in your browser to view the application.
 
 ---
-
-### 3. Running the Test Suite
-
-EmpathI includes robust integrated smoke testers:
-```bash
-# Make sure your backend (uvicorn) is running in the background on port 8000.
-# Run the test orchestrator using your active virtualenv Python:
-.\.venv\Scripts\python.exe stale_docs/run_all_tests.py
-```
-
----
-
 ## Limitations, Fallbacks & Rationale
 
 Honest assessments of engineering compromises made in the EmpathI architecture:

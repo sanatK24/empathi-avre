@@ -26,9 +26,12 @@ webdriver-manager==4.0.1
 pytest-html==4.1.1
 pytest-json-report==1.5.0
 lightgbm==4.1.0
+xgboost==2.1.0
 email-validator>=2.0.0
+
 
 feedparser==6.0.11
 beautifulsoup4==4.12.3
 textblob==0.18.0.post0
 apscheduler==3.10.4
+
