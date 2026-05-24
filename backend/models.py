@@ -142,6 +142,7 @@ class Campaign(Base):
     
     # AI Metadata Fields
     ai_summary = Column(Text, nullable=True)
+    ai_analysis_data = Column(Text, nullable=True) # JSON serialized dictionary of insights
     category_tags = Column(String, nullable=True)  # JSON serialized array
     category_confidence = Column(Float, nullable=True)
     toxicity_score = Column(Float, nullable=True)

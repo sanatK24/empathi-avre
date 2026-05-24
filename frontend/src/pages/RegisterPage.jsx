@@ -16,7 +16,7 @@ const RegisterPage = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     const formData = new FormData(e.currentTarget);
     const firstName = formData.get('firstName');
     const lastName = formData.get('lastName');
@@ -35,7 +35,7 @@ const RegisterPage = () => {
         city: "Mumbai", // Default city
         is_active: true
       });
-      
+
       alert('Registration successful! Please log in.');
       navigate('/login');
     } catch (error) {
@@ -49,11 +49,11 @@ const RegisterPage = () => {
   return (
     <div className="min-h-[calc(100vh-80px)] bg-slate-50 flex items-center justify-center p-6 md:p-12 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden">
-          <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary-100/50 rounded-full blur-[120px] opacity-50"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-accent-100/30 rounded-full blur-[100px] opacity-30"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary-100/50 rounded-full blur-[120px] opacity-50"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-accent-100/30 rounded-full blur-[100px] opacity-30"></div>
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl"
@@ -69,15 +69,15 @@ const RegisterPage = () => {
               <Input label="First Name" name="firstName" placeholder="John" autoComplete="given-name" required />
               <Input label="Last Name" name="lastName" placeholder="Doe" autoComplete="family-name" required />
             </div>
-            
-            <Input 
-              label="Organization / Background" 
+
+            <Input
+              label="Full Name"
               name="orgName"
-              placeholder="Optional: NGO Name / Independent" 
+              placeholder="Full Name"
               autoComplete="organization"
             />
-            
-            <Input 
+
+            <Input
               label="Email Address"
               name="email"
               placeholder="name@company.com"
@@ -85,8 +85,8 @@ const RegisterPage = () => {
               autoComplete="email"
               required
             />
-            
-            <Input 
+
+            <Input
               label="Password"
               name="password"
               placeholder="••••••••"

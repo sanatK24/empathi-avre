@@ -7,24 +7,39 @@ from api.v1.router import api_router
 from apscheduler.schedulers.background import BackgroundScheduler
 from database import SessionLocal
 import os
+from sqlalchemy import text
 
 # Create tables
 Base.metadata.create_all(bind=engine)
 
 # Auto-migrate new columns for campaigns table (Safe for Postgres & SQLite)
-from sqlalchemy import text
 try:
     with engine.begin() as conn:
-        try:
-            conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_id INTEGER"))
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE campaigns ADD COLUMN subcategory_id INTEGER"))
-        except Exception:
-            pass
-except Exception as e:
-    print(f"Warning: Auto-migration failed: {e}")
+        conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'USER'"))
+        print("Added 'role' column to users table.")
+except Exception:
+    pass
+    
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_id INTEGER REFERENCES campaign_categories(id)"))
+        print("Added 'category_id' column to campaigns table.")
+except Exception:
+    pass
+    
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN subcategory_id INTEGER REFERENCES campaign_subcategories(id)"))
+        print("Added 'subcategory_id' column to campaigns table.")
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN ai_analysis_data TEXT"))
+        print("Added 'ai_analysis_data' column to campaigns table.")
+except Exception:
+    pass
 
 app = FastAPI(
     title="EmpathI API",

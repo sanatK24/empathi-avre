@@ -166,45 +166,45 @@ class HFServices:
             from PIL import Image
             import io
             import tempfile
-            
-            
 
-
-            if not hasattr(self, "_paddle_ocr"):
-                self._paddle_ocr = PaddleOCR(
-                    lang='en',
-                    use_angle_cls=False
-                )
-
+            if not hasattr(self, "_paddle_ocrvl"):
+                from paddleocr import PaddleOCRVL
+                self._paddle_ocrvl = PaddleOCRVL(pipeline_version="v1.5")
 
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
-            with tempfile.NamedTemporaryFile(
-                suffix=".png",
-                delete=False
-            ) as tmp:
-                image.save(tmp.name)
+            # Create a temporary directory to save the image and markdown output
+            with tempfile.TemporaryDirectory() as temp_dir:
+                tmp_image_path = os.path.join(temp_dir, "document_image.png")
+                image.save(tmp_image_path)
 
-            os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
+                os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 
-            result = self._paddle_ocr.predict(tmp.name)
+                output = self._paddle_ocrvl.predict(tmp_image_path)
 
+                extracted = []
 
-            extracted = []
-
-            for page in result:
-                for line in page:
-                    if isinstance(line, dict):
-                        text = line.get("text", "")
-                        if text:
+                for res in output:
+                    # Save to markdown inside the temp directory
+                    res.save_to_markdown(save_path=temp_dir)
+                    
+                # Read all generated markdown files from the output directory
+                for file_name in sorted(os.listdir(temp_dir)):
+                    if file_name.endswith(".md"):
+                        with open(os.path.join(temp_dir, file_name), "r", encoding="utf-8") as f:
+                            text = f.read()
+                            import re
+                            text = re.sub(r'<div[^>]*>\s*<img[^>]*>\s*</div>', '', text)
+                            text = re.sub(r'<img[^>]*>', '', text)
                             extracted.append(text)
 
-
-            return "\n".join(extracted)
+            return "\n\n".join(extracted)
 
         except Exception as e:
-            logger.error(f"PaddleOCR Error: {e}")
-            return ""
+            import traceback
+            error_msg = f"PaddleOCRVL Error:\n{str(e)}\n\n{traceback.format_exc()}"
+            logger.error(error_msg)
+            return error_msg
 
 
 
@@ -325,19 +325,16 @@ You are a JSON API.
 
 CRITICAL RULES:
 - Return ONLY valid JSON
-- No markdown
-- No explanations
-- No extra text
-- No EXPECTED OUTPUT
-- No examples
-- No commentary
+- No markdown, extra text, or commentary
+- For `extracted_goal`, perform CALCULATIVE ANALYSIS on the text. Find the sum total of the budget required or the overall estimated cost. Then, remove all commas and extract the FULL integer. For example, if you see 'TOTAL ESTIMATED COST £44,000.00' and 'we need USD 1,80,000', use the final requested amount (180000). Do NOT just return `1`. 
+- `predicted_category` and `predicted_subcategory` MUST be chosen EXACTLY from the provided list below. DO NOT invent new categories.
 
 Required schema:
 {{
   "suggestions": "string",
   "extracted_goal": integer or null,
-  "predicted_category": string or null,
-  "predicted_subcategory": string or null,
+  "predicted_category": "Exact Category Name",
+  "predicted_subcategory": "Exact Subcategory Name",
   "inferred_urgency": "LOW|MEDIUM|HIGH|CRITICAL"
 }}
 

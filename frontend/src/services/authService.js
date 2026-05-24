@@ -100,6 +100,7 @@ export function getAuthSession() {
 
 export function clearAuthSession() {
   localStorage.removeItem(AUTH_STORAGE_KEY)
+  localStorage.removeItem('campaignCreationData')
 }
 
 export async function restoreAuthSession() {

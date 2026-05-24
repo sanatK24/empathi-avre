@@ -21,7 +21,8 @@ import {
   XCircle,
   Activity,
   MessageSquare,
-  Clock
+  Clock,
+  Brain
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
@@ -401,6 +402,54 @@ function CampaignDetailPage() {
                       )}
                     </div>
                   </div>
+                  
+                  {isCreator && campaign.ai_analysis_data && (
+                    <div className="bg-white rounded-lg p-6 border border-slate-200 mt-4 border-l-4 border-l-green-500">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                        <Brain className="w-5 h-5 text-green-500" />
+                        AI Analysis Data (Creator Only)
+                      </h3>
+                      {(() => {
+                        try {
+                          const data = JSON.parse(campaign.ai_analysis_data);
+                          return (
+                            <div className="space-y-4 text-sm">
+                              {data.docInsights && (
+                                <div className="bg-slate-50 p-4 rounded-lg">
+                                  <p className="font-bold text-slate-800 mb-2">Document Insights</p>
+                                  <p className="text-slate-700 italic mb-3">{data.docInsights.insights}</p>
+                                  {data.docInsights.ocr_text && (
+                                    <div 
+                                      className="bg-white p-3 rounded border border-slate-200 max-h-60 overflow-y-auto text-xs font-sans prose prose-sm prose-green max-w-none"
+                                      dangerouslySetInnerHTML={{ __html: data.docInsights.ocr_text }}
+                                    />
+                                  )}
+                                </div>
+                              )}
+                              {data.aiData && (
+                                <div className="bg-slate-50 p-4 rounded-lg">
+                                  <p className="font-bold text-slate-800 mb-2">Text Analysis</p>
+                                  <p className="text-slate-700 whitespace-pre-wrap">{data.aiData.suggestions}</p>
+                                  <div className="grid grid-cols-2 gap-4 mt-3">
+                                    <div>
+                                      <span className="text-slate-500 text-xs">Extracted Goal</span>
+                                      <p className="font-medium">₹{data.aiData.extracted_goal || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                      <span className="text-slate-500 text-xs">Predicted Category</span>
+                                      <p className="font-medium">{data.aiData.predicted_category || 'N/A'}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        } catch (e) {
+                          return <p className="text-red-500">Failed to parse AI data.</p>;
+                        }
+                      })()}
+                    </div>
+                  )}
                 </div>
               )}
 

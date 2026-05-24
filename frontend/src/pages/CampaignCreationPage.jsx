@@ -20,17 +20,33 @@ function CampaignCreationPage() {
   const [docAnalyzing, setDocAnalyzing] = useState(false);
   const [docInsights, setDocInsights] = useState(null);
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    category_id: '',
-    subcategory_id: '',
-    city: profile?.city || '',
-    goal_amount: '',
-    urgency_level: 'MEDIUM',
-    cover_image: null,
-    deadline: ''
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem('campaignCreationData');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.city === undefined && profile?.city) parsed.city = profile.city;
+        return parsed;
+      } catch (e) {
+        console.error("Failed to parse saved campaign data", e);
+      }
+    }
+    return {
+      title: '',
+      description: '',
+      category_id: '',
+      subcategory_id: '',
+      city: profile?.city || '',
+      goal_amount: '',
+      urgency_level: 'MEDIUM',
+      cover_image: null,
+      deadline: ''
+    };
   });
+
+  useEffect(() => {
+    localStorage.setItem('campaignCreationData', JSON.stringify(formData));
+  }, [formData]);
 
   const [verificationDocument, setVerificationDocument] = useState(null);
   const urgencies = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -71,21 +87,23 @@ function CampaignCreationPage() {
         
         setFormData(prev => {
           const updates = { ...prev };
-          if (res.extracted_goal && !prev.goal_amount) {
+          if (res.extracted_goal) {
             updates.goal_amount = res.extracted_goal.toString();
           }
-          if (res.inferred_urgency && prev.urgency_level === 'MEDIUM') {
+          if (res.inferred_urgency) {
             updates.urgency_level = res.inferred_urgency;
           }
-          if (res.predicted_category && taxonomy.length > 0) {
-             const cat = taxonomy.find(c => c.name.toLowerCase() === res.predicted_category.toLowerCase());
-             if (cat) {
-               updates.category_id = cat.id;
-               if (res.predicted_subcategory) {
-                 const subcat = cat.subcategories.find(s => s.name.toLowerCase() === res.predicted_subcategory.toLowerCase());
-                 if (subcat) updates.subcategory_id = subcat.id;
-               }
-             }
+          if (res.predicted_category) {
+            const matchedCat = taxonomy.find(c => c.name.toLowerCase() === res.predicted_category.toLowerCase());
+            if (matchedCat) {
+              updates.category_id = matchedCat.id.toString();
+              if (res.predicted_subcategory) {
+                const matchedSub = matchedCat.subcategories.find(s => s.name.toLowerCase() === res.predicted_subcategory.toLowerCase());
+                if (matchedSub) {
+                  updates.subcategory_id = matchedSub.id.toString();
+                }
+              }
+            }
           }
           return updates;
         });
@@ -195,7 +213,8 @@ function CampaignCreationPage() {
         goal_amount: parseFloat(formData.goal_amount),
         urgency_level: formData.urgency_level,
         cover_image: formData.cover_image,
-        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null
+        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
+        ai_analysis_data: JSON.stringify({ aiData, docInsights })
       };
 
       const newCampaign = await apiService.createCampaign(profile.accessToken, campaignData);
@@ -209,6 +228,7 @@ function CampaignCreationPage() {
         }
       }
 
+      localStorage.removeItem('campaignCreationData');
       navigate(`/user/campaigns/${newCampaign.id}`);
     } catch (err) {
       console.error('Campaign creation failed:', err);
@@ -335,15 +355,27 @@ function CampaignCreationPage() {
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
+              value=""
               className="absolute inset-0 opacity-0 cursor-pointer"
             />
             {formData.cover_image ? (
-              <div>
+              <div className="relative inline-block">
                 <img
                   src={formData.cover_image}
                   alt="Cover preview"
                   className="h-40 mx-auto mb-2 rounded object-cover"
                 />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setFormData(prev => ({ ...prev, cover_image: null }));
+                  }}
+                  className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1.5 shadow-md hover:bg-red-600 transition-colors z-10"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
                 <p className="text-sm text-slate-600">Click to change image</p>
               </div>
             ) : (
@@ -369,6 +401,7 @@ function CampaignCreationPage() {
               type="file"
               accept=".pdf,image/*"
               onChange={handleDocumentUpload}
+              value=""
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
             />
             <div className="flex items-center gap-3">
@@ -381,6 +414,21 @@ function CampaignCreationPage() {
                   {verificationDocument ? `${(verificationDocument.size / 1024 / 1024).toFixed(2)} MB` : 'PDF, JPG, PNG up to 5MB'}
                 </p>
               </div>
+              {verificationDocument && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setVerificationDocument(null);
+                    setDocInsights(null);
+                    setDocAnalyzing(false);
+                  }}
+                  className="relative z-10 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              )}
             </div>
           </div>
           
@@ -393,9 +441,10 @@ function CampaignCreationPage() {
             <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-900 shadow-sm animate-fade-in">
               <p className="font-bold flex items-center gap-1.5 mb-2"><ShieldCheck className="w-4 h-4 text-green-600" /> Validation Preview</p>
               <p className="text-xs mb-2 italic text-green-800">{docInsights.insights}</p>
-              <div className="bg-white p-2 rounded border border-green-100 max-h-32 overflow-y-auto text-xs whitespace-pre-wrap font-mono">
-                {docInsights.ocr_text || "No readable text found."}
-              </div>
+              <div 
+                className="bg-white p-3 rounded border border-green-100 max-h-48 overflow-y-auto text-xs font-sans prose prose-sm prose-green max-w-none"
+                dangerouslySetInnerHTML={{ __html: docInsights.ocr_text || "No readable text found." }}
+              />
             </div>
           )}
         </div>
