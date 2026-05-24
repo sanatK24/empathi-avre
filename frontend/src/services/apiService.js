@@ -210,6 +210,22 @@ export const apiService = {
         token,
         body: JSON.stringify(campaignData)
     }),
+    refineCampaignDescription: (token, description) => request('/campaigns/refine-description', {
+        method: 'POST',
+        token,
+        body: JSON.stringify({ description })
+    }),
+    verifyDocumentPreview: async (token, file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch(`${API_BASE_URL}/campaigns/verify-document-preview`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+        if (!response.ok) throw new Error(`Failed to verify document (${response.status})`);
+        return await response.json();
+    },
     getPersonalizedCampaigns: (token) => request('/campaigns/recommendations', { token }),
     searchCampaigns: (token, query) => request(`/campaigns?city=${encodeURIComponent(query)}`, { token }),
     getCampaignDetails: (token, campaignId) => request(`/campaigns/${campaignId}`, { token }),

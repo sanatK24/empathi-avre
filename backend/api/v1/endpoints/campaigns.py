@@ -60,6 +60,18 @@ def analyze_campaign(
     # The frontend will match them to the category dropdown names.
     return analysis
 
+class DescriptionRefineRequest(BaseModel):
+    description: str
+
+@router.post("/refine-description")
+def refine_description(
+    data: DescriptionRefineRequest,
+    current_user: User = Depends(get_active_user)
+):
+    from ml.hf_services import hf_services
+    refined = hf_services.refine_campaign_description(data.description)
+    return {"refined_description": refined}
+
 @router.get("", response_model=List[CampaignResponse])
 def list_campaigns(
     skip: int = 0,
@@ -103,6 +115,19 @@ def get_campaign_taxonomy(db: Session = Depends(get_db)):
 
 from fastapi import UploadFile, File, HTTPException
 import uuid
+
+@router.post("/verify-document-preview")
+async def verify_document_preview(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_active_user)
+):
+    file_bytes = await file.read()
+    from ml.hf_services import hf_services
+    ocr_text = hf_services.extract_document_text(file_bytes)
+    return {
+        "ocr_text": ocr_text, 
+        "insights": "Document analyzed successfully. Extracted text will be used for AI trust verification."
+    }
 
 @router.post("/{campaign_id}/documents", response_model=CampaignResponse)
 async def upload_campaign_document(

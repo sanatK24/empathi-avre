@@ -11,6 +11,9 @@ class UserRole(str, enum.Enum):
     USER = "USER"             # Changed from DONOR/REQUESTER
     CREATOR = "CREATOR"       # Changed from VENDOR
     ADMIN = "ADMIN"
+    REQUESTER = "REQUESTER"   # Legacy support
+    DONOR = "DONOR"           # Legacy support
+    VENDOR = "VENDOR"         # Legacy support
 
 class UrgencyLevel(str, enum.Enum):
     LOW = "LOW"

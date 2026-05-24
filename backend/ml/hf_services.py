@@ -398,4 +398,23 @@ AVAILABLE CATEGORIES AND SUBCATEGORIES:
                 
         return fallback
 
+    def refine_campaign_description(self, text: str) -> str:
+        if not self.api_key:
+            return text + "\n\n(Note: HF API Key missing. Original text returned.)"
+        model = "Qwen/Qwen2.5-1.5B-Instruct:featherless-ai"
+        system_prompt = "You are a professional copywriter. Rewrite the given humanitarian or medical campaign description to make it more emotional, attention-grabbing, and compelling. Improve clarity and impact. Keep it realistic. Just return the new text, no intro, no markdown blocks, no outro."
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text}
+            ],
+            "max_tokens": 1024,
+            "temperature": 0.7
+        }
+        res = self._post_chat_completions(payload)
+        if res and "choices" in res and len(res["choices"]) > 0:
+            return res["choices"][0]["message"]["content"].strip()
+        return text
+
 hf_services = HFServices()

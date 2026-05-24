@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, Building2 } from 'lucide-react';
+
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { motion } from 'framer-motion';
@@ -10,7 +10,6 @@ import { apiService } from '../services/apiService';
 import { useAppContext } from '../context/AppContext';
 
 const RegisterPage = () => {
-  const [role, setRole] = useState('USER');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -31,7 +30,7 @@ const RegisterPage = () => {
         name: name,
         email: email,
         password: password,
-        role: role,
+        role: 'USER',
         organization_name: orgName,
         city: "Mumbai", // Default city
         is_active: true
@@ -65,36 +64,6 @@ const RegisterPage = () => {
             <p className="text-slate-500 font-medium text-sm">Join EmpathI to support or launch life-changing humanitarian campaigns today.</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-10">
-            <button 
-              type="button"
-              onClick={() => setRole('USER')}
-              className={cn(
-                "p-5 rounded-2xl border-2 flex flex-col items-center gap-3 transition-all",
-                role === 'USER' 
-                  ? "border-primary-500 bg-primary-50/50 text-primary-700 shadow-md" 
-                  : "border-slate-100 hover:border-slate-200 text-slate-500 bg-white"
-              )}
-            >
-              <User className={cn("w-6 h-6", role === 'USER' ? "text-primary-500" : "text-slate-400")} />
-              <span className="font-black uppercase tracking-widest text-[10px] sm:text-xs">General Donor / User</span>
-            </button>
-            
-            <button 
-              type="button"
-              onClick={() => setRole('CREATOR')}
-              className={cn(
-                "p-5 rounded-2xl border-2 flex flex-col items-center gap-3 transition-all",
-                role === 'CREATOR' 
-                  ? "border-primary-500 bg-primary-50/50 text-primary-700 shadow-md" 
-                  : "border-slate-100 hover:border-slate-200 text-slate-500 bg-white"
-              )}
-            >
-              <Building2 className={cn("w-6 h-6", role === 'CREATOR' ? "text-primary-500" : "text-slate-400")} />
-              <span className="font-black uppercase tracking-widest text-[10px] sm:text-xs">Campaign Creator</span>
-            </button>
-          </div>
-
           <form onSubmit={handleRegister} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <Input label="First Name" name="firstName" placeholder="John" autoComplete="given-name" required />
@@ -102,19 +71,10 @@ const RegisterPage = () => {
             </div>
             
             <Input 
-              label={
-                role === 'USER' 
-                  ? "Organization / Background" 
-                  : "Organization / Creator Name"
-              } 
+              label="Organization / Background" 
               name="orgName"
-              placeholder={
-                role === 'USER' 
-                  ? "Optional: NGO Name / Independent" 
-                  : "Hope Foundation / Independent Creator"
-              } 
+              placeholder="Optional: NGO Name / Independent" 
               autoComplete="organization"
-              required={role === 'CREATOR'} 
             />
             
             <Input 

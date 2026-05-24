@@ -14,6 +14,10 @@ function CampaignCreationPage() {
   const [taxonomy, setTaxonomy] = useState([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
+  
+  const [refining, setRefining] = useState(false);
+  const [docAnalyzing, setDocAnalyzing] = useState(false);
+  const [docInsights, setDocInsights] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -114,6 +118,19 @@ function CampaignCreationPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleRefineDescription = async () => {
+    if (!formData.description.trim()) return;
+    setRefining(true);
+    try {
+      const res = await apiService.refineCampaignDescription(profile.accessToken, formData.description);
+      setFormData(prev => ({ ...prev, description: res.refined_description }));
+    } catch(e) {
+      console.warn("Refine description failed:", e);
+    } finally {
+      setRefining(false);
+    }
+  };
+
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -125,10 +142,20 @@ function CampaignCreationPage() {
     }
   };
 
-  const handleDocumentUpload = (e) => {
+  const handleDocumentUpload = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
       setVerificationDocument(file);
+      setDocAnalyzing(true);
+      setDocInsights(null);
+      try {
+        const res = await apiService.verifyDocumentPreview(profile.accessToken, file);
+        setDocInsights(res);
+      } catch (err) {
+        console.warn("Document preview failed:", err);
+      } finally {
+        setDocAnalyzing(false);
+      }
     }
   };
 
@@ -275,6 +302,15 @@ function CampaignCreationPage() {
           />
           <div className="flex justify-between items-center mt-1">
             <p className="text-[10px] md:text-xs text-slate-500">{formData.description.length}/5000 characters</p>
+            <button
+              type="button"
+              onClick={handleRefineDescription}
+              disabled={refining || !formData.description.trim()}
+              className="text-xs font-semibold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full hover:bg-primary-100 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {refining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
+              {refining ? 'Refining...' : 'AI Rewrite & Refine'}
+            </button>
           </div>
           
           {aiSuggestions && (
@@ -322,7 +358,7 @@ function CampaignCreationPage() {
             Verification Documents (Optional)
           </label>
           <p className="text-xs text-slate-500 mb-3">
-            Upload official documents (medical bills, estimates) to boost your campaign's Trust Score. AI verification pipelines will process them immediately after campaign creation.
+            Upload official documents (medical bills, estimates) to boost your campaign's Trust Score. Our AI will analyze them instantly to show you extracted insights.
           </p>
           <div className="border border-slate-300 rounded-lg p-4 bg-slate-50 relative">
             <input
@@ -343,6 +379,21 @@ function CampaignCreationPage() {
               </div>
             </div>
           </div>
+          
+          {docAnalyzing && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-2 text-sm text-blue-800">
+              <Loader2 className="w-4 h-4 animate-spin" /> Analyzing document...
+            </div>
+          )}
+          {docInsights && (
+            <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-900 shadow-sm animate-fade-in">
+              <p className="font-bold flex items-center gap-1.5 mb-2"><ShieldCheck className="w-4 h-4 text-green-600" /> Validation Preview</p>
+              <p className="text-xs mb-2 italic text-green-800">{docInsights.insights}</p>
+              <div className="bg-white p-2 rounded border border-green-100 max-h-32 overflow-y-auto text-xs whitespace-pre-wrap font-mono">
+                {docInsights.ocr_text || "No readable text found."}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Campaign Details Grid */}
