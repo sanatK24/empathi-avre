@@ -237,7 +237,7 @@ class CampaignRankerService:
         try:
             from models import CampaignCreatorTrust
             trust_profile = db.query(CampaignCreatorTrust).filter(
-                CampaignCreatorTrust.creator_id == creator_id
+                CampaignCreatorTrust.user_id == creator_id
             ).first()
             return trust_profile.composite_trust_score if trust_profile else 0.5
         except:

@@ -115,7 +115,7 @@ class CampaignService:
         for campaign, ml_score in ranked:
             try:
                 # Get creator trust profile
-                trust_profile = trust_engine_service.compute_creator_trust(db, campaign.creator_id)
+                trust_profile = trust_engine_service.compute_creator_trust(db, campaign.created_by)
                 if trust_profile and not trust_profile['is_fraud_flagged']:
                     trusted_ranked.append((campaign, ml_score, trust_profile['composite_trust_score']))
             except:

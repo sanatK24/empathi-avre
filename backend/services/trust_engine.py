@@ -77,11 +77,11 @@ class TrustEngine:
 
             # Get or create trust profile
             trust_profile = db.query(CampaignCreatorTrust).filter(
-                CampaignCreatorTrust.creator_id == creator_id
+                CampaignCreatorTrust.user_id == creator_id
             ).first()
 
             if not trust_profile:
-                trust_profile = CampaignCreatorTrust(creator_id=creator_id)
+                trust_profile = CampaignCreatorTrust(user_id=creator_id)
                 db.add(trust_profile)
 
             # Update profile
@@ -135,7 +135,7 @@ class TrustEngine:
 
             # Campaign history
             creator_campaigns = db.query(Campaign).filter(
-                Campaign.creator_id == creator_id
+                Campaign.created_by == creator_id
             ).all()
 
             if not creator_campaigns:
@@ -259,7 +259,7 @@ class TrustEngine:
         try:
             creator = db.query(User).filter(User.id == creator_id).first()
             campaigns = db.query(Campaign).filter(
-                Campaign.creator_id == creator_id
+                Campaign.created_by == creator_id
             ).all()
 
             score = 0.2  # Base: low fraud risk
