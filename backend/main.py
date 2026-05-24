@@ -11,6 +11,21 @@ import os
 # Create tables
 Base.metadata.create_all(bind=engine)
 
+# Auto-migrate new columns for campaigns table (Safe for Postgres & SQLite)
+from sqlalchemy import text
+try:
+    with engine.begin() as conn:
+        try:
+            conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_id INTEGER"))
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE campaigns ADD COLUMN subcategory_id INTEGER"))
+        except Exception:
+            pass
+except Exception as e:
+    print(f"Warning: Auto-migration failed: {e}")
+
 app = FastAPI(
     title="EmpathI API",
     description="EmpathI API",

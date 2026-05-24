@@ -14,6 +14,7 @@ function CampaignCreationPage() {
   const [taxonomy, setTaxonomy] = useState([]);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [aiData, setAiData] = useState(null);
   
   const [refining, setRefining] = useState(false);
   const [docAnalyzing, setDocAnalyzing] = useState(false);
@@ -66,6 +67,7 @@ function CampaignCreationPage() {
         };
         const res = await apiService.analyzeCampaign(profile.accessToken, analysisData);
         setAiSuggestions(res.suggestions);
+        setAiData(res);
         
         setFormData(prev => {
           const updates = { ...prev };
@@ -217,9 +219,11 @@ function CampaignCreationPage() {
   };
 
   return (
-    <section className="max-w-2xl mx-auto p-4 md:p-6">
-      {/* Header */}
-      <div className="mb-6 md:mb-8">
+    <div className="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+      {/* Main Form Column */}
+      <div className="lg:col-span-2">
+        {/* Header */}
+        <div className="mb-6 md:mb-8">
         <button
           onClick={() => navigate('/user/campaigns')}
           className="flex items-center gap-2 text-primary-600 hover:text-primary-700 mb-3 md:mb-4 font-bold text-sm md:text-base"
@@ -550,7 +554,73 @@ function CampaignCreationPage() {
           </Button>
         </div>
       </form>
-    </section>
+      </div>
+
+      {/* AI Showcase Sidebar (Desktop Only) */}
+      <div className="hidden lg:block relative">
+        <div className="sticky top-24 bg-slate-900 rounded-xl shadow-2xl border border-slate-700 overflow-hidden font-mono text-xs flex flex-col h-[calc(100vh-120px)] max-h-[800px]">
+          <div className="bg-slate-800 px-4 py-3 border-b border-slate-700 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Brain className="w-4 h-4 text-indigo-400" />
+              <span className="text-slate-200 font-bold tracking-wider">hf_services.py live log</span>
+            </div>
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+            </div>
+          </div>
+          <div className="p-4 flex-1 overflow-y-auto space-y-4 text-green-400 font-medium">
+            <p className="text-slate-400 opacity-70">Initialize Hugging Face Inference API...</p>
+            <p className="text-slate-400 opacity-70">Model: Qwen/Qwen2.5-1.5B-Instruct</p>
+            
+            {analyzing && (
+              <div className="flex items-center gap-2 text-yellow-400 mt-4 animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Analyzing campaign text in real-time...</span>
+              </div>
+            )}
+
+            {aiData && !analyzing && (
+              <div className="animate-fade-in space-y-2 mt-4">
+                <p className="text-white font-bold">&gt; Analysis Complete.</p>
+                <p className="text-slate-400">Extracted JSON Payload:</p>
+                <pre className="bg-slate-950 p-3 rounded-lg border border-slate-800 text-[11px] text-emerald-300 overflow-x-auto shadow-inner">
+{JSON.stringify(aiData, null, 2)}
+                </pre>
+                <div className="mt-2 space-y-1">
+                  {aiData.extracted_goal && <p className="text-indigo-300 flex items-center gap-1.5"><ShieldCheck className="w-3 h-3"/> Auto-filled goal amount</p>}
+                  {aiData.inferred_urgency && <p className="text-indigo-300 flex items-center gap-1.5"><ShieldCheck className="w-3 h-3"/> Auto-filled urgency level</p>}
+                  {aiData.predicted_category && <p className="text-indigo-300 flex items-center gap-1.5"><ShieldCheck className="w-3 h-3"/> Auto-selected category</p>}
+                </div>
+              </div>
+            )}
+
+            {refining && (
+              <div className="flex items-center gap-2 text-purple-400 mt-4 animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Refining description using LLM copywriter...</span>
+              </div>
+            )}
+
+            {docAnalyzing && (
+              <div className="flex items-center gap-2 text-blue-400 mt-4 animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Running Document OCR via PaddleOCR...</span>
+              </div>
+            )}
+
+            {docInsights && !docAnalyzing && (
+              <div className="animate-fade-in space-y-2 text-blue-300 mt-4">
+                <p className="text-white font-bold">&gt; OCR Extraction Complete.</p>
+                <p className="text-slate-400">Extracted {docInsights.ocr_text?.length || 0} characters.</p>
+                <p className="text-xs italic bg-blue-900/30 p-2 rounded text-blue-200 border border-blue-800">{docInsights.insights}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
