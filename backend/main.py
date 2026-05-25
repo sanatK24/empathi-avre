@@ -7,87 +7,9 @@ from api.v1.router import api_router
 from apscheduler.schedulers.background import BackgroundScheduler
 from database import SessionLocal
 import os
-# pyrefly: ignore [missing-import]
-from sqlalchemy import text
 
 # Create tables
 Base.metadata.create_all(bind=engine)
-
-# Auto-migrate new columns for campaigns table (Safe for Postgres & SQLite)
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'USER'"))
-except Exception:
-    pass
-    
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_id INTEGER REFERENCES campaign_categories(id)"))
-except Exception:
-    pass
-    
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN subcategory_id INTEGER REFERENCES campaign_subcategories(id)"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN ai_analysis_data TEXT"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN ai_summary TEXT"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_tags VARCHAR"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_confidence FLOAT"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN toxicity_score FLOAT"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN spam_risk_score FLOAT"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN embedding_vector TEXT"))
-except Exception:
-    pass
-
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN verification_doc_url TEXT"))
-except Exception:
-    pass
-
-try:
-    with engine.begin() as conn:
-        conn.execute(text("ALTER TABLE campaigns ADD COLUMN verification_ocr_text TEXT"))
-except Exception:
-    pass
-
-
 
 app = FastAPI(
     title="EmpathI API",

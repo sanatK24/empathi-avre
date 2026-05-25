@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, LogOut, Activity } from 'lucide-react';
+import { X, LogOut } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const MobileMenu = ({ isOpen, onClose, navItems, profile, logout, userInitials }) => {
@@ -30,12 +30,9 @@ const MobileMenu = ({ isOpen, onClose, navItems, profile, logout, userInitials }
           >
             {/* Header */}
             <div className="p-6 flex items-center justify-between border-b border-slate-100">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center text-white">
-                  <Activity className="w-5 h-5" />
-                </div>
-                <span className="text-xl font-display font-bold text-slate-900">EmpathI</span>
-              </div>
+              <Link to="/" onClick={onClose} className="flex items-center group">
+              <img src="/assets/logo.png" alt="EmpathI Logo" className="h-10 object-contain group-hover:scale-105 transition-transform" />
+            </Link>
               <button 
                 onClick={onClose}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-colors"

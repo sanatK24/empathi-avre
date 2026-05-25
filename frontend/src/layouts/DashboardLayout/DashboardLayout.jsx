@@ -1,17 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  History, 
-  User, 
-  Settings, 
-  LogOut, 
-  Menu, 
-  X, 
-  Bell, 
+import {
+  LayoutDashboard,
+  PlusCircle,
+  History,
+  User,
+  LogOut,
+  Menu,
+  X,
+  Bell,
   Search,
-  Activity,
   Package,
   Inbox,
   BarChart3,
@@ -89,7 +87,6 @@ const DashboardLayout = ({ role = 'requester' }) => {
       { label: 'Campaign Center', icon: TrendingUp, path: '/user/campaigns' },
       { label: 'My Campaigns', icon: Heart, path: '/user/campaigns/my' },
       { label: 'Profile', icon: User, path: '/user/profile' },
-      { label: 'Settings', icon: Settings, path: '/user/settings' },
     ],
     admin: [
       { label: 'Overview', icon: ShieldCheck, path: '/admin/dashboard' },
@@ -133,12 +130,9 @@ const DashboardLayout = ({ role = 'requester' }) => {
         )}
       >
         <div className="h-full flex flex-col p-6">
-          <div className={cn("flex items-center space-x-3 mb-10 transition-all", !isSidebarOpen && "justify-center space-x-0")}>
-            <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center text-white flex-shrink-0">
-              <Activity className="w-5 h-5" />
-            </div>
-            {isSidebarOpen && <span className="text-xl font-display font-bold text-slate-900 truncate">EmpathI</span>}
-          </div>
+          <Link to="/" className={cn("flex items-center mb-10 transition-all", !isSidebarOpen && "justify-center")}>
+            <img src="/assets/logo.png" alt="EmpathI Logo" className={cn("object-contain", isSidebarOpen ? "h-10" : "h-8")} />
+          </Link>
 
           <nav className="flex-grow space-y-2 overflow-y-auto no-scrollbar">
             {currentNav.map((item) => {
@@ -282,16 +276,6 @@ const DashboardLayout = ({ role = 'requester' }) => {
                           <UserCircle className="w-4 h-4" />
                           View Profile
                         </Link>
-                        {!location.pathname.startsWith('/admin') && (
-                          <Link
-                            to={`/user/settings`}
-                            onClick={() => setShowProfileMenu(false)}
-                            className="flex items-center gap-3 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-primary-50 hover:text-primary-600 transition-colors"
-                          >
-                            <Settings className="w-4 h-4" />
-                            Settings
-                          </Link>
-                        )}
                       </nav>
 
                       {/* Logout */}

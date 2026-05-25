@@ -20,7 +20,8 @@
 6. [Project Structure](#project-structure)
 7. [API Documentation](#api-documentation)
 8. [Installation & Setup](#installation--setup)
-9. [Limitations, Fallbacks & Rationale](#limitations-fallbacks--rationale)
+9. [Recent Updates](#recent-updates)
+10. [Limitations, Fallbacks & Rationale](#limitations-fallbacks--rationale)
 
 ---
 
@@ -353,6 +354,27 @@ npm run dev
 Open `http://localhost:5173` in your browser to view the application.
 
 ---
+## Recent Updates
+
+### UI/UX Improvements (Latest Release)
+* **Favicon Update**: Changed favicon from generic Vite icon to custom EmpathI logo (`logo.png`) for better brand recognition.
+* **Logo Branding Enhancement**: Replaced placeholder Activity icons with the actual EmpathI logo image throughout the UI, maintaining proper aspect ratio and responsiveness:
+  - Public header navigation
+  - Dashboard sidebar (responsive sizing)
+  - Mobile menu header
+  - Login page branding
+  - Footer branding
+* **Navigation Improvements**: All logo/branding elements are now clickable links that redirect to the landing page (`/`), improving navigation flow.
+
+### Feature Removals
+* **Settings Tab Removed**: The user Settings page and all associated features have been completely removed:
+  - Security & Access settings (password, 2FA)
+  - Proximity Alerts configuration
+  - Preferences (theme, language, default landing)
+  - Developer API management
+  - **Note**: Profile updates through the main profile page remain fully functional for legitimate user data modifications (name, email, address, bio, etc.).
+
+---
 ## Limitations, Fallbacks & Rationale
 
 Honest assessments of engineering compromises made in the EmpathI architecture:
@@ -378,4 +400,4 @@ Honest assessments of engineering compromises made in the EmpathI architecture:
 ---
 
 **EmpathI Crowdfunding Platform** — Empowering community support through transparent, fair, and trust-focused AI.  
-*Last updated: May 2026*
+*Last updated: May 2026 (UI/UX improvements & Settings feature removal)*

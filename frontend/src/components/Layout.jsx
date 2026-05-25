@@ -62,7 +62,7 @@ function Layout({ children }) {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link to="/feed" className="brand">
+        <Link to="/" className="brand">
           EmpathI
         </Link>
         <nav>{renderRoleNavigation()}</nav>

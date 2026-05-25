@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import Button from '../../components/ui/Button';
-import { Activity, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppContext } from '../../context/AppContext';
 
@@ -17,11 +17,8 @@ const PublicLayout = () => {
       {/* Navbar */}
       <nav className="sticky top-0 z-50 glass border-b border-slate-100">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary-500/20 group-hover:scale-110 transition-transform">
-              <Activity className="w-6 h-6" />
-            </div>
-            <span className="text-2xl font-display font-bold text-slate-900 tracking-tight">EmpathI</span>
+          <Link to="/" className="flex items-center group">
+            <img src="/assets/logo.png" alt="EmpathI Logo" className="h-14 object-contain group-hover:scale-105 transition-transform" />
           </Link>
 
           <div className="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-600">
@@ -106,10 +103,9 @@ const PublicLayout = () => {
       <footer className="bg-slate-50 border-t border-slate-100 py-12">
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0 text-center md:text-left">
-            <div className="flex items-center space-x-3">
-              <Activity className="w-6 h-6 text-primary-500" />
-              <span className="text-xl font-display font-bold text-slate-900">EmpathI</span>
-            </div>
+            <Link to="/" className="flex items-center group">
+              <img src="/assets/logo.png" alt="EmpathI Logo" className="h-8 object-contain group-hover:scale-105 transition-transform" />
+            </Link>
             <div className="flex space-x-8 text-sm font-medium text-slate-500">
               <a href="#" className="hover:text-primary-500">Privacy Policy</a>
               <a href="#" className="hover:text-primary-500">Terms of Service</a>

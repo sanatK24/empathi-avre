@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Activity, Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import { motion } from 'framer-motion';
@@ -147,12 +147,7 @@ const LoginPage = () => {
           <div className="p-2 bg-white rounded-[2.5rem] shadow-premium max-w-sm border border-slate-200/50">
              <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/10 rounded-full blur-2xl"></div>
-                <div className="flex items-center space-x-3 mb-10">
-                    <div className="w-8 h-8 bg-primary-gradient rounded-xl flex items-center justify-center">
-                        <Activity className="w-5 h-5" />
-                    </div>
-                    <span className="font-display font-black text-lg tracking-widest uppercase">EmpathI</span>
-                </div>
+                <img src="/assets/logo.png" alt="EmpathI Logo" className="h-10 object-contain mb-10" />
                 <div className="space-y-6">
                     <div className="space-y-2">
                         <span className="text-[8px] font-black text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded border border-primary-500/20 uppercase tracking-wider">Active Recommendation</span>
