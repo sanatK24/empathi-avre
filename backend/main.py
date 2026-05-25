@@ -16,30 +16,40 @@ Base.metadata.create_all(bind=engine)
 try:
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE users ADD COLUMN role VARCHAR DEFAULT 'USER'"))
-        print("Added 'role' column to users table.")
 except Exception:
     pass
     
 try:
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_id INTEGER REFERENCES campaign_categories(id)"))
-        print("Added 'category_id' column to campaigns table.")
 except Exception:
     pass
     
 try:
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE campaigns ADD COLUMN subcategory_id INTEGER REFERENCES campaign_subcategories(id)"))
-        print("Added 'subcategory_id' column to campaigns table.")
 except Exception:
     pass
 
 try:
     with engine.begin() as conn:
         conn.execute(text("ALTER TABLE campaigns ADD COLUMN ai_analysis_data TEXT"))
-        print("Added 'ai_analysis_data' column to campaigns table.")
 except Exception:
     pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN verification_doc_url TEXT"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN verification_ocr_text TEXT"))
+except Exception:
+    pass
+
+
 
 app = FastAPI(
     title="EmpathI API",

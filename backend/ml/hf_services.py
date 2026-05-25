@@ -167,42 +167,28 @@ class HFServices:
             import io
             import tempfile
 
-            if not hasattr(self, "_paddle_ocrvl"):
-                from paddleocr import PaddleOCRVL
-                self._paddle_ocrvl = PaddleOCRVL(pipeline_version="v1.5")
+            if not hasattr(self, "_paddle_ocr"):
+                from paddleocr import PaddleOCR
+                self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en')
 
+            import numpy as np
             image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-
-            # Create a temporary directory to save the image and markdown output
-            with tempfile.TemporaryDirectory() as temp_dir:
-                tmp_image_path = os.path.join(temp_dir, "document_image.png")
-                image.save(tmp_image_path)
-
-                os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
-
-                output = self._paddle_ocrvl.predict(tmp_image_path)
-
-                extracted = []
-
+            image_np = np.array(image)
+            
+            output = self._paddle_ocr.ocr(image_np, cls=True)
+            
+            extracted = []
+            if output:
                 for res in output:
-                    # Save to markdown inside the temp directory
-                    res.save_to_markdown(save_path=temp_dir)
-                    
-                # Read all generated markdown files from the output directory
-                for file_name in sorted(os.listdir(temp_dir)):
-                    if file_name.endswith(".md"):
-                        with open(os.path.join(temp_dir, file_name), "r", encoding="utf-8") as f:
-                            text = f.read()
-                            import re
-                            text = re.sub(r'<div[^>]*>\s*<img[^>]*>\s*</div>', '', text)
-                            text = re.sub(r'<img[^>]*>', '', text)
-                            extracted.append(text)
+                    if res:
+                        for line in res:
+                            extracted.append(line[1][0])
 
-            return "\n\n".join(extracted)
+            return "\n".join(extracted)
 
         except Exception as e:
             import traceback
-            error_msg = f"PaddleOCRVL Error:\n{str(e)}\n\n{traceback.format_exc()}"
+            error_msg = f"PaddleOCR Error:\n{str(e)}\n\n{traceback.format_exc()}"
             logger.error(error_msg)
             return error_msg
 

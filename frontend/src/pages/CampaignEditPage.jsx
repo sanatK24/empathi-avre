@@ -21,8 +21,33 @@ function CampaignEditPage() {
   const [refining, setRefining] = useState(false);
   const [docAnalyzing, setDocAnalyzing] = useState(false);
   const [docInsights, setDocInsights] = useState(null);
+  const [verificationDocument, setVerificationDocument] = useState(null);
 
-  
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem(`campaignEditData_${id}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.city === undefined && profile?.city) parsed.city = profile.city;
+        return parsed;
+      } catch (e) {
+        console.error("Failed to parse saved campaign data", e);
+      }
+    }
+    return {
+      title: '',
+      description: '',
+      category_id: '',
+      subcategory_id: '',
+      city: profile?.city || '',
+      goal_amount: '',
+      urgency_level: 'MEDIUM',
+      cover_image: null,
+      deadline: ''
+    };
+  });
+
+
   useEffect(() => {
     const fetchCampaign = async () => {
       try {
@@ -43,7 +68,7 @@ function CampaignEditPage() {
           try { localData = JSON.parse(saved); } catch(e) {}
         }
 
-        if (!saved) {
+        if (!localData || !localData.title) {
             setFormData({
             title: campaign.title || '',
             description: campaign.description || '',
@@ -71,41 +96,14 @@ function CampaignEditPage() {
     }
   }, [id, profile?.accessToken, profile?.backendUserId, profile?.userRole]);
   
+
   useEffect(() => {
     if (id && !fetching) {
       localStorage.setItem(`campaignEditData_${id}`, JSON.stringify(formData));
     }
   }, [formData, id, fetching]);
 
-  const [formData, setFormData] = useState(() => {
-    const saved = localStorage.getItem(`campaignEditData_${id}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.city === undefined && profile?.city) parsed.city = profile.city;
-        return parsed;
-      } catch (e) {
-        console.error("Failed to parse saved campaign data", e);
-      }
-    }
-    return {
-      title: '',
-      description: '',
-      category_id: '',
-      subcategory_id: '',
-      city: profile?.city || '',
-      goal_amount: '',
-      urgency_level: 'MEDIUM',
-      cover_image: null,
-      deadline: ''
-    };
-  });
 
-  useEffect(() => {
-    localStorage.setItem(`campaignEditData_${id}`, JSON.stringify(formData));
-  }, [formData]);
-
-  const [verificationDocument, setVerificationDocument] = useState(null);
   const urgencies = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
   useEffect(() => {
@@ -177,9 +175,7 @@ function CampaignEditPage() {
       triggerAnalysis();
     }, 1500);
 
-    if (fetching) return <div className="flex justify-center items-center h-64"><Loader2 className="w-8 h-8 animate-spin text-primary-500" /></div>;
-
-  return () => clearTimeout(timer);
+    return () => clearTimeout(timer);
   }, [formData.title, formData.description, profile.accessToken, taxonomy]);
 
   const handleCategoryChange = (e) => {
@@ -314,7 +310,7 @@ function CampaignEditPage() {
           Back to Campaigns
         </button>
         <div className="section-head">
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Create a Campaign</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Edit Campaign</h1>
           <p className="text-slate-600 text-sm md:text-base mt-2">Update the details of your campaign</p>
         </div>
       </div>
@@ -470,10 +466,18 @@ function CampaignEditPage() {
               <Upload size={20} className="text-slate-500" />
               <div className="flex-1 overflow-hidden">
                 <p className="text-sm font-medium text-slate-900 truncate">
-                  {verificationDocument ? verificationDocument.name : 'Select a document to upload...'}
+                  {verificationDocument 
+                    ? verificationDocument.name 
+                    : formData.verification_doc_url 
+                      ? 'Existing document uploaded'
+                      : 'Select a document to upload...'}
                 </p>
                 <p className="text-xs text-slate-500">
-                  {verificationDocument ? `${(verificationDocument.size / 1024 / 1024).toFixed(2)} MB` : 'PDF, JPG, PNG up to 5MB'}
+                  {verificationDocument 
+                    ? `${(verificationDocument.size / 1024 / 1024).toFixed(2)} MB` 
+                    : formData.verification_doc_url 
+                      ? <a href={formData.verification_doc_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline z-10 relative">View current document</a>
+                      : 'PDF, JPG, PNG up to 5MB'}
                 </p>
               </div>
               {verificationDocument && (

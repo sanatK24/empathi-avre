@@ -135,6 +135,7 @@ class CampaignUpdate(BaseModel):
     status: Optional[CampaignStatus] = None
     verification_doc_url: Optional[str] = None
     verification_ocr_text: Optional[str] = None
+    ai_analysis_data: Optional[str] = None
     
     @field_validator('urgency_level', 'status', mode='before')
     @classmethod
@@ -151,6 +152,7 @@ class CampaignResponse(CampaignBase):
     created_at: datetime
     creator_name: Optional[str] = None
     creator_avatar: Optional[str] = None
+    ai_analysis_data: Optional[str] = None
     class Config:
         from_attributes = True
 

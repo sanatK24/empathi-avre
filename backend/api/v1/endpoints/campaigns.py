@@ -129,15 +129,55 @@ async def verify_document_preview(
         "insights": "Document analyzed successfully. Extracted text will be used for AI trust verification."
     }
 
+import json
+from database import SessionLocal
+
+def process_document_background(campaign_id: int, file_bytes: bytes, filename: str, content_type: str):
+    db = SessionLocal()
+    try:
+        # 1. Run AI OCR via HFServices
+        from ml.hf_services import hf_services
+        ocr_text = hf_services.extract_document_text(file_bytes)
+        
+        # 2. Upload to Supabase
+        from services.storage_service import storage_service
+        public_url = storage_service.upload_document(file_bytes, filename, content_type)
+        
+        # 3. Save to database
+        campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+        if campaign:
+            campaign.verification_doc_url = public_url
+            campaign.verification_ocr_text = ocr_text
+            campaign.verified = True # Automatically mark verified for this prototype, or queue for review
+            
+            # Merge into ai_analysis_data
+            try:
+                ai_data_dict = json.loads(campaign.ai_analysis_data) if campaign.ai_analysis_data else {}
+            except Exception:
+                ai_data_dict = {}
+                
+            ai_data_dict["docInsights"] = {
+                "ocr_text": ocr_text,
+                "insights": "Document analyzed successfully via background processing. Extracted text is used for trust verification."
+            }
+            campaign.ai_analysis_data = json.dumps(ai_data_dict)
+            
+            db.commit()
+    except Exception as e:
+        print(f"Background document processing failed: {e}")
+    finally:
+        db.close()
+
 @router.post("/{campaign_id}/documents", response_model=CampaignResponse)
 async def upload_campaign_document(
     campaign_id: int,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_active_user)
 ):
     """
-    Upload a verification document to Supabase and run AI OCR.
+    Upload a verification document to Supabase and run AI OCR in the background.
     """
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign:
@@ -149,21 +189,8 @@ async def upload_campaign_document(
     # Read file bytes
     file_bytes = await file.read()
     
-    # 1. Run AI OCR via HFServices
-    from ml.hf_services import hf_services
-    ocr_text = hf_services.extract_document_text(file_bytes)
-    
-    # 2. Upload to Supabase
-    from services.storage_service import storage_service
-    public_url = storage_service.upload_document(file_bytes, file.filename, file.content_type)
-    
-    # 3. Save to database
-    campaign.verification_doc_url = public_url
-    campaign.verification_ocr_text = ocr_text
-    campaign.verified = True # Automatically mark verified for this prototype, or queue for review
-    
-    db.commit()
-    db.refresh(campaign)
+    # Schedule background processing
+    background_tasks.add_task(process_document_background, campaign_id, file_bytes, file.filename, file.content_type)
     
     return campaign
 

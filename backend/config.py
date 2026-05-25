@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -17,10 +18,10 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://empathi-frontend.onrender.com")
     
     # Supabase
-    SUPABASE_URL: str | None = os.getenv("SUPABASE_URL")
-    SUPABASE_KEY: str | None = os.getenv("SUPABASE_KEY")
+    SUPABASE_URL: Optional[str] = os.getenv("SUPABASE_URL")
+    SUPABASE_KEY: Optional[str] = os.getenv("SUPABASE_KEY")
     # ML Settings
-    HUGGINGFACE_API_KEY: str | None = os.getenv("HUGGINGFACE_API_KEY")
+    HUGGINGFACE_API_KEY: Optional[str] = os.getenv("HUGGINGFACE_API_KEY")
     # If loaded via pydantic env_file, also reflect into process env
     # so that other libraries/tools relying on os.environ behave consistently.
 
