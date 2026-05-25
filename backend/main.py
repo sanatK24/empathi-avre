@@ -40,6 +40,43 @@ except Exception:
 
 try:
     with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN ai_summary TEXT"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_tags VARCHAR"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN category_confidence FLOAT"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN toxicity_score FLOAT"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN spam_risk_score FLOAT"))
+except Exception:
+    pass
+
+try:
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE campaigns ADD COLUMN embedding_vector TEXT"))
+except Exception:
+    pass
+
+
+try:
+    with engine.begin() as conn:
         conn.execute(text("ALTER TABLE campaigns ADD COLUMN verification_doc_url TEXT"))
 except Exception:
     pass
