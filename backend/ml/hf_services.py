@@ -3,7 +3,6 @@ import os
 os.environ["FLAGS_use_mkldnn"] = "0"
 os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 
-from paddleocr import PaddleOCR
 import re
 import logging
 import requests

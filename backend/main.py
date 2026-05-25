@@ -7,6 +7,7 @@ from api.v1.router import api_router
 from apscheduler.schedulers.background import BackgroundScheduler
 from database import SessionLocal
 import os
+# pyrefly: ignore [missing-import]
 from sqlalchemy import text
 
 # Create tables
