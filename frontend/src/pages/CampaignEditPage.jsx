@@ -19,8 +19,6 @@ function CampaignEditPage() {
   const [aiData, setAiData] = useState(null);
   
   const [refining, setRefining] = useState(false);
-  const [docAnalyzing, setDocAnalyzing] = useState(false);
-  const [docInsights, setDocInsights] = useState(null);
   const [verificationDocument, setVerificationDocument] = useState(null);
 
   const [formData, setFormData] = useState(() => {
