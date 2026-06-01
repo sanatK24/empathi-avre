@@ -50,3 +50,13 @@ Thumbs.db
 *.log
 *.out
 *.pid
+
+# --- Markdown files (except README) ---
+/*.md
+!README.md
+
+/*.docx
+/*.py
+stale_docs/
+scratch/
+backend/__pycache__

@@ -7,9 +7,24 @@ from api.v1.router import api_router
 from apscheduler.schedulers.background import BackgroundScheduler
 from database import SessionLocal
 import os
+from sqlalchemy import text
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Temporary: Fix userrole enum values
+def _fix_userrole_enum():
+    try:
+        with engine.begin() as conn:
+            for role in ['USER', 'CREATOR', 'ADMIN', 'REQUESTER', 'DONOR', 'VENDOR']:
+                try:
+                    conn.execute(text(f"ALTER TYPE userrole ADD VALUE IF NOT EXISTS '{role}'"))
+                except:
+                    pass
+    except Exception as e:
+        print(f"[DB] Enum fix: {e}")
+
+_fix_userrole_enum()
 
 app = FastAPI(
     title="EmpathI API",
