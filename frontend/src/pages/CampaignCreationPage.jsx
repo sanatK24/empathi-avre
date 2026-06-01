@@ -35,7 +35,9 @@ function CampaignCreationPage() {
       title: '',
       description: '',
       category_id: '',
+      category_name: '',
       subcategory_id: '',
+      subcategory_name: '',
       city: profile?.city || '',
       goal_amount: '',
       urgency_level: 'MEDIUM',
@@ -94,10 +96,12 @@ function CampaignCreationPage() {
             updates.urgency_level = res.inferred_urgency;
           }
           if (res.predicted_category) {
+            updates.category_name = res.predicted_category;
             const matchedCat = taxonomy.find(c => c.name.toLowerCase() === res.predicted_category.toLowerCase());
             if (matchedCat) {
               updates.category_id = matchedCat.id.toString();
               if (res.predicted_subcategory) {
+                updates.subcategory_name = res.predicted_subcategory;
                 const matchedSub = matchedCat.subcategories.find(s => s.name.toLowerCase() === res.predicted_subcategory.toLowerCase());
                 if (matchedSub) {
                   updates.subcategory_id = matchedSub.id.toString();
@@ -123,15 +127,7 @@ function CampaignCreationPage() {
     return () => clearTimeout(timer);
   }, [formData.title, formData.description, profile.accessToken, taxonomy]);
 
-  const handleCategoryChange = (e) => {
-    const catId = parseInt(e.target.value);
-    const cat = taxonomy.find(c => c.id === catId);
-    setFormData(prev => ({
-        ...prev, 
-        category_id: catId, 
-        subcategory_id: cat?.subcategories[0]?.id || '' 
-    }));
-  };
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -197,6 +193,14 @@ function CampaignCreationPage() {
     }
     if (!formData.city.trim()) {
       setError('Campaign city is required');
+      return;
+    }
+    if (!formData.category_id) {
+      setError('Category must be inferred from analysis. Please wait for AI analysis to complete.');
+      return;
+    }
+    if (!formData.subcategory_id) {
+      setError('Subcategory must be inferred from analysis. Please wait for AI analysis to complete.');
       return;
     }
 
@@ -451,42 +455,50 @@ function CampaignCreationPage() {
 
         {/* Campaign Details Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Category */}
+          {/* Category - Editable with AI Inference */}
           <div>
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Category <span className="text-red-600">*</span>
             </label>
-            <select
-              name="category_id"
-              value={formData.category_id}
-              onChange={handleCategoryChange}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-            >
-              {taxonomy.map(cat => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type="text"
+                name="category_name"
+                value={formData.category_name}
+                onChange={handleInputChange}
+                placeholder="Awaiting analysis..."
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              />
+              {formData.category_id && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                  <span className="text-xs text-indigo-600 font-medium">AI</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Subcategory */}
+          {/* Subcategory - Editable with AI Inference */}
           <div>
             <label className="block text-sm font-semibold text-slate-900 mb-2">
               Subcategory <span className="text-red-600">*</span>
             </label>
-            <select
-              name="subcategory_id"
-              value={formData.subcategory_id}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-            >
-              {taxonomy.find(c => c.id === parseInt(formData.category_id))?.subcategories.map(sub => (
-                <option key={sub.id} value={sub.id}>
-                  {sub.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <input
+                type="text"
+                name="subcategory_name"
+                value={formData.subcategory_name}
+                onChange={handleInputChange}
+                placeholder="Awaiting analysis..."
+                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+              />
+              {formData.subcategory_id && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                  <span className="text-xs text-indigo-600 font-medium">AI</span>
+                </div>
+              )}
+            </div>
           </div>
           
           {/* AI Rules Display (Full Width) */}
