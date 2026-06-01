@@ -1,7 +1,0 @@
-faker
-geopy
-sqlalchemy
-pandas
-numpy
-passlib[bcrypt]
-python-dotenv
