@@ -155,12 +155,15 @@ function CampaignEditPage() {
             const matchedCat = taxonomy.find(c => c.name.toLowerCase() === res.predicted_category.toLowerCase());
             if (matchedCat) {
               updates.category_id = matchedCat.id.toString();
-              if (res.predicted_subcategory) {
-                updates.subcategory_name = res.predicted_subcategory;
-                const matchedSub = matchedCat.subcategories.find(s => s.name.toLowerCase() === res.predicted_subcategory.toLowerCase());
-                if (matchedSub) {
-                  updates.subcategory_id = matchedSub.id.toString();
-                }
+            }
+          }
+          if (res.predicted_subcategory) {
+            updates.subcategory_name = res.predicted_subcategory;
+            const matchedCat = taxonomy.find(c => c.id === parseInt(updates.category_id || formData.category_id));
+            if (matchedCat) {
+              const matchedSub = matchedCat.subcategories.find(s => s.name.toLowerCase() === res.predicted_subcategory.toLowerCase());
+              if (matchedSub) {
+                updates.subcategory_id = matchedSub.id.toString();
               }
             }
           }
