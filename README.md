@@ -168,7 +168,7 @@ EmpathI utilizes state-of-the-art HuggingFace Transformers and PaddleOCR pipelin
 | **Campaign Analysis** | `Qwen/Qwen2.5-1.5B-Instruct` | Coherent description auditing and extraction | Analyzes title & body text via HF Chat Completions. Extracts goal values, validates categories, and infers urgency. Falls back to medium urgency structural template. |
 | **Summarization** | `sshleifer/distilbart-cnn-12-6` | Brief overview creation for card thumbnails | DistillBART CNN text summarization. Falls back to descriptive slice template. |
 | **Toxicity Moderation** | `unitary/toxic-bert` | Abuse and spam detection | Scans texts for toxicity/spam flags during campaign creation. Falls back to 0.0 safe rating. |
-| **OCR Document Extraction** | `PaddleOCR` (Local Engine) | Auditing hospital bills and ID documents | Predicts text inside verification images. Safe wrapper catches system issues (like Paddle runtime mismatches) and yields logs with empty string fallback. |
+| **OCR Document Extraction** | `PaddleOCR` (Local Engine) | Auditing hospital bills and ID documents | **Background Task Processing**: OCR now runs asynchronously after campaign creation/update. Users can submit campaigns instantly without waiting for OCR analysis. Results are populated in campaign details page after processing completes. Safe wrapper catches system issues (like Paddle runtime mismatches) and yields logs with empty string fallback. |
 | **Image Captioning** | `Salesforce/blip-image-captioning-base` | Image context verification | Local BLIP captioner parses campaign cover images to ensure they match fundraising categories (e.g. medical ward vs gaming setup). |
 
 ---
@@ -356,7 +356,22 @@ Open `http://localhost:5173` in your browser to view the application.
 ---
 ## Recent Updates
 
-### UI/UX Improvements (Latest Release)
+### Background Task Processing (Latest Release)
+* **OCR Processing**: Moved OCR document analysis to asynchronous background tasks:
+  - Users can now upload documents and create campaigns instantly without waiting for OCR analysis
+  - Document upload happens immediately after campaign submission
+  - PaddleOCR processes verification documents in the background automatically
+  - OCR results are available on the campaign details page once processing completes
+  - Non-blocking form submission allows faster campaign creation workflow
+  - Removed synchronous document preview UI since analysis occurs post-submission
+
+* **Category/Subcategory Inference**: Updated form fields to display AI-inferred values:
+  - Categories are auto-selected based on AI analysis of campaign description
+  - Users can manually edit inferred values with an "AI" badge indicator
+  - Fields remain editable for owner preference overrides
+  - Auto-matched to taxonomy IDs for proper validation
+
+### UI/UX Improvements
 * **Favicon Update**: Changed favicon from generic Vite icon to custom EmpathI logo (`logo.png`) for better brand recognition.
 * **Logo Branding Enhancement**: Replaced placeholder Activity icons with the actual EmpathI logo image throughout the UI, maintaining proper aspect ratio and responsiveness:
   - Public header navigation
