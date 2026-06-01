@@ -161,20 +161,12 @@ function CampaignCreationPage() {
     }
   };
 
-  const handleDocumentUpload = async (e) => {
+  const handleDocumentUpload = (e) => {
     const file = e.target.files?.[0];
     if (file) {
       setVerificationDocument(file);
-      setDocAnalyzing(true);
-      setDocInsights(null);
-      try {
-        const res = await apiService.verifyDocumentPreview(profile.accessToken, file);
-        setDocInsights(res);
-      } catch (err) {
-        console.warn("Document preview failed:", err);
-      } finally {
-        setDocAnalyzing(false);
-      }
+      // Fire and forget - OCR will process in background after campaign creation
+      console.log(`Document ${file.name} selected for background OCR processing`);
     }
   };
 
@@ -221,17 +213,20 @@ function CampaignCreationPage() {
         urgency_level: formData.urgency_level,
         cover_image: formData.cover_image,
         deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
-        ai_analysis_data: JSON.stringify({ aiData, docInsights })
+        ai_analysis_data: JSON.stringify({ aiData })
       };
 
       const newCampaign = await apiService.createCampaign(profile.accessToken, campaignData);
       
+      // Queue OCR as background task if document is present
       if (verificationDocument) {
         try {
+          // Upload document - OCR will process in background automatically
           await apiService.uploadCampaignDocument(profile.accessToken, newCampaign.id, verificationDocument);
+          console.log('Document queued for background OCR processing');
         } catch (docErr) {
-          console.warn("Campaign created, but document upload failed:", docErr);
-          // Don't throw, we still want to navigate to the created campaign
+          console.warn("Document upload failed, but campaign created:", docErr);
+          // Don't throw, campaign is created successfully
         }
       }
 
@@ -428,8 +423,6 @@ function CampaignCreationPage() {
                     e.preventDefault();
                     e.stopPropagation();
                     setVerificationDocument(null);
-                    setDocInsights(null);
-                    setDocAnalyzing(false);
                   }}
                   className="relative z-10 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
                 >
@@ -439,21 +432,7 @@ function CampaignCreationPage() {
             </div>
           </div>
           
-          {docAnalyzing && (
-            <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-2 text-sm text-blue-800">
-              <Loader2 className="w-4 h-4 animate-spin" /> Analyzing document...
-            </div>
-          )}
-          {docInsights && (
-            <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg text-sm text-green-900 shadow-sm animate-fade-in">
-              <p className="font-bold flex items-center gap-1.5 mb-2"><ShieldCheck className="w-4 h-4 text-green-600" /> Validation Preview</p>
-              <p className="text-xs mb-2 italic text-green-800">{docInsights.insights}</p>
-              <div 
-                className="bg-white p-3 rounded border border-green-100 max-h-48 overflow-y-auto text-xs font-sans prose prose-sm prose-green max-w-none"
-                dangerouslySetInnerHTML={{ __html: docInsights.ocr_text || "No readable text found." }}
-              />
-            </div>
-          )}
+          {/* OCR analysis now runs asynchronously in background after submission */}
         </div>
 
         {/* Campaign Details Grid */}
@@ -667,20 +646,7 @@ function CampaignCreationPage() {
               </div>
             )}
 
-            {docAnalyzing && (
-              <div className="flex items-center gap-2 text-blue-400 mt-4 animate-pulse">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Running Document OCR via PaddleOCR...</span>
-              </div>
-            )}
-
-            {docInsights && !docAnalyzing && (
-              <div className="animate-fade-in space-y-2 text-blue-300 mt-4">
-                <p className="text-white font-bold">&gt; OCR Extraction Complete.</p>
-                <p className="text-slate-400">Extracted {docInsights.ocr_text?.length || 0} characters.</p>
-                <p className="text-xs italic bg-blue-900/30 p-2 rounded text-blue-200 border border-blue-800">{docInsights.insights}</p>
-              </div>
-            )}
+            {/* OCR now runs asynchronously in background after campaign creation */}
           </div>
         </div>
       </div>
