@@ -22,9 +22,6 @@ async def lifespan(app: FastAPI):
     try:
         from models import Campaign, CampaignCategory
         import random
-        import json
-        from sqlalchemy import text
-
         cats = db.query(CampaignCategory).all()
         if cats:
             cat_ids = [c.id for c in cats]
@@ -34,34 +31,8 @@ async def lifespan(app: FastAPI):
                     camp.category_id = random.choice(cat_ids)
                 db.commit()
                 print(f"[Startup] Fixed {len(campaigns)} campaigns with missing category_ids.")
-
-        # OCR Database Cleanup: Strip out old OCR insights from campaigns
-        campaigns_with_ai = db.query(Campaign).filter(Campaign.ai_analysis_data != None).all()
-        cleaned_count = 0
-        for camp in campaigns_with_ai:
-            try:
-                ai_data = json.loads(camp.ai_analysis_data)
-                if isinstance(ai_data, dict) and "docInsights" in ai_data:
-                    del ai_data["docInsights"]
-                    camp.ai_analysis_data = json.dumps(ai_data)
-                    cleaned_count += 1
-            except Exception as parse_err:
-                print(f"[Startup] Failed to parse ai_analysis_data for campaign {camp.id}: {parse_err}")
-        
-        if cleaned_count > 0:
-            db.commit()
-            print(f"[Startup] [OCR Cleanup] Cleaned up docInsights (OCR text) from {cleaned_count} campaigns in the database.")
-
-        # Clear raw verification_ocr_text if column exists
-        try:
-            db.execute(text("UPDATE campaigns SET verification_ocr_text = NULL WHERE verification_ocr_text IS NOT NULL"))
-            db.commit()
-            print("[Startup] [OCR Cleanup] Raw verification_ocr_text column cleared in database.")
-        except Exception:
-            pass
-
     except Exception as e:
-        print(f"[Startup] Error fixing categories/OCR: {e}")
+        print(f"[Startup] Error fixing categories: {e}")
     finally:
         db.close()
 
