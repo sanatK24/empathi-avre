@@ -145,31 +145,32 @@ const LoginPage = () => {
         
         <div className="h-full w-full flex flex-col items-center justify-center relative z-10">
           <div className="p-2 bg-white rounded-[2.5rem] shadow-premium max-w-sm border border-slate-200/50">
-             <div className="bg-slate-900 rounded-[2rem] p-8 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-primary-500/10 rounded-full blur-2xl"></div>
-                <img src="/assets/logo.png" alt="EmpathI Logo" className="h-10 object-contain mb-10" />
-                <div className="space-y-6">
+             <div className="bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-[2rem] p-8 text-slate-900 relative overflow-hidden border border-white shadow-inner">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-sky-300/10 rounded-full blur-2xl"></div>
+                <img src="/assets/logo.png" alt="EmpathI Logo" className="h-10 object-contain mb-10 relative z-10" />
+                <div className="space-y-6 relative z-10">
                     <div className="space-y-2">
-                        <span className="text-[8px] font-black text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded border border-primary-500/20 uppercase tracking-wider">Active Recommendation</span>
-                        <h3 className="text-sm font-black text-white uppercase tracking-tight mt-1">Medical Aid concentrators for Local Hospitals</h3>
+                        <span className="text-[8px] font-black text-primary-600 bg-primary-50 px-2 py-0.5 rounded border border-primary-100 uppercase tracking-wider">Active Recommendation</span>
+                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight mt-1">Medical Aid concentrators for Local Hospitals</h3>
                     </div>
-                    <div className="pt-6 border-t border-white/5 space-y-4">
+                    <div className="pt-6 border-t border-slate-200 space-y-4">
                         <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Matched Reasons</span>
-                            <span className="text-[8px] font-black text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2 py-0.5 rounded-md">94% Match</span>
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Matched Reasons</span>
+                            <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md shadow-sm">94% Match</span>
                         </div>
                         <div className="space-y-2.5">
                             {[
                                 { title: 'Matches your donation history', label: 'Interests' },
                                 { title: 'Located within your city boundary', label: 'Proximity' }
                             ].map((item, i) => (
-                                <div key={i} className="flex items-center space-x-3 bg-white/5 p-3 rounded-xl border border-white/5">
-                                    <div className="w-6 h-6 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
-                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <div key={i} className="flex items-center space-x-3 bg-white/80 p-3 rounded-xl border border-slate-100 shadow-sm backdrop-blur-sm">
+                                    <div className="w-6 h-6 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0 border border-emerald-100">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                                     </div>
                                     <div className="flex-grow min-w-0">
-                                        <p className="text-[10px] font-bold text-white tracking-tight truncate">{item.title}</p>
-                                        <p className="text-[8px] text-slate-400 uppercase tracking-wider font-bold mt-0.5">{item.label}</p>
+                                        <p className="text-[10px] font-bold text-slate-800 tracking-tight truncate">{item.title}</p>
+                                        <p className="text-[8px] text-slate-500 uppercase tracking-wider font-bold mt-0.5">{item.label}</p>
                                     </div>
                                 </div>
                             ))}

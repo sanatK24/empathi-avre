@@ -414,18 +414,6 @@ function CampaignDetailPage() {
                           const data = JSON.parse(campaign.ai_analysis_data);
                           return (
                             <div className="space-y-4 text-sm">
-                              {data.docInsights && (
-                                <div className="bg-slate-50 p-4 rounded-lg">
-                                  <p className="font-bold text-slate-800 mb-2">Document Insights</p>
-                                  <p className="text-slate-700 italic mb-3">{data.docInsights.insights}</p>
-                                  {data.docInsights.ocr_text && (
-                                    <div 
-                                      className="bg-white p-3 rounded border border-slate-200 max-h-60 overflow-y-auto text-xs font-sans prose prose-sm prose-green max-w-none"
-                                      dangerouslySetInnerHTML={{ __html: data.docInsights.ocr_text }}
-                                    />
-                                  )}
-                                </div>
-                              )}
                               {data.aiData && (
                                 <div className="bg-slate-50 p-4 rounded-lg">
                                   <p className="font-bold text-slate-800 mb-2">Text Analysis</p>

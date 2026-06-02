@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
-import { Heart, MapPin, Search, Filter, Bell } from 'lucide-react';
+import { Heart, MapPin, Search, Filter, Bell, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DonationModal from '../components/DonationModal';
 import { handleImageError } from '../utils/imageUtils';
@@ -44,9 +44,10 @@ function CampaignsFeedPage() {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [dynamicCategories, setDynamicCategories] = useState([]);
 
   const filteredCampaigns = React.useMemo(() => {
-    return campaigns.filter(campaign => {
+    let result = campaigns.filter(campaign => {
       if (!profile?.lat || !profile?.lng || !campaign.lat || !campaign.lng) return true;
       const distance = calculateDistance(profile.lat, profile.lng, campaign.lat, campaign.lng);
       if (profile?.proximityThreshold) {
@@ -54,6 +55,21 @@ function CampaignsFeedPage() {
       }
       return true;
     });
+
+    const urgencyWeight = {
+      'critical': 4,
+      'high': 3,
+      'medium': 2,
+      'low': 1
+    };
+
+    result.sort((a, b) => {
+      const weightA = urgencyWeight[a.urgency_level?.toLowerCase()] || 0;
+      const weightB = urgencyWeight[b.urgency_level?.toLowerCase()] || 0;
+      return weightB - weightA;
+    });
+
+    return result;
   }, [campaigns, profile?.lat, profile?.lng, profile?.proximityThreshold]);
 
   const fetchCampaigns = async (newFilters = filters) => {
@@ -61,7 +77,12 @@ function CampaignsFeedPage() {
       setLoading(true);
       setError(null);
       const campaignsData = await apiService.getCampaigns(profile?.accessToken, newFilters);
-      setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
+      const fetched = Array.isArray(campaignsData) ? campaignsData : [];
+      setCampaigns(fetched);
+      if (!newFilters.category) {
+        const uniqueCats = Array.from(new Set(fetched.map(c => c.category).filter(Boolean)));
+        setDynamicCategories(uniqueCats);
+      }
     } catch (err) {
       console.error('Failed to load campaigns:', err);
       setError(err.message || 'Failed to load campaigns');
@@ -78,7 +99,12 @@ function CampaignsFeedPage() {
       setLoading(true);
       setError(null);
       apiService.searchCampaigns(profile?.accessToken, urlSearch)
-        .then(results => setCampaigns(Array.isArray(results) ? results : []))
+        .then(results => {
+          const fetched = Array.isArray(results) ? results : [];
+          setCampaigns(fetched);
+          const uniqueCats = Array.from(new Set(fetched.map(c => c.category).filter(Boolean)));
+          setDynamicCategories(uniqueCats);
+        })
         .catch(err => setError(err.message || 'Search failed'))
         .finally(() => setLoading(false));
     } else {
@@ -95,7 +121,10 @@ function CampaignsFeedPage() {
     try {
       setLoading(true);
       const results = await apiService.searchCampaigns(profile?.accessToken, searchQuery);
-      setCampaigns(Array.isArray(results) ? results : []);
+      const fetched = Array.isArray(results) ? results : [];
+      setCampaigns(fetched);
+      const uniqueCats = Array.from(new Set(fetched.map(c => c.category).filter(Boolean)));
+      setDynamicCategories(uniqueCats);
     } catch (err) {
       console.error('Search failed:', err);
       setError('Search failed. Please try again.');
@@ -152,7 +181,6 @@ function CampaignsFeedPage() {
     }
   };
 
-  const categories = ['Medical', 'Food', 'Shelter', 'Education', 'Infrastructure', 'Other'];
   const urgencies = ['Low', 'Medium', 'High', 'Critical'];
 
   return (
@@ -171,6 +199,15 @@ function CampaignsFeedPage() {
                 Help those in need today
               </p>
             </div>
+            
+            <button
+              onClick={() => navigate('/user/campaigns/create')}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl shadow-md transition-colors text-sm flex items-center gap-2"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              <Plus className="w-4 h-4" />
+              Create Campaign
+            </button>
           </div>
 
           {/* Search Bar */}
@@ -238,7 +275,7 @@ function CampaignsFeedPage() {
 
           {/* Category Pills */}
           <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-2 -mx-5 px-5">
-            {['All', ...categories].map((cat) => (
+            {['All', ...dynamicCategories].map((cat) => (
               <button
                 key={cat}
                 onClick={() => handleCategoryClick(cat)}

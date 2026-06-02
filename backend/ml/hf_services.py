@@ -155,44 +155,6 @@ class HFServices:
             
         return "Summary not available."
 
-    # D. DOCUMENT OCR
-    def extract_document_text(self, image_bytes: bytes) -> str:
-        try:
-            import os
-            os.environ["FLAGS_use_mkldnn"] = "0"
-            os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
-
-            from PIL import Image
-            import io
-            import tempfile
-
-            if not hasattr(self, "_paddle_ocr"):
-                from paddleocr import PaddleOCR
-                self._paddle_ocr = PaddleOCR(use_angle_cls=True, lang='en')
-
-            import numpy as np
-            image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-            image_np = np.array(image)
-            
-            output = self._paddle_ocr.ocr(image_np, cls=True)
-            
-            extracted = []
-            if output:
-                for res in output:
-                    if res:
-                        for line in res:
-                            extracted.append(line[1][0])
-
-            return "\n".join(extracted)
-
-        except Exception as e:
-            import traceback
-            error_msg = f"PaddleOCR Error:\n{str(e)}\n\n{traceback.format_exc()}"
-            logger.error(error_msg)
-            return error_msg
-
-
-
 
     # E. DOCUMENT UNDERSTANDING
     def understand_document(self, image_bytes: bytes, question: str) -> str:

@@ -60,3 +60,9 @@ Thumbs.db
 stale_docs/
 scratch/
 backend/__pycache__
+
+# --- Fix and Test scripts ---
+fix_*
+**/fix_*
+test_*
+**/test_*

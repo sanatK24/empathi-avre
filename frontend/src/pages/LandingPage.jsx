@@ -135,7 +135,7 @@ const LandingPage = () => {
                       <span>•</span>
                       <span>Mumbai Proximity Match</span>
                       <span>•</span>
-                      <span className="text-amber-400">Verified Doc (OCR)</span>
+                      <span className="text-emerald-400">Verified Document</span>
                     </div>
                   </div>
                 </div>
@@ -162,7 +162,7 @@ const LandingPage = () => {
               { title: 'LightGBM Context Ranker', desc: 'Predicts target success using 13 contextual, engagement, and geographic features for tailored matches.', icon: Target, color: 'border-primary-500/20 text-primary-400' },
               { title: 'XGBoost Trust Engine', desc: 'Analyzes disposable hosts, rapid creation, and past completions to gauge creator risk profiles.', icon: Shield, color: 'border-emerald-500/20 text-emerald-400' },
               { title: 'Fairness Allocation', desc: 'Balances impression metrics to prevent monopolization, ensuring niche and new campaigns gain visibility.', icon: TrendingUp, color: 'border-indigo-500/20 text-indigo-400' },
-              { title: 'Multi-Modal NLP Audits', desc: 'OCR verification, semantic redundancy checking (BGE), and toxicity screening automate campaign verification.', icon: Cpu, color: 'border-amber-500/20 text-amber-400' },
+              { title: 'Multi-Modal NLP Audits', desc: 'Semantic redundancy checking (BGE) and toxicity screening automate campaign verification.', icon: Cpu, color: 'border-amber-500/20 text-amber-400' },
             ].map((f, i) => (
               <Card key={i} className={`p-8 bg-white/5 backdrop-blur-md border ${f.color} hover:ring-2 hover:ring-primary-500/30 transition-all duration-300 rounded-[2rem] flex flex-col justify-between h-full`}>
                 <div className="space-y-6">
@@ -189,7 +189,7 @@ const LandingPage = () => {
               </h2>
               <div className="space-y-8">
                 {[
-                  { title: 'Launch & AI Audit', desc: 'Creators upload medical documents or bills. EmpathI instantly extracts urgency values and audits for toxicity, spam risk, and semantic duplicates.' },
+                  { title: 'Launch & AI Audit', desc: 'Creators upload verification documents. EmpathI instantly extracts urgency values and audits for toxicity, spam risk, and semantic duplicates.' },
                   { title: 'LightGBM Ranking', desc: 'The recommendation engine calculates customized donor match scores based on past giving behaviors, city proximity, and campaign momentum.' },
                   { title: 'Fair Distribution', desc: 'The Fairness Engine adjusts raw scores dynamically against impression counts, bringing high-priority and under-funded campaigns to the discovery page.' },
                 ].map((step, i) => (

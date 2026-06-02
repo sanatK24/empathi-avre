@@ -110,7 +110,6 @@ class CampaignBase(BaseModel):
     cover_image: Optional[str] = None
     deadline: Optional[datetime] = None
     verification_doc_url: Optional[str] = None
-    verification_ocr_text: Optional[str] = None
     ai_analysis_data: Optional[str] = None
 
     @field_validator('urgency_level', mode='before')
@@ -134,7 +133,6 @@ class CampaignUpdate(BaseModel):
     deadline: Optional[datetime] = None
     status: Optional[CampaignStatus] = None
     verification_doc_url: Optional[str] = None
-    verification_ocr_text: Optional[str] = None
     ai_analysis_data: Optional[str] = None
     
     @field_validator('urgency_level', 'status', mode='before')

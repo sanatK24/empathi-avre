@@ -163,8 +163,6 @@ function CampaignCreationPage() {
     const file = e.target.files?.[0];
     if (file) {
       setVerificationDocument(file);
-      // Fire and forget - OCR will process in background after campaign creation
-      console.log(`Document ${file.name} selected for background OCR processing`);
     }
   };
 
@@ -216,15 +214,12 @@ function CampaignCreationPage() {
 
       const newCampaign = await apiService.createCampaign(profile.accessToken, campaignData);
       
-      // Queue OCR as background task if document is present
+      // Upload verification document if present
       if (verificationDocument) {
         try {
-          // Upload document - OCR will process in background automatically
           await apiService.uploadCampaignDocument(profile.accessToken, newCampaign.id, verificationDocument);
-          console.log('Document queued for background OCR processing');
         } catch (docErr) {
           console.warn("Document upload failed, but campaign created:", docErr);
-          // Don't throw, campaign is created successfully
         }
       }
 
@@ -394,7 +389,7 @@ function CampaignCreationPage() {
             Verification Documents (Optional)
           </label>
           <p className="text-xs text-slate-500 mb-3">
-            Upload official documents (medical bills, estimates) to boost your campaign's Trust Score. Our AI will analyze them instantly to show you extracted insights.
+            Upload official documents (medical bills, estimates) to boost your campaign's Trust Score.
           </p>
           <div className="border border-slate-300 rounded-lg p-4 bg-slate-50 relative">
             <input
@@ -429,8 +424,6 @@ function CampaignCreationPage() {
               )}
             </div>
           </div>
-          
-          {/* OCR analysis now runs asynchronously in background after submission */}
         </div>
 
         {/* Campaign Details Grid */}
@@ -574,7 +567,7 @@ function CampaignCreationPage() {
         <div className="flex gap-3 pt-6 border-t border-slate-200">
           <button
             type="button"
-            onClick={() => navigate('/campaigns')}
+            onClick={() => navigate('/user/campaigns')}
             className="flex-1 px-6 py-2.5 border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-50"
           >
             Cancel
@@ -643,8 +636,6 @@ function CampaignCreationPage() {
                 <span>Refining description using LLM copywriter...</span>
               </div>
             )}
-
-            {/* OCR now runs asynchronously in background after campaign creation */}
           </div>
         </div>
       </div>

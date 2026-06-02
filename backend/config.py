@@ -8,7 +8,8 @@ class Settings(BaseSettings):
     # Model config for Pydantic V2
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(BASE_DIR), ".env"), 
-        extra="ignore"  # Allow extra fields in .env without crashing
+        extra="ignore",  # Allow extra fields in .env without crashing
+        protected_namespaces=()
     )
 
     APP_NAME: str = "EmpathI"

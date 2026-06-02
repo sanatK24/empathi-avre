@@ -28,7 +28,7 @@
 ## Project Overview
 
 In traditional crowdfunding, viral campaigns capture 90%+ of donations while critical, localized emergency campaigns get buried. **EmpathI** solves this "monopoly of attention" problem through:
-* **AI-Assisted Moderation**: NLP analysis extraction, urgency levels, OCR documents verification, toxicity checks.
+* **AI-Assisted Moderation**: NLP analysis extraction, urgency levels, toxicity checks.
 * **Intelligent Personalization**: Learn donor behaviors to recommend campaigns matching category preferences and local city proximity.
 * **Trust & Security Foundation**: Creator reputation profile computed via XGBoost classifiers to flag fraud and gauge fulfillment probabilities.
 * **Fairness-Aware Attention Allocation**: Dynamic exposure reranking that ensures new, niche, and high-urgency fundraisers gain fair visibility.
@@ -103,7 +103,7 @@ EmpathI features are fully implemented and verified via end-to-end integration t
 
 ### 4. Admin Management Dashboard
 * Fully featured dashboards for platform-wide metrics: user count, campaign velocity, active categories ratios.
-* Document Verification: Review OCR outputs and manually toggle verification statuses.
+* Document Verification: Review uploaded documents and manually toggle verification statuses.
 
 ---
 
@@ -160,7 +160,7 @@ To prevent the "winner-takes-all" effect where viral campaigns dominate the home
 
 ## NLP & Multi-Modal Integrations
 
-EmpathI utilizes state-of-the-art HuggingFace Transformers and PaddleOCR pipelines to automate campaign auditing:
+EmpathI utilizes state-of-the-art HuggingFace Transformers pipelines to automate campaign auditing:
 
 | Engine | Model ID / Engine | Purpose | Current Implementation & Fallback |
 | :--- | :--- | :--- | :--- |
@@ -168,7 +168,6 @@ EmpathI utilizes state-of-the-art HuggingFace Transformers and PaddleOCR pipelin
 | **Campaign Analysis** | `Qwen/Qwen2.5-1.5B-Instruct` | Coherent description auditing and extraction | Analyzes title & body text via HF Chat Completions. Extracts goal values, validates categories, and infers urgency. Falls back to medium urgency structural template. |
 | **Summarization** | `sshleifer/distilbart-cnn-12-6` | Brief overview creation for card thumbnails | DistillBART CNN text summarization. Falls back to descriptive slice template. |
 | **Toxicity Moderation** | `unitary/toxic-bert` | Abuse and spam detection | Scans texts for toxicity/spam flags during campaign creation. Falls back to 0.0 safe rating. |
-| **OCR Document Extraction** | `PaddleOCR` (Local Engine) | Auditing hospital bills and ID documents | **Background Task Processing**: OCR now runs asynchronously after campaign creation/update. Users can submit campaigns instantly without waiting for OCR analysis. Results are populated in campaign details page after processing completes. Safe wrapper catches system issues (like Paddle runtime mismatches) and yields logs with empty string fallback. |
 | **Image Captioning** | `Salesforce/blip-image-captioning-base` | Image context verification | Local BLIP captioner parses campaign cover images to ensure they match fundraising categories (e.g. medical ward vs gaming setup). |
 
 ---
@@ -195,7 +194,7 @@ EmpathI/
 │   │   └── security.py                # BCrypt password hashing & JWT generators
 │   ├── ml/
 │   │   ├── campaign_ranker.py         # LightGBM campaign ranking model
-│   │   └── hf_services.py             # HuggingFace & PaddleOCR core modules
+│   │   └── hf_services.py             # HuggingFace core modules
 │   ├── repositories/                  # Clean database interface queries
 │   │   ├── campaign_repo.py
 │   │   ├── donation_repo.py
@@ -357,13 +356,10 @@ Open `http://localhost:5173` in your browser to view the application.
 ## Recent Updates
 
 ### Background Task Processing (Latest Release)
-* **OCR Processing**: Moved OCR document analysis to asynchronous background tasks:
-  - Users can now upload documents and create campaigns instantly without waiting for OCR analysis
-  - Document upload happens immediately after campaign submission
-  - PaddleOCR processes verification documents in the background automatically
-  - OCR results are available on the campaign details page once processing completes
+* **Background Verification Upload**: Upload verification documents asynchronously:
+  - Users can upload documents and create campaigns instantly
+  - Document upload happens in the background immediately after campaign submission
   - Non-blocking form submission allows faster campaign creation workflow
-  - Removed synchronous document preview UI since analysis occurs post-submission
 
 * **Category/Subcategory Inference**: Updated form fields to display AI-inferred values:
   - Categories are auto-selected based on AI analysis of campaign description
@@ -406,11 +402,6 @@ Honest assessments of engineering compromises made in the EmpathI architecture:
   * **Classification**: Defaults to "community aid" tags.
   * **Toxicity**: Safely assumes 0.0 (clean content) to avoid blocking campaign creations.
   * **LLM Extraction**: Falls back to user-provided form fields.
-
-### 3. PaddleOCR vs. TrOCR Integration Tradeoffs
-* **Why Chosen**: PaddleOCR was selected over TrOCR due to its high efficiency on CPU architectures and excellent multi-lingual (specifically Indic character sets) layout parsers.
-* **Limitations**: PaddleOCR introduces complex compiled system dependencies. Mismatched binaries on different architectures can occasionally throw Pirate framework conversion attributes errors.
-* **Fallback Design**: The `extract_document_text` function isolates PaddleOCR inside a dedicated try-catch container. If an internal engine error is thrown, it captures the trace, logs a warning, and safely returns an empty string to ensure the campaign submission process continues smoothly.
 
 ---
 

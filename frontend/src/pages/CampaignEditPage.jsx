@@ -79,8 +79,7 @@ function CampaignEditPage() {
             urgency_level: campaign.urgency_level || 'MEDIUM',
             cover_image: campaign.cover_image || null,
             deadline: campaign.deadline ? new Date(campaign.deadline).toISOString().slice(0, 16) : '',
-            verification_doc_url: campaign.verification_doc_url || null,
-            verification_ocr_text: campaign.verification_ocr_text || ''
+            verification_doc_url: campaign.verification_doc_url || null
             });
         }
       } catch (err) {
@@ -218,8 +217,6 @@ function CampaignEditPage() {
     const file = e.target.files?.[0];
     if (file) {
       setVerificationDocument(file);
-      // Fire and forget - OCR will process in background
-      console.log(`Document ${file.name} selected for background OCR processing`);
     }
   };
 
@@ -272,12 +269,10 @@ function CampaignEditPage() {
       
       const newCampaign = await apiService.updateCampaign(profile.accessToken, id, campaignData);
       
-      // Queue OCR as background task if document is present
+      // Upload verification document if present
       if (verificationDocument) {
         try {
-          // Upload document - OCR will process in background automatically
           await apiService.uploadCampaignDocument(profile.accessToken, id, verificationDocument);
-          console.log('Document queued for background OCR processing');
         } catch (docErr) {
           console.warn("Document upload failed, but campaign updated:", docErr);
         }
@@ -452,7 +447,7 @@ function CampaignEditPage() {
             Verification Documents (Optional)
           </label>
           <p className="text-xs text-slate-500 mb-3">
-            Upload official documents (medical bills, estimates) to boost your campaign's Trust Score. Our AI will analyze them instantly to show you extracted insights.
+            Upload official documents (medical bills, estimates) to boost your campaign's Trust Score.
           </p>
           <div className="border border-slate-300 rounded-lg p-4 bg-slate-50 relative">
             <input
@@ -495,8 +490,6 @@ function CampaignEditPage() {
               )}
             </div>
           </div>
-          
-          {/* OCR analysis now runs asynchronously in background after submission */}
         </div>
 
         {/* Campaign Details Grid */}
@@ -640,7 +633,7 @@ function CampaignEditPage() {
         <div className="flex gap-3 pt-6 border-t border-slate-200">
           <button
             type="button"
-            onClick={() => navigate('/campaigns')}
+            onClick={() => navigate('/user/campaigns')}
             className="flex-1 px-6 py-2.5 border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-50"
           >
             Cancel
@@ -709,8 +702,6 @@ function CampaignEditPage() {
                 <span>Refining description using LLM copywriter...</span>
               </div>
             )}
-
-            {/* OCR now runs asynchronously in background after campaign submission */}
           </div>
         </div>
       </div>

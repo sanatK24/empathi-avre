@@ -112,7 +112,7 @@ class AiValidationRule(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     category_id = Column(Integer, ForeignKey("campaign_categories.id"))
-    capability = Column(String)  # e.g., "OCR", "NLP", "Embeddings"
+    capability = Column(String)  # e.g., "NLP", "Embeddings"
     description = Column(String) # e.g., "duplicate case detection"
 
     category = relationship("CampaignCategory", back_populates="ai_rules")
@@ -151,7 +151,6 @@ class Campaign(Base):
 
     # Document Verification
     verification_doc_url = Column(String, nullable=True)
-    verification_ocr_text = Column(Text, nullable=True)
 
     # Relationships
     creator = relationship("User", back_populates="campaigns")
@@ -168,6 +167,10 @@ class Campaign(Base):
     @property
     def creator_avatar(self):
         return self.creator.avatar_url if self.creator else None
+
+    @property
+    def category(self):
+        return self.taxonomy_category.name if self.taxonomy_category else None
 
 
 # ============ DONATIONS TABLE ============
