@@ -1,9 +1,7 @@
 export const USER_ROLES = {
   DONOR: 'donor',
-  NGO: 'ngo',
-  VERIFIER: 'verifier',
+  CREATOR: 'creator',
   ADMIN: 'admin',
-  VENDOR: 'vendor',
 }
 
 export const RESOURCE_TYPES = {
@@ -54,16 +52,14 @@ export const NOTIFICATION_TYPES = {
 }
 
 export const ROLE_DESCRIPTIONS = {
-  [USER_ROLES.DONOR]: 'Donate and help in emergencies with fractional emergency fund contribution',
-  [USER_ROLES.NGO]: 'Create campaigns and request resources for emergencies',
-  [USER_ROLES.VERIFIER]: 'Verify emergency requests and proof-of-resolution',
+  [USER_ROLES.DONOR]: 'Donate and help in campaigns and community requests',
+  [USER_ROLES.CREATOR]: 'Create campaigns and request resources for emergency and funding needs',
   [USER_ROLES.ADMIN]: 'Declare emergencies, manage emergency fund, oversee platform',
-  [USER_ROLES.VENDOR]: 'Declare resources and fulfill emergency requests',
 }
 
 export const VERIFICATION_TYPES = {
   MEDICAL_PROFESSIONAL: 'medical_professional',
-  NGO_REPRESENTATIVE: 'ngo_representative',
+  COMMUNITY_LEADER: 'community_leader',
   LOCAL_VOLUNTEER: 'local_volunteer',
   GOVERNMENT_OFFICIAL: 'government_official',
 }

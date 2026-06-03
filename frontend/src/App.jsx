@@ -10,7 +10,6 @@ import RegisterPage from './pages/RegisterPage';
 
 
 // User Pages
-import Dashboard from './pages/Dashboard';
 import UserDashboard from './pages/UserDashboard';
 import SharedProfileDashboard from './pages/SharedProfileDashboard';
 
@@ -27,8 +26,7 @@ import DonationPage from './pages/DonationPage';
 
 import AdminCampaigns from './pages/AdminCampaigns';
 import AdminUsers from './pages/AdminUsers';
-import AdminStats from './pages/AdminStats';
-import AdminProfile from './pages/AdminProfile';
+
 
 import { useAppContext } from './context/AppContext';
 import { useLocation } from 'react-router-dom';
@@ -93,7 +91,7 @@ function App() {
           <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
         </Route>
 
-        {/* User Routes (Formerly Requester) */}
+        {/* User Routes */}
         <Route path="/user" element={<ProtectedRoute allowedRole="USER"><DashboardLayout role="user" /></ProtectedRoute>}>
           <Route index element={<Navigate to="dashboard" />} />
           <Route path="dashboard" element={<UserDashboard />} />
@@ -109,16 +107,11 @@ function App() {
 
         {/* Admin Routes */}
         <Route path="/admin" element={<ProtectedRoute allowedRole="ADMIN"><DashboardLayout role="admin" /></ProtectedRoute>}>
-          <Route index element={<Navigate to="dashboard" />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route index element={<Navigate to="users" />} />
           <Route path="users" element={<AdminUsers />} />
-          
-
           <Route path="campaigns" element={<AdminCampaigns />} />
-          <Route path="stats" element={<AdminStats />} />
-          <Route path="profile" element={<AdminProfile />} />
-
         </Route>
+
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" />} />

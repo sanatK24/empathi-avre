@@ -3,19 +3,16 @@ from typing import Optional, Any, Union
 from jose import jwt
 import bcrypt
 from config import settings
-
-# JWT Settings
 SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 10080  # 7 days for persistence
+ALGORITHM = 'HS256'
+ACCESS_TOKEN_EXPIRE_MINUTES = 10080
 
-def create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(subject: Union[str, Any], expires_delta: Optional[timedelta]=None) -> str:
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode = {"exp": expire, "sub": str(subject)}
+    to_encode = {'exp': expire, 'sub': str(subject)}
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 

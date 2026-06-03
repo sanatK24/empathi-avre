@@ -18,14 +18,14 @@ const CATEGORY_IMAGES = {
   infrastructure:'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&h=500&fit=crop',
   emergency:     'https://images.unsplash.com/photo-1584438784894-089d6a62b8fa?w=800&h=500&fit=crop',
   community:     'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&h=500&fit=crop',
-  vendor:        'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=500&fit=crop',
+  creator:       'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=500&fit=crop',
   news:          'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&h=500&fit=crop',
   default:       'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&h=500&fit=crop',
 };
 
 /**
  * Get a real fallback image URL for a given category.
- * @param {string} category - e.g. "medical", "food", "vendor", "news"
+ * @param {string} category - e.g. "medical", "food", "creator", "news"
  * @returns {string} A valid Unsplash URL
  */
 export function getFallbackImage(category = 'default') {

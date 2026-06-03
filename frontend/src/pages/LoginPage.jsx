@@ -41,7 +41,7 @@ const LoginPage = () => {
         fullName: userProfile.name,
         email: userProfile.email,
         backendRole: userProfile.role, // Essential for ProtectedRoute
-        userRole: userProfile.role?.toLowerCase() === 'requester' ? 'donor' : userProfile.role?.toLowerCase(),
+        userRole: userProfile.role?.toLowerCase() === 'user' ? 'donor' : userProfile.role?.toLowerCase(),
         isAuthenticated: true,
         accessToken: token,
         backendUserId: userProfile.id,
@@ -51,13 +51,12 @@ const LoginPage = () => {
 
       // 4. Redirect based on role
       const role = userProfile.role?.toLowerCase();
-      if (role === 'vendor') {
-        navigate('/vendor/dashboard');
-      } else if (role === 'requester' || role === 'donor' || role === 'user') {
+      if (role === 'donor' || role === 'user') {
         navigate('/user/dashboard');
       } else if (role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate('/admin/users');
       } else {
+
         // Fallback to user dashboard if role is unknown but authenticated
         navigate('/user/dashboard');
       }

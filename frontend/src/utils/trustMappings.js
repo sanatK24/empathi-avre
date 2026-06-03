@@ -7,7 +7,7 @@
 export const TRUST_TIERS = [
   { key: 'high',   label: 'Highly Trusted', variant: 'success',   min: 0.8 },
   { key: 'good',   label: 'Trusted',        variant: 'primary',   min: 0.6 },
-  { key: 'new',    label: 'New Vendor',      variant: 'secondary', min: 0.4 },
+  { key: 'new',    label: 'New Creator',     variant: 'secondary', min: 0.4 },
   { key: 'review', label: 'Under Review',    variant: 'warning',   min: 0.0 },
 ];
 
@@ -63,10 +63,10 @@ export const TRUST_SIGNALS = {
 
 // ── Simulation Scenarios (human-readable labels) ─────────────────────
 export const SIMULATION_SCENARIOS = {
-  successful_fulfillment: { label: 'Successful Delivery',     description: 'Vendor delivers on time' },
+  successful_fulfillment: { label: 'Successful Delivery',     description: 'Creator delivers on time' },
   delayed_delivery:       { label: 'Delayed Delivery',        description: 'Delivery arrives late' },
-  dispute_and_refund:     { label: 'Dispute & Refund',        description: 'Requester raises dispute' },
-  vendor_cancellation:    { label: 'Vendor Cancellation',     description: 'Vendor cancels order' },
+  dispute_and_refund:     { label: 'Dispute & Refund',        description: 'User raises dispute' },
+  creator_cancellation:    { label: 'Creator Cancellation',     description: 'Creator cancels order' },
   suspicious_activity:    { label: 'Suspicious Activity',     description: 'Flagged during escrow' },
   fraud_scenario:         { label: 'Fraud Detection',         description: 'Immediate fraud flag' },
 };

@@ -17,27 +17,11 @@ const AppContext = createContext(null)
 
 const ROLE_PERMISSIONS = {
   donor: ['view_feed', 'donate', 'view_recommendations', 'track_donations'],
-  ngo: [
+  creator: [
     'view_feed',
     'create_campaign',
     'manage_campaigns',
     'request_resources',
-    'view_recommendations',
-  ],
-  volunteer_ngo: [
-    'view_feed',
-    'create_campaign',
-    'manage_campaigns',
-    'request_resources',
-    'view_recommendations',
-    'track_donations',
-    'post_notices',
-  ],
-  verifier: [
-    'view_feed',
-    'verify_requests',
-    'view_verification_tasks',
-    'submit_proof',
     'view_recommendations',
   ],
   admin: [
@@ -46,13 +30,6 @@ const ROLE_PERMISSIONS = {
     'manage_crises',
     'view_audit_log',
     'view_users',
-  ],
-  vendor: [
-    'view_feed',
-    'view_requests',
-    'manage_availability',
-    'fulfill_requests',
-    'view_recommendations',
   ],
 }
 
@@ -197,14 +174,7 @@ export function AppProvider({ children }) {
           session.user.role
         )
         
-        // For dual-role users, check if they should stay in vendor view
         let activeUserRole = mappedRole
-        if (session.user.can_switch_role && session.user.is_vendor) {
-          const currentPath = window.location.pathname
-          if (currentPath.startsWith('/vendor')) {
-            activeUserRole = 'vendor'
-          }
-        }
         
         const next = {
           accessToken: session.accessToken,
@@ -223,7 +193,6 @@ export function AppProvider({ children }) {
           preferredHospital:
             session.user.preferred_hospital,
           canSwitchRole: session.user.can_switch_role,
-          isVendor: session.user.is_vendor,
           addressLine1: session.user.address_line_1 || '',
           addressLine2: session.user.address_line_2 || '',
           locality: session.user.locality || '',
@@ -256,8 +225,6 @@ export function AppProvider({ children }) {
               ? 'user'
               : next.userRole === 'admin'
               ? 'admin'
-              : next.userRole === 'vendor'
-              ? 'vendor'
               : 'user'
           }/dashboard`
 
@@ -288,8 +255,6 @@ export function AppProvider({ children }) {
         ? 'user'
         : newRole === 'admin'
         ? 'admin'
-        : newRole === 'vendor'
-        ? 'vendor'
         : 'user'
     }/dashboard`
 

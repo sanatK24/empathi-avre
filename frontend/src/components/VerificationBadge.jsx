@@ -1,4 +1,4 @@
-function VerificationBadge({ verificationStatus, verifierCount = 0 }) {
+function VerificationBadge({ verificationStatus }) {
   const statusClass = {
     pending: 'status-pending',
     verified: 'status-verified',
@@ -18,7 +18,6 @@ function VerificationBadge({ verificationStatus, verifierCount = 0 }) {
       <span className="badge-icon">✓</span>
       <div className="badge-content">
         <strong>{statusLabel}</strong>
-        {verifierCount > 0 && <small>Verified by {verifierCount}</small>}
       </div>
     </div>
   )

@@ -98,7 +98,6 @@ const AdminStats = () => {
             { k: 'verified_campaigns', label: 'Verified Campaigns' },
             { k: 'pending_campaigns', label: 'Pending Campaigns' },
             { k: 'flagged_campaigns', label: 'Flagged Campaigns' },
-            { k: 'active_vendors', label: 'Active Vendors' },
             { k: 'fraud_risk', label: 'Fraud Risk' },
             { k: 'server_uptime_hours', label: 'Uptime (hrs)' },
           ].map((item) => (
