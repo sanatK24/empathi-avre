@@ -55,7 +55,6 @@ function getInitialProfile() {
     email: '',
     phone: '',
     fullName: '',
-    organizationName: '',
     bio: '',
     emergency_contacts: [],
     personal_categories: '',
@@ -124,7 +123,6 @@ export function AppProvider({ children }) {
         email: '',
         phone: '',
         fullName: '',
-        organizationName: '',
         bio: '',
         emergencyFundOptIn: true,
         emergencyFundPercentage: 5,
@@ -192,7 +190,6 @@ export function AppProvider({ children }) {
           bloodGroup: session.user.blood_group,
           preferredHospital:
             session.user.preferred_hospital,
-          canSwitchRole: session.user.can_switch_role,
           addressLine1: session.user.address_line_1 || '',
           addressLine2: session.user.address_line_2 || '',
           locality: session.user.locality || '',

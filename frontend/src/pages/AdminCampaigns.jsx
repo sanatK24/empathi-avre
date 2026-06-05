@@ -18,6 +18,7 @@ const AdminCampaigns = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedCreatorIds, setExpandedCreatorIds] = useState(new Set());
+  const [selectedReportsCampaign, setSelectedReportsCampaign] = useState(null);
 
   const toggleCreator = (id) => setExpandedCreatorIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
@@ -161,11 +162,16 @@ const AdminCampaigns = () => {
                                   </thead>
                                   <tbody className="divide-y divide-slate-50">
                                     {creator.campaigns.map((c) => (
-                                      <tr key={c.id} className="hover:bg-slate-50/30 transition-colors">
+                                      <tr key={c.id} className={c.reports && c.reports.length >= 3 ? "bg-red-50/70 hover:bg-red-100/70 transition-colors border-l-4 border-red-500" : "hover:bg-slate-50/30 transition-colors"}>
                                         <td className="px-6 py-4">
                                           <div className="flex flex-col">
                                             <span className="font-bold text-slate-900 tracking-tight text-sm uppercase">{c.title || 'Untitled Campaign'}</span>
                                             <span className="text-[11px] text-slate-500 font-medium mt-0.5">{c.city || 'Global'} • {c.category || 'General'}</span>
+                                            {c.reports && c.reports.length > 0 && (
+                                              <span className={`inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full mt-1.5 w-fit cursor-pointer transition-colors ${c.reports.length >= 3 ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200'}`} onClick={() => setSelectedReportsCampaign(c)}>
+                                                <AlertTriangle className="w-3.5 h-3.5" /> {c.reports.length} {c.reports.length === 1 ? 'Report' : 'Reports'} (View)
+                                              </span>
+                                            )}
                                           </div>
                                         </td>
                                         <td className="px-6 py-4"><span className="text-sm font-semibold text-slate-900">₹{Number(c.goal_amount || 0).toLocaleString()}</span></td>
@@ -198,6 +204,59 @@ const AdminCampaigns = () => {
           )}
         </CardContent>
       </Card>
+      {selectedReportsCampaign && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-3 text-red-600">
+                <AlertTriangle className="w-8 h-8 animate-pulse" />
+                <div>
+                  <h3 className="text-xl font-display font-black tracking-tight uppercase">Campaign Reports</h3>
+                  <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">Campaign ID: {selectedReportsCampaign.id}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedReportsCampaign(null)} className="text-slate-400 hover:text-slate-600 font-black text-2xl p-1">&times;</button>
+            </div>
+            
+            <div className="bg-slate-50 p-4 rounded-2xl mb-6">
+              <h4 className="font-bold text-slate-900 text-sm uppercase tracking-tight">{selectedReportsCampaign.title}</h4>
+              <p className="text-xs text-slate-500 font-medium mt-1">Creator: {selectedReportsCampaign.creator?.name || 'Unknown'} ({selectedReportsCampaign.creator?.email})</p>
+            </div>
+
+            <div className="overflow-y-auto space-y-4 flex-1 pr-1 custom-scrollbar">
+              {selectedReportsCampaign.reports && selectedReportsCampaign.reports.length > 0 ? (
+                selectedReportsCampaign.reports.map((report, idx) => (
+                  <div key={report.id || idx} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-3">
+                    <div className="flex justify-between items-center text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                      <span>Report #{idx + 1}</span>
+                      <span>{report.created_at ? new Date(report.created_at).toLocaleDateString() : 'Recent'}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">User Reason</p>
+                      <p className="text-sm text-slate-700 font-medium leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">{report.reason}</p>
+                    </div>
+                    {report.ai_analysis && (
+                      <div className="border-t border-slate-50 pt-3">
+                        <p className="text-xs font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          AI Moderation Analysis
+                        </p>
+                        <p className="text-xs text-slate-600 font-medium bg-emerald-50/50 p-3 rounded-xl border border-emerald-100/50 italic leading-relaxed">{report.ai_analysis}</p>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500 text-center py-6">No reports found.</p>
+              )}
+            </div>
+            
+            <div className="mt-6 flex gap-3">
+              <Button variant="secondary" onClick={() => setSelectedReportsCampaign(null)} className="w-full font-bold">Close Details</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

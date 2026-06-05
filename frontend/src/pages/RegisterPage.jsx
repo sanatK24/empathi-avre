@@ -21,7 +21,6 @@ const RegisterPage = () => {
     const firstName = formData.get('firstName');
     const lastName = formData.get('lastName');
     const name = `${firstName} ${lastName}`;
-    const orgName = formData.get('orgName') || 'Independent';
     const email = formData.get('email');
     const password = formData.get('password');
 
@@ -31,7 +30,6 @@ const RegisterPage = () => {
         email: email,
         password: password,
         role: 'USER',
-        organization_name: orgName,
         city: "Mumbai", // Default city
         is_active: true
       });
@@ -70,12 +68,7 @@ const RegisterPage = () => {
               <Input label="Last Name" name="lastName" placeholder="Doe" autoComplete="family-name" required />
             </div>
 
-            <Input
-              label="Full Name"
-              name="orgName"
-              placeholder="Full Name"
-              autoComplete="organization"
-            />
+
 
             <Input
               label="Email Address"
@@ -95,9 +88,7 @@ const RegisterPage = () => {
               required
             />
 
-            <div className="text-xs text-slate-500 px-1 font-medium">
-              By creating an account, you agree to our <Link to="#" className="font-black text-primary-500 underline underline-offset-4">Terms of Service</Link> and <Link to="#" className="font-black text-primary-500 underline underline-offset-4">Privacy Policy</Link>.
-            </div>
+
 
             <Button type="submit" size="lg" className="w-full h-14 uppercase font-black tracking-widest text-xs" loading={loading}>
               Create Account

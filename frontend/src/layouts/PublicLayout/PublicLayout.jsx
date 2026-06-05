@@ -100,23 +100,6 @@ const PublicLayout = () => {
       <main className="flex-grow">
         <Outlet />
       </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-50 border-t border-slate-100 py-12">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-6 md:space-y-0 text-center md:text-left">
-            <Link to="/" className="flex items-center group">
-              <img src="/assets/logo.png" alt="EmpathI Logo" className="h-8 object-contain group-hover:scale-105 transition-transform" />
-            </Link>
-            <div className="flex space-x-8 text-sm font-medium text-slate-500">
-              <a href="#" className="hover:text-primary-500">Privacy Policy</a>
-              <a href="#" className="hover:text-primary-500">Terms of Service</a>
-              <a href="#" className="hover:text-primary-500">Contact Us</a>
-            </div>
-            <p className="text-sm text-slate-400">© 2026 EmpathI Intelligence. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };

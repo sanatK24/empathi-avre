@@ -5,7 +5,7 @@ import { apiService } from '../services/apiService';
 import SaveCampaignButton from '../components/SaveCampaignButton';
 import CampaignUpdatesSection from '../components/CampaignUpdatesSection';
 import { motion } from 'framer-motion';
-import { Heart, MapPin, Calendar, Users, ArrowLeft, AlertCircle, Edit, Trash2, XCircle, Brain, MoreVertical, CheckCircle } from 'lucide-react';
+import { Heart, MapPin, Calendar, Users, ArrowLeft, AlertCircle, AlertTriangle, Edit, Trash2, XCircle, Brain, MoreVertical, CheckCircle } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -38,6 +38,10 @@ function CampaignDetailPage() {
   const [postingUpdate, setPostingUpdate] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
 
   const fetchCampaignData = async () => {
     try {
@@ -110,6 +114,20 @@ function CampaignDetailPage() {
     if (!window.confirm('Are you sure you want to permanently delete this campaign as an Admin? This action cannot be undone.')) return;
     try { await apiService.adminDeleteCampaign(campaign.id, profile.accessToken); alert('Campaign deleted successfully.'); navigate(getBackPath()); }
     catch (err) { console.error('Failed to delete campaign:', err); alert('Failed to delete campaign: ' + (err.message || err)); }
+  };
+
+  const handleSendReport = async () => {
+    if (reportReason.trim().length < 5) return;
+    try {
+      setSubmittingReport(true);
+      await apiService.reportCampaign(profile.accessToken, id, reportReason);
+      setReportSuccess(true);
+    } catch (err) {
+      console.error('Failed to submit report:', err);
+      alert('Failed to submit report: ' + (err.message || err));
+    } finally {
+      setSubmittingReport(false);
+    }
   };
 
   const getPathPrefix = () => {
@@ -188,6 +206,8 @@ function CampaignDetailPage() {
                   <div className="flex flex-wrap gap-2 items-center">
                     <Badge className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", URGENCY_COLORS[campaign.urgency_level] || URGENCY_COLORS.medium)}>{campaign.urgency_level}</Badge>
                     {campaign.verified && <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 text-[10px] font-black uppercase tracking-widest flex-shrink-0">✓ Verified</Badge>}
+                    {campaign.verification_status === 'FAILED' && <Badge className="bg-red-50 text-red-600 border-red-100 text-[10px] font-black uppercase tracking-widest flex-shrink-0 animate-pulse">✗ Failed</Badge>}
+                    {campaign.trust_score > 0 && <Badge className="bg-indigo-50 text-indigo-600 border-indigo-100 text-[10px] font-black uppercase tracking-widest flex-shrink-0">★ {campaign.trust_score}% Trust</Badge>}
                     <span className="text-sm font-bold text-slate-400 break-words w-full sm:w-auto">
                       BY <button onClick={() => navigate(`/user/profiles/${campaign.created_by}`)} className="text-slate-900 font-black hover:text-primary-500 transition-colors uppercase">{campaign.creator_name || 'Anonymous'}</button>
                     </span>
@@ -195,6 +215,11 @@ function CampaignDetailPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 relative">
                   {profile.isAuthenticated && <SaveCampaignButton campaignId={campaign.id} token={profile.accessToken} />}
+                  {profile.isAuthenticated && !isCreator && (
+                    <button onClick={() => setShowReportModal(true)} className="p-2 hover:bg-slate-100 border border-slate-200 rounded-lg flex-shrink-0 text-slate-600 hover:text-amber-600 transition-colors" title="Report Campaign">
+                      <AlertTriangle size={20} />
+                    </button>
+                  )}
                   {isAdmin && (
                     <div className="relative">
                       <button onClick={() => setShowAdminMenu(!showAdminMenu)} className="p-2 hover:bg-slate-100 border border-slate-200 rounded-lg flex-shrink-0" title="Admin Controls"><MoreVertical size={20} className="text-slate-600" /></button>
@@ -240,7 +265,121 @@ function CampaignDetailPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
               <TabBar tabs={TABS} activeTab={activeTab} onChange={setActiveTab} className="mb-6" />
               {activeTab === 'overview' && (
-                <div className="space-y-4">
+                <div className="space-y-6">
+                  {/* AI Verification Report Widget */}
+                  {campaign.verification_report && (
+                    <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-soft space-y-4">
+                      <div className="flex items-center justify-between border-b pb-4">
+                        <div className="flex items-center gap-2.5">
+                          <Brain className="w-6 h-6 text-indigo-500" />
+                          <div>
+                            <h3 className="text-lg font-bold text-slate-900">AI Trust & Verification Report</h3>
+                            <p className="text-xs text-slate-500 font-medium">Fusing Image Forensics, OCR, YOLO, LayoutLM & XGBoost</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Trust Score</span>
+                          <span className="text-3xl font-display font-black text-indigo-600">{campaign.trust_score}%</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                        {[
+                          { label: "EXIF Metadata", val: campaign.verification_report.metadata_score, desc: campaign.verification_report.metadata_score > 0.5 ? "Clean" : "Tampered" },
+                          { label: "Error Level (ELA)", val: campaign.verification_report.ela_score, desc: campaign.verification_report.ela_score > 0.7 ? "Clean" : "Anomalous" },
+                          { label: "OCR Confidence", val: campaign.verification_report.ocr_confidence, desc: `${Math.round(campaign.verification_report.ocr_confidence * 100)}%` },
+                          { label: "Billing Check", val: campaign.verification_report.billing_score, desc: campaign.verification_report.billing_score > 0.9 ? "Valid Sum" : "Sum Mismatch" },
+                          { label: "Hospital Registry", val: campaign.verification_report.hospital_score, desc: campaign.verification_report.hospital_score > 0.8 ? "Verified" : "Unknown" }
+                        ].map((m, idx) => {
+                          const isPassed = m.val > 0.5;
+                          return (
+                            <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-100 text-center space-y-1">
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider truncate" title={m.label}>{m.label}</p>
+                              <p className={cn("text-xs font-black uppercase tracking-wider", isPassed ? "text-emerald-600" : "text-rose-600")}>
+                                {isPassed ? "PASS" : "FAIL"}
+                              </p>
+                              <p className="text-[10px] text-slate-500 font-medium truncate" title={m.desc}>{m.desc}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="bg-slate-900 rounded-2xl p-4 text-xs font-mono text-indigo-300 flex items-center justify-between shadow-inner">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className={cn("w-5 h-5", campaign.verification_status === "VERIFIED" ? "text-emerald-400" : "text-rose-400")} />
+                          <div>
+                            <span className="text-slate-400 text-[10px] uppercase font-mono tracking-wider block">Verification Status</span>
+                            <span className="text-white font-bold text-sm tracking-wide">{campaign.verification_status}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-slate-400 text-[10px] uppercase font-mono tracking-wider block">Fraud Probability</span>
+                          <span className="text-white font-bold text-sm tracking-wide">{Math.round(campaign.verification_report.fraud_probability * 100)}%</span>
+                        </div>
+                      </div>
+
+                      {/* Expandable Detailed Analysis */}
+                      {campaign.verification_report.report_json && (() => {
+                        try {
+                          const detail = JSON.parse(campaign.verification_report.report_json);
+                          return (
+                            <details className="group">
+                              <summary className="cursor-pointer text-xs font-bold text-slate-500 hover:text-indigo-600 uppercase tracking-wider flex items-center gap-1.5 py-2 transition-colors select-none">
+                                <span className="transition-transform group-open:rotate-90">▶</span> Detailed Pipeline Output
+                              </summary>
+                              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                                {detail.exif && (
+                                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                    <p className="font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">EXIF Metadata</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Software: {detail.exif.software || 'N/A'}</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Modified: {detail.exif.is_modified ? 'Yes' : 'No'}</p>
+                                  </div>
+                                )}
+                                {detail.ela && (
+                                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                    <p className="font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Error Level Analysis</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Mean: {detail.ela.mean?.toFixed(2) || 'N/A'}</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Variance: {detail.ela.variance?.toFixed(2) || 'N/A'}</p>
+                                  </div>
+                                )}
+                                {detail.ocr && (
+                                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                    <p className="font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">OCR Output</p>
+                                    <p className="text-slate-500 font-mono text-[11px] line-clamp-3">{detail.ocr.text?.substring(0, 150) || 'N/A'}...</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Confidence: {(detail.ocr.confidence * 100)?.toFixed(0)}%</p>
+                                  </div>
+                                )}
+                                {detail.yolo && (
+                                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                    <p className="font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">YOLO Layout Detection</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Logo: {detail.yolo.logo_confidence?.toFixed(2) || '0.00'}</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Signature: {detail.yolo.signature_confidence?.toFixed(2) || '0.00'}</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Stamp: {detail.yolo.stamp_confidence?.toFixed(2) || '0.00'}</p>
+                                  </div>
+                                )}
+                                {detail.billing && (
+                                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                    <p className="font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Billing Validation</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Computed Total: ₹{detail.billing.computed_total?.toLocaleString() || 'N/A'}</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Stated Total: ₹{detail.billing.stated_total?.toLocaleString() || 'N/A'}</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Delta: {detail.billing.delta?.toFixed(2) || '0.00'}</p>
+                                  </div>
+                                )}
+                                {detail.hospital && (
+                                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                                    <p className="font-black text-slate-600 uppercase tracking-wider text-[10px] mb-1">Hospital Registry</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Name: {detail.hospital.name || 'N/A'}</p>
+                                    <p className="text-slate-500 font-mono text-[11px]">Match: {detail.hospital.match_score?.toFixed(2) || '0.00'}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </details>
+                          );
+                        } catch { return null; }
+                      })()}
+                    </div>
+                  )}
+
                   <div className="bg-white rounded-lg p-6 border border-slate-200">
                     <h3 className="text-lg font-semibold text-slate-900 mb-4">About this campaign</h3>
                     <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">{campaign.description}</p>
@@ -339,6 +478,37 @@ function CampaignDetailPage() {
       </div>
       {showDonationModal && (
         <DonationModal campaign={campaign} onClose={() => setShowDonationModal(false)} onDonationSuccess={() => { setShowDonationModal(false); fetchCampaignData(); triggerStatsRefresh(); }} />
+      )}
+      {showReportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 mb-4 text-amber-600">
+              <AlertTriangle className="w-8 h-8" />
+              <h3 className="text-xl font-display font-black tracking-tight uppercase">Report Campaign</h3>
+            </div>
+            {reportSuccess ? (
+              <div className="text-center py-6 space-y-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <h4 className="text-lg font-bold text-slate-900">Thank you for your report</h4>
+                <p className="text-sm text-slate-500 font-medium">Our moderation team and AI models are reviewing this campaign to ensure safety and integrity.</p>
+                <Button variant="secondary" onClick={() => { setShowReportModal(false); setReportSuccess(false); setReportReason(''); }} className="w-full mt-4">Close</Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600 font-medium">Please explain why you are reporting this campaign. Our system will run an AI analysis on your report reason to assist administrators.</p>
+                <textarea value={reportReason} onChange={(e) => setReportReason(e.target.value)} placeholder="Explain the issue (minimum 5 characters)..." className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all text-sm resize-none font-medium text-slate-900" />
+                <div className="flex gap-3 mt-6">
+                  <Button variant="secondary" onClick={() => { setShowReportModal(false); setReportReason(''); }} className="flex-1 font-bold">Cancel</Button>
+                  <Button onClick={handleSendReport} disabled={submittingReport || reportReason.trim().length < 5} className="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl disabled:opacity-50">
+                    {submittingReport ? 'Submitting...' : 'Submit Report'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </section>
   );

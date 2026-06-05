@@ -9,9 +9,9 @@ const URGENCIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const INPUT_CLS = 'w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500';
 const LABEL_CLS = 'block text-sm font-semibold text-slate-900 mb-2';
 const CLOSE_SVG = <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>;
-const INITIAL_FORM = (city) => ({
+const INITIAL_FORM = () => ({
   title: '', description: '', category_id: '', subcategory_id: '',
-  city: city || '', goal_amount: '', urgency_level: 'MEDIUM', cover_image: null, deadline: ''
+  goal_amount: '', urgency_level: 'MEDIUM', cover_image: null, deadline: ''
 });
 
 function CampaignEditPage() {
@@ -32,11 +32,10 @@ function CampaignEditPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.city === undefined && profile?.city) parsed.city = profile.city;
         return parsed;
       } catch (e) { console.error("Failed to parse saved campaign data", e); }
     }
-    return INITIAL_FORM(profile?.city);
+    return INITIAL_FORM();
   });
 
   useEffect(() => {
@@ -58,7 +57,7 @@ function CampaignEditPage() {
             title: campaign.title || '', description: campaign.description || '',
             category_id: campaign.category_id || '', category_name: campaign.category?.name || '',
             subcategory_id: campaign.subcategory_id || '', subcategory_name: campaign.subcategory?.name || '',
-            city: campaign.city || '', goal_amount: campaign.goal_amount || '',
+            goal_amount: campaign.goal_amount || '',
             urgency_level: campaign.urgency_level || 'MEDIUM', cover_image: campaign.cover_image || null,
             deadline: campaign.deadline ? new Date(campaign.deadline).toISOString().slice(0, 16) : '',
             verification_doc_url: campaign.verification_doc_url || null
@@ -156,7 +155,6 @@ function CampaignEditPage() {
       [!formData.title.trim(), 'Campaign title is required'],
       [!formData.description.trim(), 'Campaign description is required'],
       [!formData.goal_amount || parseFloat(formData.goal_amount) <= 0, 'Campaign goal amount must be greater than 0'],
-      [!formData.city.trim(), 'Campaign city is required'],
       [!formData.category_id, 'Category must be inferred from analysis. Please wait for AI analysis to complete.'],
       [!formData.subcategory_id, 'Subcategory must be inferred from analysis. Please wait for AI analysis to complete.'],
     ];
@@ -166,7 +164,7 @@ function CampaignEditPage() {
       await apiService.updateCampaign(profile.accessToken, id, {
         title: formData.title, description: formData.description,
         category_id: parseInt(formData.category_id), subcategory_id: parseInt(formData.subcategory_id),
-        city: formData.city, goal_amount: parseFloat(formData.goal_amount),
+        goal_amount: parseFloat(formData.goal_amount),
         urgency_level: formData.urgency_level, cover_image: formData.cover_image,
         deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
         ai_analysis_data: JSON.stringify({ aiData })
@@ -190,7 +188,6 @@ function CampaignEditPage() {
     { name: 'subcategory_name', label: 'Subcategory', showAi: formData.subcategory_id },
   ];
   const gridFields = [
-    { name: 'city', label: 'City', type: 'text', placeholder: 'Enter city name', required: true },
     { name: 'goal_amount', label: 'Goal Amount (₹)', type: 'number', placeholder: 'Enter campaign goal', required: true, step: '0.01', min: '0' },
   ];
   const matchedCat = taxonomy.find(c => c.id === parseInt(formData.category_id));

@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -5,19 +9,32 @@ from sqlalchemy.orm import Session
 from database import get_db, engine, Base, SessionLocal
 from api.v1.router import api_router
 from apscheduler.schedulers.background import BackgroundScheduler
-import os
+
 def run_startup_migrations():
     from sqlalchemy import text
-    with engine.begin() as conn:
-        for t, cols in [("users", [("address", "TEXT"), ("address_line_1", "VARCHAR"), ("address_line_2", "VARCHAR"), ("locality", "VARCHAR"), ("state_province", "VARCHAR"), ("postal_code", "VARCHAR"), ("country_code", "VARCHAR"), ("blood_group", "VARCHAR"), ("preferred_hospital", "VARCHAR"), ("accessibility_needs", "TEXT"), ("personal_categories", "TEXT")]), ("campaigns", [("category_id", "INTEGER"), ("subcategory_id", "INTEGER")])]:
-            for col, typ in cols:
-                try:
+    for t, cols in [
+        ("users", [
+            ("address", "TEXT"), ("address_line_1", "VARCHAR"), ("address_line_2", "VARCHAR"),
+            ("locality", "VARCHAR"), ("state_province", "VARCHAR"), ("postal_code", "VARCHAR"),
+            ("country_code", "VARCHAR"), ("blood_group", "VARCHAR"), ("preferred_hospital", "VARCHAR"),
+            ("accessibility_needs", "TEXT"), ("personal_categories", "TEXT"), ("lat", "FLOAT"), ("lng", "FLOAT")
+        ]),
+        ("campaigns", [
+            ("category_id", "INTEGER"), ("subcategory_id", "INTEGER"), ("lat", "FLOAT"), ("lng", "FLOAT"),
+            ("trust_score", "FLOAT"), ("verification_status", "VARCHAR"), ("verified", "BOOLEAN")
+        ])
+    ]:
+        for col, typ in cols:
+            try:
+                with engine.begin() as conn:
                     conn.execute(text(f"ALTER TABLE {t} ADD COLUMN {col} {typ};"))
-                    print(f"[Startup] Successfully added column '{col}' to {t} table.")
-                except Exception as e:
-                    if "duplicate column" not in str(e).lower() and "already exists" not in str(e).lower():
-                        print(f"[Startup] Warning/Error adding '{col}' column to {t}: {e}")
-    try: Base.metadata.create_all(bind=engine)
+                print(f"[Startup] Successfully added column '{col}' to {t} table.")
+            except Exception as e:
+                if "duplicate column" not in str(e).lower() and "already exists" not in str(e).lower():
+                    print(f"[Startup] Warning/Error adding '{col}' column to {t}: {e}")
+    try:
+        from models import CampaignReport
+        Base.metadata.create_all(bind=engine)
     except Exception as e: print(f"[Startup] Error creating tables: {e}")
     try:
         from fix_enum import fix_userrole_enum

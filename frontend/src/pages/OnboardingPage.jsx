@@ -8,8 +8,7 @@ const contactFields = [
   { id: 'fullName', label: 'Full Name', type: 'text', placeholder: 'Your name' },
   { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com' },
   { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+91 9876543210' },
-  { id: 'organizationName', label: 'Organization Name', type: 'text', placeholder: 'Your organization', cond: (r) => r === USER_ROLES.CREATOR },
-  { id: 'bio', label: 'About You / Organization (Optional)', type: 'textarea', placeholder: 'Tell us about yourself...' }
+  { id: 'bio', label: 'About You (Optional)', type: 'textarea', placeholder: 'Tell us about yourself...' }
 ]
 
 export default function OnboardingPage() {
@@ -20,10 +19,10 @@ export default function OnboardingPage() {
   const [auth, setAuth] = useState({ loading: false, error: '' })
   const [form, setForm] = useState({
     city: profile.city || CITY_OPTIONS[0], userRole: profile.userRole || '', email: profile.email || '',
-    phone: profile.phone || '', fullName: profile.fullName || '', organizationName: profile.organizationName || '', bio: profile.bio || ''
+    phone: profile.phone || '', fullName: profile.fullName || '', bio: profile.bio || ''
   })
 
-  const { city, userRole, email, phone, fullName, organizationName, bio } = form
+  const { city, userRole, email, phone, fullName, bio } = form
   const change = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
   const enableLocation = () => {
@@ -43,7 +42,7 @@ export default function OnboardingPage() {
       const u = session.user || {}
       updateProfile({
         city, location: geo.coords, userRole, email: u.email || email, phone, fullName: u.name || fullName,
-        organizationName, bio, accessToken: session.accessToken, backendUserId: u.id, backendRole: u.role, isAuthenticated: true
+        bio, accessToken: session.accessToken, backendUserId: u.id, backendRole: u.role, isAuthenticated: true
       })
       navigate('/feed')
     } catch (err) {

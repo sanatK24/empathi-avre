@@ -43,8 +43,8 @@ const UserDashboard = () => {
     (async () => {
       try {
         setLoading(true);
-        const [statsData, histData, donationData, recData] = await Promise.all(
-          ['getUserStats', 'getRequestHistory', 'getDonationHistory', 'getPersonalizedCampaigns'].map((m, i) => apiService[m](token).catch(() => i ? [] : {}))
+        const [statsData, donationData, recData] = await Promise.all(
+          ['getUserStats', 'getDonationHistory', 'getPersonalizedCampaigns'].map((m, i) => apiService[m](token).catch(() => i ? [] : {}))
         );
         const { total_requests: total = 0, resolved_requests: resolved = 0, active_requests = 0, active_campaigns = 0, emergency_requests = 0, recommendations_available } = statsData;
         setStats({
@@ -56,10 +56,10 @@ const UserDashboard = () => {
         });
         setRecommendations(recData || []);
         const toAct = (d, type, title, status, level) => ({ type, title, status, level, date: new Date(d.created_at), time: new Date(d.created_at).toLocaleDateString() });
-        setActivities([
-          ...(histData || []).map(d => toAct(d, 'request', d.resource_name || d.name || 'Resource Request', d.status || 'Pending', (d.urgency_level || 'low').toLowerCase())),
-          ...(donationData || []).map(d => toAct(d, 'donation', `Donated to ${d.campaign_title || 'Humanitarian Campaign'}`, formatCurrency(d.amount), 'medium'))
-        ].sort((a, b) => b.date - a.date).slice(0, 5));
+        setActivities(
+          (donationData || []).map(d => toAct(d, 'donation', `Donated to ${d.campaign_title || 'Humanitarian Campaign'}`, formatCurrency(d.amount), 'medium'))
+            .sort((a, b) => b.date - a.date).slice(0, 5)
+        );
       } catch (err) {
         console.error("Dashboard fetch failed", err);
       } finally {

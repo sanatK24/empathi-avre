@@ -28,14 +28,15 @@ function CampaignCreationPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.city === undefined && profile?.city) parsed.city = profile.city;
+        // Location is inferred by the backend from user profile
         return parsed;
       } catch (e) { console.error("Failed to parse saved campaign data", e); }
     }
-    return { title: '', description: '', category_id: '', category_name: '', subcategory_id: '', subcategory_name: '', city: profile?.city || '', goal_amount: '', urgency_level: 'MEDIUM', cover_image: null, deadline: '' };
+    return { title: '', description: '', category_id: '', category_name: '', subcategory_id: '', subcategory_name: '', goal_amount: '', urgency_level: 'MEDIUM', cover_image: null, deadline: '' };
   });
   useEffect(() => { localStorage.setItem('campaignCreationData', JSON.stringify(formData)); }, [formData]);
   const [verificationDocument, setVerificationDocument] = useState(null);
+  const [verifying, setVerifying] = useState(false);
   useEffect(() => {
     const fetchTaxonomy = async () => {
       try {
@@ -95,14 +96,48 @@ function CampaignCreationPage() {
     const file = e.target.files?.[0];
     if (file) { const reader = new FileReader(); reader.onloadend = () => { setFormData(prev => ({ ...prev, cover_image: reader.result })); }; reader.readAsDataURL(file); }
   };
-  const handleDocumentUpload = (e) => { const file = e.target.files?.[0]; if (file) setVerificationDocument(file); };
+  const handleDocumentUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setError("Document file too large. Maximum size allowed is 10MB.");
+        setVerificationDocument(null);
+        return;
+      }
+      // Security: block path traversal
+      if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+        setError("Invalid filename. Path traversal characters are not allowed.");
+        setVerificationDocument(null);
+        return;
+      }
+      const ext = file.name.split('.').pop().toLowerCase();
+      const allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+      if (!allowed.includes(ext)) {
+        setError("Invalid document file type. Only PDF, JPG, and PNG files are allowed.");
+        setVerificationDocument(null);
+        return;
+      }
+      // Security: block double extensions (e.g., virus.jpg.exe → caught above, but also invoice.exe.jpg)
+      const parts = file.name.split('.');
+      if (parts.length > 2) {
+        const dangerousExts = ['exe', 'bat', 'cmd', 'ps1', 'sh', 'vbs', 'js', 'msi', 'com', 'scr', 'zip'];
+        const hasHiddenDanger = parts.slice(0, -1).some(p => dangerousExts.includes(p.toLowerCase()));
+        if (hasHiddenDanger) {
+          setError("Suspicious file detected. Double extensions are not allowed.");
+          setVerificationDocument(null);
+          return;
+        }
+      }
+      setError(null);
+      setVerificationDocument(file);
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validations = [
       [!formData.title.trim(), 'Campaign title is required'],
       [!formData.description.trim(), 'Campaign description is required'],
       [!formData.goal_amount || parseFloat(formData.goal_amount) <= 0, 'Campaign goal amount must be greater than 0'],
-      [!formData.city.trim(), 'Campaign city is required'],
       [!formData.category_id, 'Category must be inferred from analysis. Please wait for AI analysis to complete.'],
       [!formData.subcategory_id, 'Subcategory must be inferred from analysis. Please wait for AI analysis to complete.'],
     ];
@@ -112,13 +147,25 @@ function CampaignCreationPage() {
       const newCampaign = await apiService.createCampaign(profile.accessToken, {
         title: formData.title, description: formData.description,
         category_id: parseInt(formData.category_id), subcategory_id: parseInt(formData.subcategory_id),
-        city: formData.city, goal_amount: parseFloat(formData.goal_amount), urgency_level: formData.urgency_level,
+        goal_amount: parseFloat(formData.goal_amount), urgency_level: formData.urgency_level,
         cover_image: formData.cover_image, deadline: formData.deadline ? new Date(formData.deadline).toISOString() : null,
         ai_analysis_data: JSON.stringify({ aiData })
       });
       if (verificationDocument) {
-        try { await apiService.uploadCampaignDocument(profile.accessToken, newCampaign.id, verificationDocument); }
-        catch (docErr) { console.warn("Document upload failed, but campaign created:", docErr); }
+        try {
+          setVerifying(true);
+          await apiService.verifyCampaignDocument(profile.accessToken, newCampaign.id, verificationDocument); 
+        }
+        catch (docErr) { 
+          console.warn("Document verification failed:", docErr); 
+          setError(`Document verification failed: ${docErr.message || 'Invalid document.'}`);
+          try { await apiService.deleteCampaign(profile.accessToken, newCampaign.id); } catch(delErr) { console.warn("Delete fallback failed:", delErr); }
+          setLoading(false);
+          setVerifying(false);
+          return;
+        } finally {
+          setVerifying(false);
+        }
       }
       localStorage.removeItem('campaignCreationData');
       navigate(`/user/campaigns/${newCampaign.id}`);
@@ -203,7 +250,7 @@ function CampaignCreationPage() {
             <label className="block text-sm font-semibold text-slate-900 mb-2">Verification Documents (Optional)</label>
             <p className="text-xs text-slate-500 mb-3">Upload official documents (medical bills, estimates) to boost your campaign's Trust Score.</p>
             <div className="border border-slate-300 rounded-lg p-4 bg-slate-50 relative">
-              <input type="file" accept=".pdf,image/*" onChange={handleDocumentUpload} value="" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={handleDocumentUpload} value="" className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
               <div className="flex items-center gap-3">
                 <Upload size={20} className="text-slate-500" />
                 <div className="flex-1 overflow-hidden">
@@ -256,10 +303,6 @@ function CampaignCreationPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-900 mb-2">City <span className="text-red-600">*</span></label>
-              <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="Enter city name" className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div>
               <label className="block text-sm font-semibold text-slate-900 mb-2">Goal Amount (₹) <span className="text-red-600">*</span></label>
               <input type="number" step="0.01" min="0" name="goal_amount" value={formData.goal_amount} onChange={handleInputChange} placeholder="Enter campaign goal" className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
             </div>
@@ -270,8 +313,8 @@ function CampaignCreationPage() {
           </div>
           <div className="flex gap-3 pt-6 border-t border-slate-200">
             <button type="button" onClick={() => navigate('/user/campaigns')} className="flex-1 px-6 py-2.5 border border-slate-300 rounded-lg font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-            <Button type="submit" disabled={loading} className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-lg shadow-primary-500/20 disabled:opacity-50 flex items-center justify-center gap-2">
-              {loading ? <><Loader2 size={18} className="animate-spin" /> Creating...</> : 'Create Campaign'}
+            <Button type="submit" disabled={loading || verifying} className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-bold shadow-lg shadow-primary-500/20 disabled:opacity-50 flex items-center justify-center gap-2">
+              {verifying ? <><Loader2 size={18} className="animate-spin" /> Verifying Document...</> : loading ? <><Loader2 size={18} className="animate-spin" /> Creating...</> : 'Create Campaign'}
             </Button>
           </div>
         </form>

@@ -27,7 +27,7 @@ const TABS = [
 
 const PROFILE_FIELDS = [
   ['fullName', 'fullName'], ['email', 'email'], ['phone', 'phone'],
-  ['organizationName', 'organizationName'], ['bio', 'bio'], ['city', 'city'],
+  ['bio', 'bio'], ['city', 'city'],
   ['address', 'address'], ['addressLine1', 'addressLine1'], ['addressLine2', 'addressLine2'],
   ['locality', 'locality'], ['stateProvince', 'stateProvince'], ['postalCode', 'postalCode'],
   ['countryCode', 'countryCode'], ['bloodGroup', 'bloodGroup'],
@@ -52,7 +52,7 @@ const SharedProfileDashboard = () => {
   const [geoError, setGeoError] = useState('');
 
   const [formData, setFormData] = useState({
-    fullName: '', email: '', phone: '', organizationName: '', bio: '', city: '',
+    fullName: '', email: '', phone: '', bio: '', city: '',
     address: '', addressLine1: '', addressLine2: '', locality: '', stateProvince: '',
     postalCode: '', countryCode: '', lat: null, lng: null, language: 'English',
     timezone: 'UTC+5:30', bloodGroup: '', preferredHospital: '', emergencyContacts: [],
@@ -71,24 +71,16 @@ const SharedProfileDashboard = () => {
       .finally(() => setSavedLoading(false));
 
     setActivitiesLoading(true);
-    Promise.all([
-      apiService.getRequestHistory(profile.accessToken).catch(() => []),
-      apiService.getDonationHistory(profile.accessToken).catch(() => [])
-    ]).then(([histData, donationData]) => {
-      const requests = (histData || []).map(item => ({
-        type: 'request', icon: Package,
-        action: `Created resource request: ${item.resource_name || item.name || 'Resource Request'}`,
-        date: new Date(item.created_at).toLocaleDateString(),
-        details: `Status: ${item.status || 'Pending'}`
-      }));
-      const donations = (donationData || []).map(item => ({
-        type: 'donation', icon: Heart,
-        action: `Donated ${formatINR(item.amount)} to "${item.campaign_title || 'Humanitarian Campaign'}"`,
-        date: new Date(item.created_at).toLocaleDateString(),
-        details: `Status: ${item.status || 'Completed'}`
-      }));
-      setActivities([...requests, ...donations].sort((a, b) => new Date(b.date) - new Date(a.date)));
-    }).catch(err => console.error('Failed to load activities:', err))
+    apiService.getDonationHistory(profile.accessToken)
+      .then(donationData => {
+        const donations = (donationData || []).map(item => ({
+          type: 'donation', icon: Heart,
+          action: `Donated ${formatINR(item.amount)} to "${item.campaign_title || 'Humanitarian Campaign'}"`,
+          date: new Date(item.created_at).toLocaleDateString(),
+          details: `Status: ${item.status || 'Completed'}`
+        }));
+        setActivities(donations.sort((a, b) => new Date(b.date) - new Date(a.date)));
+      }).catch(err => console.error('Failed to load activities:', err))
       .finally(() => setActivitiesLoading(false));
   }, [profile?.accessToken]);
 
@@ -182,7 +174,7 @@ const SharedProfileDashboard = () => {
     try {
       const payload = {
         name: formData.fullName, email: formData.email, phone: formData.phone,
-        organizationName: formData.organizationName, bio: formData.bio, city: formData.city,
+        bio: formData.bio, city: formData.city,
         address: formData.address, bloodGroup: formData.bloodGroup, preferredHospital: formData.preferredHospital,
         personal_categories: formData.personalCategories.join(','), accessibilityNeeds: formData.accessibilityNeeds,
         addressLine1: formData.addressLine1, addressLine2: formData.addressLine2, locality: formData.locality,
@@ -193,7 +185,7 @@ const SharedProfileDashboard = () => {
       updateProfile({
         ...profile,
         fullName: u?.name || formData.fullName, email: u?.email || formData.email,
-        phone: u?.phone || formData.phone, organizationName: u?.organization_name || formData.organizationName,
+        phone: u?.phone || formData.phone,
         bio: u?.bio || formData.bio, city: u?.city || formData.city, address: u?.address || formData.address,
         bloodGroup: u?.blood_group || formData.bloodGroup, preferredHospital: u?.preferred_hospital || formData.preferredHospital,
         accessibilityNeeds: u?.accessibility_needs || formData.accessibilityNeeds,
@@ -287,15 +279,14 @@ const SharedProfileDashboard = () => {
 
       <Card className="p-8 lg:col-span-2">
         <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <Building2 className="w-5 h-5 text-indigo-500" /> Bio & Professional Identity
+          <Building2 className="w-5 h-5 text-indigo-500" /> Bio & Personal Statement
         </h3>
         <div className="space-y-6">
-          <Input label="Organization Name" value={formData.organizationName} onChange={e => set('organizationName', e.target.value)} icon={<Building2 className="w-4 h-4" />} />
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700 ml-1">About / Bio</label>
             <textarea value={formData.bio} onChange={e => set('bio', e.target.value)} rows={4}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-sm font-medium focus:ring-2 focus:ring-primary-500/20 outline-none transition-all resize-none"
-              placeholder="Tell us about yourself or your organization..." />
+              placeholder="Tell us about yourself..." />
           </div>
         </div>
       </Card>

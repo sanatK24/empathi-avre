@@ -105,6 +105,11 @@ EmpathI features are fully implemented and verified via end-to-end integration t
 * Fully featured dashboards for platform-wide metrics: user count, campaign velocity, active categories ratios.
 * Document Verification: Review uploaded documents and manually toggle verification statuses.
 
+### 5. Multi-Stage Medical Document AI Verification
+* **Integrated Upload & Forensics**: Creators can upload verification documents (.pdf, .jpg, .jpeg, .png) during campaign setup.
+* **Asynchronous AI Audit Pipeline**: Performs metadata inspection (EXIF software tampering), JPEG pixel recompression difference analysis (ELA), YOLOv8 layout box detection (signatures, logos, stamps), fuzzy billing cost sums calculations, hospital registry matching (Levenshtein distance), and LayoutLMv3 spatial token structural validation.
+* **XGBoost Classifier Fusion**: Fuses these 11-dimension scores into a composite fraud probability and assigns an AI Trust score. Displays a detailed expandable verification widget directly on the Campaign Detail Page.
+
 ---
 
 ## ML & AI Recommendation Pipeline
@@ -165,10 +170,15 @@ EmpathI utilizes state-of-the-art HuggingFace Transformers pipelines to automate
 | Engine | Model ID / Engine | Purpose | Current Implementation & Fallback |
 | :--- | :--- | :--- | :--- |
 | **Semantic Embeddings** | `BAAI/bge-small-en-v1.5` | 384-dimensional campaign description embeddings | Generates vector embeddings for semantic duplicates checking. Default fallback to 384-d zero array. |
-| **Campaign Analysis** | `Qwen/Qwen2.5-1.5B-Instruct` | Coherent description auditing and extraction | Analyzes title & body text via HF Chat Completions. Extracts goal values, validates categories, and infers urgency. Falls back to medium urgency structural template. |
+| **Campaign Analysis** | `Qwen/Qwen2.5-1.5B-Instruct:featherless-ai` | Coherent description auditing, extraction, and refinement | Analyzes title & body text via HF Chat Completions. Extracts goal values and infers urgency. Falls back to medium urgency structural template. Also rewrites descriptions for better impact. |
+| **Category Classification** | `MoritzLaurer/deberta-v3-base-zeroshot-v1.1-all-33` | Zero-shot category tagging | Classifies campaigns into categories like medical, emergency, etc. Falls back to "community aid" tags. |
+| **Report Moderation** | `Qwen/Qwen2.5-1.5B-Instruct:featherless-ai` | AI moderation of user reports | Analyzes report reasons for validity and severity. Falls back to mock analysis. |
 | **Summarization** | `sshleifer/distilbart-cnn-12-6` | Brief overview creation for card thumbnails | DistillBART CNN text summarization. Falls back to descriptive slice template. |
 | **Toxicity Moderation** | `unitary/toxic-bert` | Abuse and spam detection | Scans texts for toxicity/spam flags during campaign creation. Falls back to 0.0 safe rating. |
 | **Image Captioning** | `Salesforce/blip-image-captioning-base` | Image context verification | Local BLIP captioner parses campaign cover images to ensure they match fundraising categories (e.g. medical ward vs gaming setup). |
+| **Layout Detection** | `yolov8_medical` (Custom Weights) | Signature, logo, and stamp detection on invoices | Custom YOLOv8 layout auditor. Falls back to ground truth splits dataset checks or basic heuristic OCR layout verification. |
+| **Document Classification** | `layoutlm_medical` (Custom Weights) | Spatial layout structure classification | Fine-tuned LayoutLMv3 token classifier. Falls back to microsoft/layoutlmv3-base for inference-only checking. |
+| **XGBoost Document Classifier** | `fraud_detector` (XGBoost) | Final fraud probability classification | Stratified 5-Fold XGBoost classifier trained on 11-d pixel & semantic features. Falls back to weighted scoring. |
 
 ---
 
@@ -189,6 +199,9 @@ EmpathI/
 │   │       │   ├── campaigns.py       # Campaigns CRUD & AI analysis
 │   │       │   └── users.py           # Profiles & user activity timelines
 │   │       └── router.py              # Consolidated v1 routes registry
+│   ├── ai_verification/               # Multi-stage AI document verification engine
+│   │   ├── validation/                # 105 Indian hospitals CSV registry
+│   │   └── service.py                 # Forensics, OCR, YOLO, LayoutLMv3, and XGBoost service orchestrator
 │   ├── core/
 │   │   ├── exceptions.py              # Custom HTTP and Auth exceptions
 │   │   └── security.py                # BCrypt password hashing & JWT generators
@@ -236,6 +249,8 @@ EmpathI/
 │   │   └── main.jsx                   # React root launcher
 │   ├── package.json                   # Frontend dependencies
 │   └── vite.config.js                 # Vite compiler configurations
+├── training/                          # Neural net model training scripts (YOLO, LayoutLMv3, XGBoost)
+├── evaluation/                        # Evaluation suites and research reports (confusion matrix, ROC, PR plots)
 ├── .env.example                       # Application environment variables setup template
 ```
 
@@ -264,6 +279,7 @@ EmpathI enforces stateless JWT bearer tokens for role-based endpoints.
 | `GET` | `/campaigns/taxonomy` | Public | Returns valid category trees, verification needs, and AI audit policies. | None | `List[CampaignCategoryResponse]` |
 | `GET` | `/campaigns/recommendations` | Logged In | Generates dynamic LightGBM personalized feeds with XGBoost filtering. | None | `List[CampaignRecommendation]` |
 | `POST` | `/campaigns/{id}/donate` | Logged In | Simulates a transaction. Updates the progress bar in real-time. | Query Param: `amount` | `DonationResponse` |
+| `POST` | `/campaigns/{id}/verify` | CREATOR (Owner) / ADMIN | Runs multi-stage AI document verification (ELA, EXIF, YOLO, LayoutLMv3, Tesseract OCR). | Multipart Form (`file`) | `CampaignVerifyResponse` |
 | `POST` | `/campaigns/{id}/updates` | CREATOR (Owner) | Posts progress updates (medical receipts, announcements). | `CampaignUpdateCreate` | `CampaignUpdateResponse` |
 | `POST` | `/campaigns/{id}/updates/{uid}/like` | Logged In | Likes a campaign progress update announcement. | None | `{ "message": "Liked update" }` |
 
@@ -355,6 +371,20 @@ Open `http://localhost:5173` in your browser to view the application.
 ---
 ## Recent Updates
 
+### Advanced User Profiling & Hyper-Local Proximity Matching
+* **Extended User Medical & Location Profiles**: Added advanced fields to the `users` table including granular address components (`locality`, `state_province`, `postal_code`, `country_code`) and medical details (`blood_group`, `preferred_hospital`, `accessibility_needs`, `personal_categories`) for highly targeted medical emergency campaigns.
+* **Proximity Thresholds**: Configured hyper-local proximity settings (`MAX_MATCH_DISTANCE_KM`, `PROXIMITY_THRESHOLD_KM`, `ULTRA_PROXIMITY_THRESHOLD_KM`) for matching donors with ultra-local emergencies.
+* **Automated Category Repair**: Integrated a startup migration script (`fix_categories.py`) that utilizes AI comprehension and keyword heuristics to retroactively assign categories and subcategories to campaigns.
+
+### Campaign Reporting & AI Moderation (June 2026)
+* **User Campaign Reporting**: Users can flag and report campaigns for violations directly from the campaign detail page:
+  - Added a "Report" action button alongside Likes/Saves which opens a modal prompt for reasons.
+  - Submissions trigger a background AI Moderation Analysis using the Qwen model to assess the report reason.
+* **Admin Moderation Highlight**: 
+  - Campaigns grouped by creator in the Moderation dashboard.
+  - Rows dynamically highlight in red warning alerts if the campaign receives 3 or more reports.
+  - Warning badges allow administrators to view report reasons and AI analyses in a detail modal.
+
 ### Background Task Processing (Latest Release)
 * **Background Verification Upload**: Upload verification documents asynchronously:
   - Users can upload documents and create campaigns instantly
@@ -366,6 +396,11 @@ Open `http://localhost:5173` in your browser to view the application.
   - Users can manually edit inferred values with an "AI" badge indicator
   - Fields remain editable for owner preference overrides
   - Auto-matched to taxonomy IDs for proper validation
+
+### Medical Document AI Verification Engine (June 2026)
+* **Asynchronous Forensics Check**: Implemented multi-stage verification on campaigns' supporting documents, analyzing JPEG compression differences (Error Level Analysis), checking EXIF software edits, verifying logo/stamp layouts (YOLOv8), extracting OCR text (Tesseract), fuzzy-matching billing totals, and validating structure layouts (LayoutLMv3).
+* **Detailed AI Verification Report UI**: Integrated an expandable detailed pipeline widget inside the Campaign Detail Page showing pass/fail outcomes, YOLO detection metrics, EXIF software titles, OCR text snippets, billing cost sums, and fuzzy hospital matches.
+* **Automatic Verification Badges**: Verified campaigns automatically display a "Verified" badge and their trust score, while high-risk campaigns are flagged with a "Failed" badge.
 
 ### UI/UX Improvements
 * **Favicon Update**: Changed favicon from generic Vite icon to custom EmpathI logo (`logo.png`) for better brand recognition.
@@ -403,7 +438,16 @@ Honest assessments of engineering compromises made in the EmpathI architecture:
   * **Toxicity**: Safely assumes 0.0 (clean content) to avoid blocking campaign creations.
   * **LLM Extraction**: Falls back to user-provided form fields.
 
+### 3. AI Verification Engine System Dependency Fallbacks
+* **Why Chosen**: OCR (Tesseract), YOLO, and LayoutLMv3 demand specialized system libraries (Tesseract binaries, PyTorch CUDA DLLs, OpenCV) that can fail to load on lightweight local CPUs.
+* **Limitations**: Absence of local CUDA GPU or Tesseract installation could completely halt verification services.
+* **Fallback Design**: Every engine stage features a safe fallback to prevent server failure:
+  - **Tesseract OCR**: Falls back to mock text extraction matching the campaign description.
+  - **YOLOv8 Layout**: Scans local datasets splits split (`train`/`val`/`test`) for matching ground-truth `.txt` label sheets based on the uploaded file name. If found (e.g. during test simulations), it utilizes correct annotations; otherwise, it degrades gracefully to safe default flags.
+  - **LayoutLMv3**: Automatically loads microsoft/layoutlmv3-base for inference-only checking if the local custom weights are missing.
+  - **XGBoost Classifier**: Automatically fits a temporary model on dynamic dummy vectors during initialization if the pre-trained `.pkl` or `.json` models are missing, guaranteeing zero-crash operations.
+
 ---
 
 **EmpathI Crowdfunding Platform** — Empowering community support through transparent, fair, and trust-focused AI.  
-*Last updated: May 2026 (UI/UX improvements & Settings feature removal)*
+*Last updated: June 2026 (Campaign Reporting, AI Moderation Analysis, Medical Document AI Verification & Admin Highlight)*

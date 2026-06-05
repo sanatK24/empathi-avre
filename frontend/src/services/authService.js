@@ -44,13 +44,13 @@ export const login = async (email, password) => {
 }
 export const register = u => apiRequest('POST', '/auth/register', u)
 export const updateMyProfile = async ({ 
-  name, email, phone, organizationName, bio, password, city, address, bloodGroup, preferredHospital, 
+  name, email, phone, bio, password, city, address, bloodGroup, preferredHospital, 
   emergencyContactName, emergencyContactPhone, accessibilityNeeds, personal_categories, 
   addressLine1, addressLine2, locality, stateProvince, postalCode, countryCode, lat, lng, accessToken 
 }) => {
   if (!accessToken) throw new Error('Missing access token')
   return apiRequest('PUT', '/auth/profile', { 
-    name, email, phone, organization_name: organizationName, bio, password, city, address, 
+    name, email, phone, bio, password, city, address, 
     blood_group: bloodGroup, preferred_hospital: preferredHospital, 
     emergency_contact_name: emergencyContactName, emergency_contact_phone: emergencyContactPhone, 
     accessibility_needs: accessibilityNeeds, personal_categories, 

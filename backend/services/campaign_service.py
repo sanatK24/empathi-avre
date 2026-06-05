@@ -24,7 +24,7 @@ class CampaignService:
         cat = db.query(CampaignCategory).filter(CampaignCategory.name.ilike(final_cat)).first() if final_cat else None
         camp = Campaign(
             title=data.title, description=data.description, category_id=cat.id if cat else data.category_id,
-            subcategory_id=data.subcategory_id, city=data.city, goal_amount=data.goal_amount,
+            subcategory_id=data.subcategory_id, city=user.city, lat=user.lat, lng=user.lng, goal_amount=data.goal_amount,
             urgency_level=data.urgency_level, cover_image=data.cover_image, deadline=data.deadline,
             created_by=user.id, status=CampaignStatus.ACTIVE, ai_summary=ai_sum,
             category_tags=json.dumps([p_cat] if p_cat else []),
@@ -47,7 +47,7 @@ class CampaignService:
         if not all_active: logger.warning("No active campaigns found"); return []
         user_don = donation_repo.get_user_donation_history(db, user.id)
         user_cats = {c.category_id for c in db.query(Campaign).filter(Campaign.id.in_([d.campaign_id for d in user_don])).all()} if user_don else set()
-        context = {'user_city': user.city, 'preferred_category': next(iter(user_cats), None)}
+        context = {'user_city': user.city, 'user_lat': user.lat, 'user_lng': user.lng, 'preferred_category': next(iter(user_cats), None)}
         logger.debug(f"Ranking {len(all_active)} campaigns")
         ranked = campaign_ranker_service.rank_campaigns(db, all_active, user.id, context)
         logger.debug("Computing trust scores for campaign creators")
