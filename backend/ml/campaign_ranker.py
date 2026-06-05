@@ -5,6 +5,8 @@ if TYPE_CHECKING:
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from sklearn.preprocessing import StandardScaler
+from config import settings
+from core.location import LocationUtils
 logger = logging.getLogger(__name__)
 class CampaignRankerService:
     MODEL_PATH = "artifacts/campaign_ranker_model.pkl"
@@ -73,7 +75,14 @@ class CampaignRankerService:
     def _compute_category_match(self, c: 'Campaign', ctx: Dict = None) -> float:
         return 0.5 if not ctx or not ctx.get('preferred_category') else (1.0 if c.category_id == ctx['preferred_category'] else 0.3)
     def _compute_geographic_relevance(self, c: 'Campaign', ctx: Dict = None) -> float:
-        return 0.5 if not ctx or not ctx.get('user_city') else (1.0 if c.city == ctx['user_city'] else 0.3)
+        if not ctx: return 0.5
+        if c.lat is not None and c.lng is not None and ctx.get('user_lat') is not None and ctx.get('user_lng') is not None:
+            dist = LocationUtils.haversine_distance(c.lat, c.lng, ctx['user_lat'], ctx['user_lng'])
+            if dist <= settings.ULTRA_PROXIMITY_THRESHOLD_KM: return 1.0
+            if dist <= settings.PROXIMITY_THRESHOLD_KM: return 0.8
+            if dist <= settings.MAX_MATCH_DISTANCE_KM: return 0.6
+            return 0.3
+        return 0.5 if not ctx.get('user_city') else (0.8 if c.city == ctx['user_city'] else 0.3)
     def _predict_scores(self, df: pd.DataFrame) -> np.ndarray:
         try:
             raw = self.model.predict(self.scaler.transform(df))

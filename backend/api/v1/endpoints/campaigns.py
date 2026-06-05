@@ -1,11 +1,13 @@
+import os
 from typing import List, Optional
 from fastapi import APIRouter, Depends, BackgroundTasks, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
 from database import get_db, SessionLocal
-from models import User, Campaign, CampaignStatus, CampaignCategory, SavedCampaign, Donation, DonationStatus, CampaignUpdate, UpdateLike, UpdateComment
-from schemas import CampaignResponse, CampaignCreate, CampaignUpdate, DonationResponse, DonationHistoryResponse, DonationWithDonorResponse, CampaignUpdateResponse, CampaignUpdateCreate, UpdateCommentCreate, UpdateCommentResponse, CampaignCategoryResponse
+from models import User, Campaign, CampaignStatus, CampaignCategory, SavedCampaign, Donation, DonationStatus, CampaignUpdate, UpdateLike, UpdateComment, CampaignReport
+from schemas import CampaignResponse, CampaignCreate, CampaignUpdate as CampaignUpdateSchema, DonationResponse, DonationHistoryResponse, DonationWithDonorResponse, CampaignUpdateResponse, CampaignUpdateCreate, UpdateCommentCreate, UpdateCommentResponse, CampaignCategoryResponse, CampaignReportCreate, CampaignReportResponse, CampaignVerifyResponse
 from api.deps import get_active_user
 from services.campaign_service import CampaignService
 from repositories.campaign_repo import campaign_repo
@@ -110,7 +112,7 @@ def get_campaign(campaign_id: int, db: Session = Depends(get_db)):
     return campaign
 
 @router.put("/{campaign_id}", response_model=CampaignResponse)
-def update_campaign(campaign_id: int, data: CampaignUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_active_user)):
+def update_campaign(campaign_id: int, data: CampaignUpdateSchema, db: Session = Depends(get_db), current_user: User = Depends(get_active_user)):
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
     if not campaign: raise HTTPException(status_code=404, detail="Campaign not found")
     if campaign.created_by != current_user.id and current_user.role.upper() != "ADMIN": raise HTTPException(status_code=403, detail="Not authorized to edit this campaign")
@@ -267,3 +269,90 @@ def delete_update_comment(campaign_id: int, update_id: int, comment_id: int, db:
     db.delete(comment)
     db.commit()
     return {"message": "Comment deleted"}
+
+@router.post("/{campaign_id}/report", response_model=CampaignReportResponse)
+def report_campaign(campaign_id: int, data: CampaignReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_active_user)):
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign: raise HTTPException(status_code=404, detail="Campaign not found")
+    ai_result = hf_services.analyze_report(campaign.title, campaign.description, data.reason)
+    report = CampaignReport(campaign_id=campaign_id, user_id=current_user.id, reason=data.reason, ai_analysis=ai_result)
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+    return report
+
+@router.post("/{campaign_id}/verify", response_model=CampaignVerifyResponse)
+async def verify_campaign(
+    campaign_id: int, 
+    file: Optional[UploadFile] = File(None), 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_active_user)
+):
+    campaign = db.query(Campaign).filter(Campaign.id == campaign_id).first()
+    if not campaign: raise HTTPException(status_code=404, detail="Campaign not found")
+    if campaign.created_by != current_user.id and current_user.role.upper() != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not authorized to verify this campaign")
+    
+    # 1. Missing File Check
+    if not file or not file.filename:
+        return JSONResponse(status_code=400, content={"error": "No document"})
+        
+    # 2. File Type / Extension Check
+    filename = file.filename or ""
+    ext = os.path.splitext(filename)[1].lower()
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".pdf"}
+    allowed_content_types = {"image/jpeg", "image/png", "application/pdf"}
+    
+    if ext not in allowed_extensions or (file.content_type and file.content_type not in allowed_content_types):
+        return JSONResponse(status_code=400, content={"error": "Invalid file"})
+    
+    # 2b. Security: Block path traversal and double extensions
+    basename = os.path.basename(filename)
+    if ".." in filename or "/" in filename or "\\" in basename:
+        return JSONResponse(status_code=400, content={"error": "Invalid file"})
+    # Block double extensions like virus.jpg.exe → split all parts after first dot
+    name_parts = basename.rsplit(".", maxsplit=1)
+    if len(name_parts) == 2 and "." in name_parts[0]:
+        # e.g. "virus.jpg.exe" → name_parts[0]="virus.jpg", has inner dot
+        inner_ext = os.path.splitext(name_parts[0])[1].lower()
+        if inner_ext in {".exe", ".bat", ".cmd", ".ps1", ".sh", ".vbs", ".js", ".msi", ".com", ".scr"}:
+            return JSONResponse(status_code=400, content={"error": "Invalid file"})
+        
+    # 3. Read and check size
+    file_bytes = await file.read()
+    MAX_FILE_SIZE = 10 * 1024 * 1024 # 10MB
+    if len(file_bytes) > MAX_FILE_SIZE:
+        return JSONResponse(status_code=413, content={"error": "File too large"})
+        
+    # 4. Check for Corrupted file or invalid image/PDF
+    try:
+        from PIL import Image
+        import io
+        if ext in {".jpg", ".jpeg", ".png"}:
+            img = Image.open(io.BytesIO(file_bytes))
+            img.verify()
+        elif ext == ".pdf":
+            if not file_bytes.startswith(b"%PDF"):
+                return JSONResponse(status_code=400, content={"error": "Invalid file"})
+    except Exception:
+        return JSONResponse(status_code=400, content={"error": "Invalid file"})
+        
+    # 5. Run Verification Service
+    try:
+        from ai_verification.service import AIVerificationService
+        result = AIVerificationService.verify_campaign_document(db, campaign_id, file_bytes, filename=filename)
+        try:
+            from repositories.audit_repo import audit_repo
+            audit_repo.log(
+                db, 
+                action="verify_campaign", 
+                user_id=current_user.id, 
+                resource_type="campaign", 
+                resource_id=campaign_id, 
+                details=f"Ran AI verification on campaign. Trust Score: {result['trust_score']}, Status: {result['status']}."
+            )
+        except Exception as e:
+            print(f"Error logging verification audit: {e}")
+        return result
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": f"Verification failed: {str(e)}"})

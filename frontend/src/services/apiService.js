@@ -51,12 +51,7 @@ export const apiService = {
     updateMyProfile: (token, data) => request('/auth/profile', { method: 'PUT', token, body: JSON.stringify(data) }),
     addEmergencyContact: (token, contact) => request('/auth/emergency-contacts', { method: 'POST', token, body: JSON.stringify(contact) }),
     deleteEmergencyContact: (token, id) => request(`/auth/emergency-contacts/${id}`, { method: 'DELETE', token }),
-    createRequest: (token, requestData) => request('/requests', { method: 'POST', token, body: JSON.stringify(requestData) }),
-    getRequestHistory: (token) => request('/requests/my', { token }),
-    getUserStats: (token) => request('/requests/stats', { token }),
-    getRequestDetails: (token, requestId) => request(`/requests/${requestId}`, { token }),
-    getRequestMatches: (token, requestId) => request(`/requests/${requestId}/matches`, { token }),
-    cancelRequest: (token, requestId) => request(`/requests/${requestId}/cancel`, { method: 'POST', token }),
+    getUserStats: (token) => request('/users/me/stats', { token }),
     getCampaigns: (token, filters = {}) => {
         const q = new URLSearchParams(Object.fromEntries(Object.entries(filters).filter(([k, v]) => ['category', 'city', 'limit', 'skip'].includes(k) && v))).toString();
         return request(`/campaigns${q ? '?' + q : ''}`, { token });
@@ -64,12 +59,7 @@ export const apiService = {
     getTaxonomy: () => request('/campaigns/taxonomy'),
     analyzeCampaign: (token, campaignData) => request('/campaigns/analyze', { method: 'POST', token, body: JSON.stringify(campaignData) }),
     refineCampaignDescription: (token, description) => request('/campaigns/refine-description', { method: 'POST', token, body: JSON.stringify({ description }) }),
-    verifyDocumentPreview: async (token, file) => {
-        const fd = new FormData(); fd.append('file', file);
-        const res = await fetch(`${API_BASE_URL}/campaigns/verify-document-preview`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
-        if (!res.ok) throw new Error(`Failed to verify document (${res.status})`);
-        return res.json();
-    },
+    reportCampaign: (token, campaignId, reason) => request(`/campaigns/${campaignId}/report`, { method: 'POST', token, body: JSON.stringify({ reason }) }),
     getPersonalizedCampaigns: (token) => request('/campaigns/recommendations', { token }),
     searchCampaigns: (token, query) => request(`/campaigns?city=${encodeURIComponent(query)}`, { token }),
     getCampaignDetails: (token, campaignId) => request(`/campaigns/${campaignId}`, { token }),
@@ -91,6 +81,13 @@ export const apiService = {
         const res = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/documents`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
         if (!res.ok) throw new Error(`Failed to upload document (${res.status})`);
         return res.json();
+    },
+    verifyCampaignDocument: async (token, campaignId, file) => {
+        const fd = new FormData(); fd.append('file', file);
+        const res = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/verify`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || data.detail || `Verification failed (${res.status})`);
+        return data;
     },
     updateCampaign: (token, campaignId, campaignData) => request(`/campaigns/${campaignId}`, { method: 'PUT', token, body: JSON.stringify(campaignData) }),
     closeCampaign: (token, campaignId) => request(`/campaigns/${campaignId}/close`, { method: 'PUT', token }),
@@ -114,25 +111,5 @@ export const apiService = {
     adminDeleteCampaign: (campaign_id, token) => request(`/admin/campaigns/${campaign_id}`, { method: 'DELETE', token }),
     flagCampaign: (campaign_id, token, flagged = true) => request(`/admin/campaigns/${campaign_id}/flag?flagged=${flagged}`, { method: 'PUT', token }),
     deleteProfile: (token) => request('/auth/profile', { method: 'DELETE', token }),
-    getTransactions: (token) => request('/transactions', { token }),
-    getTransaction: (token, id) => request(`/transactions/${id}`, { token }),
-    getTransactionScenarios: (token) => request('/transactions/scenarios', { token }),
-    simulateTransaction: (token, id, scenario) => request(`/transactions/${id}/simulate-event?scenario=${scenario}`, { method: 'POST', token }),
-    getTrendingNews: (token) => request('/news/trending', { token }),
-    getPersonalizedNews: (token, params = {}) => {
-        const q = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([k, v]) => (['city', 'category'].includes(k) && v) || (['skip', 'limit'].includes(k) && v !== undefined)))).toString();
-        return request(`/news/feed?${q}`, { token });
-    },
-    searchNews: (token, query) => request(`/news/search?q=${encodeURIComponent(query)}`, { token }),
-    syncNews: (token, city) => request(`/news/sync${city ? '?city=' + encodeURIComponent(city) : ''}`, { method: 'POST', token }),
-    createNotice: (token, noticeData) => request('/news/notices', { method: 'POST', token, body: JSON.stringify(noticeData) }),
-    getNotices: (token, params = {}) => {
-        const q = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([k, v]) => (k === 'city' && v) || (['skip', 'limit'].includes(k) && v !== undefined)))).toString();
-        return request(`/news/notices?${q}`, { token });
-    },
-    getAIInsights: (token, city) => request(`/news/ai-insights${city ? '?city=' + encodeURIComponent(city) : ''}`, { token }),
-    getResourceTrends: (token, city) => request(`/news/resource-trends${city ? '?city=' + encodeURIComponent(city) : ''}`, { token }),
     getUserTimeline: (token) => request('/users/me/timeline', { token }),
-    getCrisisAlerts: (token) => request('/intelligence/crisis-alerts', { token }),
-    getDemandForecast: (token) => request('/intelligence/demand-forecast', { token }),
 };

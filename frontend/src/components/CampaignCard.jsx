@@ -15,6 +15,7 @@ const CampaignCard = ({ campaign, onClick }) => {
     cover_image,
     category,
     verified,
+    trust_score = 0,
     urgency_level,
     raised_amount = 0,
     goal_amount = 1,
@@ -53,6 +54,16 @@ const CampaignCard = ({ campaign, onClick }) => {
             {verified && (
               <Badge className="bg-emerald-500 text-white shadow-sm border-none backdrop-blur-md">
                 ✓ Verified
+              </Badge>
+            )}
+            {campaign.verification_status === 'FAILED' && (
+              <Badge className="bg-red-500 text-white shadow-sm border-none backdrop-blur-md animate-pulse">
+                ✗ Failed Verification
+              </Badge>
+            )}
+            {trust_score > 0 && (
+              <Badge className="bg-indigo-600 text-white shadow-sm border-none backdrop-blur-md font-bold">
+                ★ {trust_score}% Trust
               </Badge>
             )}
             {urgency_level === 'critical' && (

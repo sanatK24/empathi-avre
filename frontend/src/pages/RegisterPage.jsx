@@ -21,7 +21,6 @@ const RegisterPage = () => {
     const firstName = formData.get('firstName');
     const lastName = formData.get('lastName');
     const name = `${firstName} ${lastName}`;
-    const orgName = formData.get('orgName') || 'Independent';
     const email = formData.get('email');
     const password = formData.get('password');
 
@@ -31,7 +30,6 @@ const RegisterPage = () => {
         email: email,
         password: password,
         role: 'USER',
-        organization_name: orgName,
         city: "Mumbai", // Default city
         is_active: true
       });
@@ -70,12 +68,7 @@ const RegisterPage = () => {
               <Input label="Last Name" name="lastName" placeholder="Doe" autoComplete="family-name" required />
             </div>
 
-            <Input
-              label="Full Name"
-              name="orgName"
-              placeholder="Full Name"
-              autoComplete="organization"
-            />
+
 
             <Input
               label="Email Address"

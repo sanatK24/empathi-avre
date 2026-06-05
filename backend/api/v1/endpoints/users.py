@@ -18,7 +18,7 @@ def get_public_profile(user_id: int, db: Session = Depends(get_db), current_user
     campaigns_created_count = db.query(func.count(Campaign.id)).filter(Campaign.created_by == user_id, Campaign.status == CampaignStatus.ACTIVE).scalar() or 0
     return PublicUserProfileResponse(
         id=user.id, name=user.name, avatar_url=user.avatar_url, bio=user.bio, city=user.city,
-        organization_name=user.organization_name, follower_count=follower_count,
+        follower_count=follower_count,
         following_count=following_count, campaigns_created_count=campaigns_created_count, is_following=is_following
     )
 @router.post("/{user_id}/follow", response_model=FollowResponse)
@@ -67,3 +67,15 @@ def get_user_timeline(db: Session = Depends(get_db), current_user: User = Depend
         for c in db.query(Campaign).filter(Campaign.created_by == current_user.id).all()
     ]
     return sorted(timeline, key=lambda x: x["created_at"], reverse=True)
+@router.get("/me/stats")
+def get_user_stats(db: Session = Depends(get_db), current_user: User = Depends(get_active_user)):
+    uc = db.query(Campaign).filter(Campaign.created_by == current_user.id).all()
+    return {
+        "total_requests": len(uc),
+        "resolved_requests": sum(1 for c in uc if c.status == CampaignStatus.COMPLETED),
+        "matched_creators": 0,
+        "active_requests": sum(1 for c in uc if c.status == CampaignStatus.ACTIVE),
+        "active_campaigns": db.query(Campaign).filter(Campaign.status == CampaignStatus.ACTIVE).count(),
+        "emergency_requests": db.query(Campaign).filter(Campaign.status == CampaignStatus.ACTIVE, Campaign.raised_amount < Campaign.goal_amount * 0.2).count(),
+        "recommendations_available": 3
+    }

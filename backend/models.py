@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum, ForeignKey, Text, Index
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from database import Base
 
@@ -25,8 +25,8 @@ class User(Base):
     role = Column(Enum(UserRole), default=UserRole.USER)
     phone, city = Column(String, nullable=True), Column(String, index=True, nullable=True)
     lat, lng = Column(Float, nullable=True), Column(Float, nullable=True)
-    organization_name, bio = Column(String, nullable=True), Column(Text, nullable=True)
-    is_active, can_switch_role = Column(Boolean, default=True), Column(Boolean, default=False)
+    bio = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=func.now())
     address = Column(Text, nullable=True)
     address_line_1, address_line_2 = Column(String, nullable=True), Column(String, nullable=True)
@@ -104,6 +104,8 @@ class Campaign(Base):
     cover_image = Column(Text, nullable=True)
     status = Column(Enum(CampaignStatus), default=CampaignStatus.DRAFT)
     verified = Column(Boolean, default=False)
+    trust_score = Column(Float, default=0.0)
+    verification_status = Column(String, default="PENDING")
     deadline = Column(DateTime, nullable=True)
     is_flagged = Column(Boolean, default=False)
     created_at = Column(DateTime, default=func.now())
@@ -117,6 +119,7 @@ class Campaign(Base):
     donations = relationship("Donation", back_populates="campaign", cascade="all, delete-orphan")
     updates = relationship("CampaignUpdate", back_populates="campaign", cascade="all, delete-orphan")
     saved_by = relationship("SavedCampaign", back_populates="campaign", cascade="all, delete-orphan")
+    reports = relationship("CampaignReport", back_populates="campaign", cascade="all, delete-orphan")
     creator_name = property(lambda self: self.creator.name if self.creator else "Unknown User")
     creator_avatar = property(lambda self: self.creator.avatar_url if self.creator else None)
     category = property(lambda self: self.taxonomy_category.name if self.taxonomy_category else None)
@@ -192,3 +195,28 @@ class CampaignCreatorTrust(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
     user = relationship("User", backref="trust_profile", uselist=False)
+
+class CampaignReport(Base):
+    __tablename__ = "campaign_reports"
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    reason = Column(Text, nullable=False)
+    ai_analysis = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    campaign = relationship("Campaign", back_populates="reports")
+    user = relationship("User")
+
+class VerificationReport(Base):
+    __tablename__ = "verification_reports"
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    metadata_score = Column(Float, default=1.0)
+    ela_score = Column(Float, default=1.0)
+    ocr_confidence = Column(Float, default=1.0)
+    billing_score = Column(Float, default=1.0)
+    hospital_score = Column(Float, default=1.0)
+    fraud_probability = Column(Float, default=0.0)
+    report_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=func.now())
+    campaign = relationship("Campaign", backref=backref("verification_report", uselist=False))

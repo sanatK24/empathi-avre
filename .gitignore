@@ -65,4 +65,10 @@ backend/__pycache__
 fix_*
 **/fix_*
 test_*
-**/test_*
+**/test_*
+
+# --- Machine Learning / AI models & datasets ---
+models/
+datasets/
+runs/
+yolov8n.pt

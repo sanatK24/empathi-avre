@@ -54,8 +54,7 @@ class HFServices:
     def summarize_campaign(self, text: str) -> str:
         res = self._post_inference("sshleifer/distilbart-cnn-12-6", {"inputs": text})
         return res[0]["summary_text"] if res and isinstance(res, list) and "summary_text" in res[0] else "Summary not available."
-    def understand_document(self, image_bytes: bytes, question: str) -> str:
-        return "Mocked document answer"
+
     def validate_image_context(self, image_bytes: bytes) -> str:
         try:
             if not image_bytes or len(image_bytes) < 16: return ""
@@ -108,5 +107,17 @@ class HFServices:
             "temperature": 0.7
         })
         return res["choices"][0]["message"]["content"].strip() if res and "choices" in res and res["choices"] else text
+
+    def analyze_report(self, campaign_title: str, campaign_description: str, report_reason: str) -> str:
+        if not self.api_key: return "Mock AI Analysis: Checked report reason. No severe violations detected."
+        sys_prompt = "You are an AI moderator assistant. Analyze the user's report reason for a fundraising campaign. Provide a concise, 1-2 sentence analysis summarizing the validity and severity of the report. Keep it professional."
+        user_prompt = f"Campaign Title: {campaign_title}\nCampaign Description: {campaign_description}\nReport Reason: {report_reason}"
+        res = self._post_chat_completions({
+            "model": "Qwen/Qwen2.5-1.5B-Instruct:featherless-ai",
+            "messages": [{"role": "system", "content": sys_prompt}, {"role": "user", "content": user_prompt}],
+            "max_tokens": 128,
+            "temperature": 0.3
+        })
+        return res["choices"][0]["message"]["content"].strip() if res and "choices" in res and res["choices"] else "AI Analysis: Analysis unavailable."
 
 hf_services = HFServices()

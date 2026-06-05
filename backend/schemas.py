@@ -11,11 +11,9 @@ class UserBase(BaseModel):
     role: UserRole = UserRole.USER
     phone: Optional[str] = None
     city: Optional[str] = None
-    organization_name: Optional[str] = None
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
     is_active: bool = True
-    can_switch_role: bool = False
     address: Optional[str] = None
     address_line_1: Optional[str] = None
     address_line_2: Optional[str] = None
@@ -41,7 +39,6 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     phone: Optional[str] = None
     city: Optional[str] = None
-    organization_name: Optional[str] = None
     bio: Optional[str] = None
     password: Optional[str] = None
     address: Optional[str] = None
@@ -109,7 +106,7 @@ class CampaignBase(BaseModel):
     category_id: Optional[int] = None
     subcategory_id: Optional[int] = None
     category: Optional[str] = None
-    city: str
+    city: Optional[str] = None
     goal_amount: float = Field(..., gt=0)
     urgency_level: UrgencyLevel = UrgencyLevel.MEDIUM
     cover_image: Optional[str] = None
@@ -140,17 +137,46 @@ class CampaignUpdate(BaseModel):
     @classmethod
     def validate_enums(cls, v): return to_upper(v)
 
+class CampaignReportCreate(BaseModel):
+    reason: str = Field(..., min_length=5, max_length=1000)
+
+class CampaignReportResponse(BaseModel):
+    id: int
+    campaign_id: int
+    user_id: int
+    reason: str
+    ai_analysis: Optional[str] = None
+    created_at: datetime
+    class Config: from_attributes = True
+
+class VerificationReportResponse(BaseModel):
+    id: int
+    campaign_id: int
+    metadata_score: float
+    ela_score: float
+    ocr_confidence: float
+    billing_score: float
+    hospital_score: float
+    fraud_probability: float
+    report_json: Optional[str] = None
+    created_at: datetime
+    class Config: from_attributes = True
+
 class CampaignResponse(CampaignBase):
     id: int
     created_by: int
-    raised_amount: float
+    raised_amount: Optional[float] = 0.0
     status: CampaignStatus
-    verified: bool
-    is_flagged: bool
+    verified: Optional[bool] = False
+    trust_score: Optional[float] = 0.0
+    verification_status: Optional[str] = "PENDING"
+    is_flagged: Optional[bool] = False
     created_at: datetime
     creator_name: Optional[str] = None
     creator_avatar: Optional[str] = None
     ai_analysis_data: Optional[str] = None
+    reports: List[CampaignReportResponse] = []
+    verification_report: Optional[VerificationReportResponse] = None
     class Config: from_attributes = True
 
 class DonationCreate(BaseModel):
@@ -224,7 +250,6 @@ class PublicUserProfileResponse(BaseModel):
     bio: Optional[str]
     role: str
     city: Optional[str]
-    organization_name: Optional[str]
     created_at: datetime
     followers_count: int = 0
     following_count: int = 0
@@ -242,3 +267,10 @@ class UserFollowerResponse(BaseModel):
 class FollowResponse(BaseModel):
     status: str
     is_following: bool
+
+class CampaignVerifyResponse(BaseModel):
+    trust_score: float
+    fraud_probability: float
+    status: str
+    report: VerificationReportResponse
+    class Config: from_attributes = True
