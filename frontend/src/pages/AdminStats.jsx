@@ -8,14 +8,11 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import EmptyState from '../components/ui/EmptyState';
 import StatCard from '../components/ui/StatCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
-
-
 const AdminStats = () => {
   const { profile } = useAppContext();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState(null);
-
   const fetchStats = async () => {
     if (!profile?.accessToken) return;
     setLoading(true);
@@ -30,14 +27,10 @@ const AdminStats = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchStats();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.accessToken]);
-
   if (loading) return <LoadingSpinner fullPage text="Loading system stats..." />;
-
   if (error) {
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -53,7 +46,6 @@ const AdminStats = () => {
       </div>
     );
   }
-
   if (!stats) {
     return (
       <EmptyState
@@ -65,7 +57,6 @@ const AdminStats = () => {
       />
     );
   }
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -77,14 +68,12 @@ const AdminStats = () => {
           Refresh
         </Button>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard label="Total Users" value={stats.total_users || 0} icon={Users} />
         <StatCard label="Total Campaigns" value={stats.total_campaigns || 0} icon={Megaphone} />
         <StatCard label="System Alerts" value={stats.system_alerts || 0} icon={AlertCircle} />
         <StatCard label="Active Creators" value={stats.active_creators || 0} icon={ShieldCheck} />
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -118,6 +107,4 @@ const AdminStats = () => {
     </div>
   );
 };
-
 export default AdminStats;
-

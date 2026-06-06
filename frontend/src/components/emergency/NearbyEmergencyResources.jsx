@@ -6,30 +6,23 @@ import { Search, Navigation, Phone, ExternalLink, Activity, AlertTriangle, Loade
 import { useAppContext } from '../../context/AppContext';
 import { apiService } from '../../services/apiService';
 import Button from '../ui/Button'; import Badge from '../ui/Badge'; import { cn } from '../../utils/cn';
-
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({ iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png', iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png', shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png' });
-
 const userIcon = new L.Icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] });
-
 const RecenterAutomatically = ({ lat, lon }) => {
     const map = useMap();
     useEffect(() => { map.setView([lat, lon]); }, [lat, lon, map]);
     return null;
 };
-
 const CATEGORIES = [{ id: 'hospital', label: 'Hospitals' }, { id: 'pharmacy', label: 'Pharmacies' }, { id: 'blood bank', label: 'Blood Banks' }, { id: 'ambulance', label: 'Ambulances' }, { id: 'clinic', label: 'Clinics' }, { id: 'fire station', label: 'Fire Dept' }];
-
 const NearbyEmergencyResources = () => {
     const { profile } = useAppContext();
     const [userLoc, setUserLoc] = useState({ lat: profile?.lat || 19.0760, lon: profile?.lng || 72.8777 });
     const [resources, setResources] = useState([]), [loading, setLoading] = useState(false), [error, setError] = useState(null), [activeCategory, setActiveCategory] = useState('hospital'), [searchQuery, setSearchQuery] = useState(''), [mapReady, setMapReady] = useState(false), [currentPage, setCurrentPage] = useState(1), ITEMS_PER_PAGE = 5;
-
     useEffect(() => {
         navigator.geolocation?.getCurrentPosition(p => setUserLoc({ lat: p.coords.latitude, lon: p.coords.longitude }), err => console.warn("Geolocation denied, using profile location or default.", err));
         setTimeout(() => setMapReady(true), 100);
     }, []);
-
     const fetchResources = async (keyword) => {
         if (!userLoc.lat || !userLoc.lon) return;
         setLoading(true); setError(null);
@@ -40,16 +33,13 @@ const NearbyEmergencyResources = () => {
             console.error("Failed to fetch nearby resources", err); setError("Could not load nearby resources right now."); setResources([]);
         } finally { setLoading(false); }
     };
-
     useEffect(() => {
         setCurrentPage(1);
         const timeout = setTimeout(() => fetchResources(searchQuery.trim() || activeCategory), 800);
         return () => clearTimeout(timeout);
     }, [activeCategory, searchQuery, userLoc.lat, userLoc.lon]);
-
     const handleCall = phone => phone && (window.location.href = `tel:${phone}`);
     const handleNavigate = (lat, lon) => window.open(`https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${userLoc.lat},${userLoc.lon};${lat},${lon}`, '_blank');
-
     return (
         <div className="bg-white rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-sm border border-slate-100 flex flex-col overflow-hidden relative">
             <div className="flex items-center justify-between mb-4 md:mb-6 shrink-0">
@@ -124,5 +114,4 @@ const NearbyEmergencyResources = () => {
         </div>
     );
 };
-
 export default NearbyEmergencyResources;

@@ -4,13 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNotificationContext } from '../context/NotificationContext';
 import Badge from './ui/Badge';
 import Button from './ui/Button';
-
 const NotificationBell = () => {
   const { notifications, unreadCount, markAsRead, clearNotifications } = useNotificationContext();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
-
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -20,7 +17,6 @@ const NotificationBell = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
   const getIcon = (type) => {
     switch (type) {
       case 'emergency': return <AlertTriangle className="w-4 h-4 text-rose-500" />;
@@ -29,16 +25,15 @@ const NotificationBell = () => {
       default: return <Zap className="w-4 h-4 text-primary-500" />;
     }
   };
-
   return (
     <div className="relative" ref={dropdownRef}>
-      <button 
+      <button
         onClick={() => setShowDropdown(!showDropdown)}
         className="relative p-2.5 rounded-xl hover:bg-slate-100 transition-all duration-300 group active:scale-95"
       >
         <Bell className={`w-6 h-6 transition-colors ${unreadCount > 0 ? 'text-primary-500' : 'text-slate-500 group-hover:text-slate-700'}`} />
         {unreadCount > 0 && (
-          <motion.span 
+          <motion.span
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="absolute top-2 right-2 flex h-4 w-4"
@@ -50,7 +45,6 @@ const NotificationBell = () => {
           </motion.span>
         )}
       </button>
-
       <AnimatePresence>
         {showDropdown && (
           <motion.div
@@ -67,7 +61,7 @@ const NotificationBell = () => {
               </div>
               <div className="flex items-center gap-2">
                 {notifications.length > 0 && (
-                  <button 
+                  <button
                     onClick={clearNotifications}
                     className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"
                     title="Clear All"
@@ -75,7 +69,7 @@ const NotificationBell = () => {
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
-                <button 
+                <button
                   onClick={() => setShowDropdown(false)}
                   className="p-2 hover:bg-slate-200 text-slate-400 hover:text-slate-900 rounded-lg transition-colors"
                 >
@@ -83,7 +77,6 @@ const NotificationBell = () => {
                 </button>
               </div>
             </div>
-
             <div className="flex-1 overflow-y-auto no-scrollbar py-2">
               {notifications.length === 0 ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center px-6">
@@ -124,12 +117,11 @@ const NotificationBell = () => {
                 </div>
               )}
             </div>
-
             {notifications.length > 0 && (
               <div className="p-4 bg-slate-50/50 border-t border-slate-100">
-                <Button 
-                  variant="ghost" 
-                  fullWidth 
+                <Button
+                  variant="ghost"
+                  fullWidth
                   className="h-10 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-primary-500"
                   onClick={() => setShowDropdown(false)}
                 >
@@ -143,5 +135,4 @@ const NotificationBell = () => {
     </div>
   );
 };
-
 export default NotificationBell;

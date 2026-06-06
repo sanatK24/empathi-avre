@@ -9,23 +9,19 @@ import { handleImageError } from '../utils/imageUtils';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import EmptyState from '../components/ui/EmptyState';
 import ProgressBar from '../components/ProgressBar';
-
 const URGENCY_WEIGHT = { critical: 4, high: 3, medium: 2, low: 1 };
 const URGENCIES = ['Low', 'Medium', 'High', 'Critical'];
 const FONT_POPPINS = { fontFamily: 'Poppins, sans-serif' };
 const FONT_INTER = { fontFamily: 'Inter, sans-serif' };
-
 function calculateDistance(lat1, lon1, lat2, lon2) {
   if (!lat1 || !lon1 || !lat2 || !lon2) return null;
   const R = 6371, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
 function extractCategories(fetched) {
   return Array.from(new Set(fetched.map(c => c.category).filter(Boolean)));
 }
-
 function CampaignsFeedPage() {
   const { profile } = useAppContext();
   const navigate = useNavigate();
@@ -40,7 +36,6 @@ function CampaignsFeedPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [activeCategory, setActiveCategory] = useState('All');
   const [dynamicCategories, setDynamicCategories] = useState([]);
-
   const filteredCampaigns = React.useMemo(() => {
     const result = campaigns.filter(c => {
       if (!profile?.lat || !profile?.lng || !c.lat || !c.lng) return true;
@@ -50,7 +45,6 @@ function CampaignsFeedPage() {
     result.sort((a, b) => (URGENCY_WEIGHT[b.urgency_level?.toLowerCase()] || 0) - (URGENCY_WEIGHT[a.urgency_level?.toLowerCase()] || 0));
     return result;
   }, [campaigns, profile?.lat, profile?.lng, profile?.proximityThreshold]);
-
   const fetchCampaigns = async (newFilters = filters) => {
     try {
       setLoading(true); setError(null);
@@ -63,7 +57,6 @@ function CampaignsFeedPage() {
       setError(err.message || 'Failed to load campaigns');
     } finally { setLoading(false); }
   };
-
   useEffect(() => {
     const urlSearch = searchParams.get('search');
     if (urlSearch) {
@@ -74,7 +67,6 @@ function CampaignsFeedPage() {
         .finally(() => setLoading(false));
     } else { fetchCampaigns(); }
   }, [profile?.accessToken, searchParams]);
-
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim()) { fetchCampaigns(); return; }
@@ -89,32 +81,25 @@ function CampaignsFeedPage() {
       setError('Search failed. Please try again.');
     } finally { setLoading(false); }
   };
-
   const handleFilterChange = (key, value) => setFilters(f => ({ ...f, [key]: value }));
   const applyFilters = () => { fetchCampaigns(filters); setShowFilters(false); };
-
   const handleCategoryClick = (cat) => {
     setActiveCategory(cat);
     const newFilters = { ...filters, category: cat === 'All' ? '' : cat.toLowerCase() };
     setFilters(newFilters);
     fetchCampaigns(newFilters);
   };
-
   const requireAuth = (cb) => {
     if (!profile?.isAuthenticated) { navigate('/login', { state: { from: window.location.pathname } }); return; }
     cb();
   };
-
   const handleDonate = (campaign) => requireAuth(() => { setSelectedCampaign(campaign); setShowDonationModal(true); });
-
   const handleViewDetails = (campaign) => requireAuth(() => {
     const p = window.location.pathname;
     navigate(p.includes('/user/') ? `/user/campaigns/${campaign.id}` : p.includes('/admin/') ? `/admin/campaigns/${campaign.id}` : `/campaigns/${campaign.id}`);
   });
-
   const pillClass = (active) => `whitespace-nowrap px-5 py-2.5 rounded-full text-sm font-medium transition-all ${active ? 'bg-blue-600 text-white shadow-md shadow-blue-200' : 'bg-white text-slate-600 border border-slate-100 hover:bg-slate-50'}`;
   const urgPillClass = (active) => `px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${active ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-600'}`;
-
   return (
     <div className="bg-slate-50 min-h-screen pb-10 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto bg-slate-50 min-h-screen relative flex flex-col">

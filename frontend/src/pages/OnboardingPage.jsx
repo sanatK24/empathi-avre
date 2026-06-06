@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAppContext } from '../context/AppContext'
 import { USER_ROLES, ROLE_DESCRIPTIONS, CITY_OPTIONS } from '../utils/constants'
 import { authenticateWithGoogleAndSyncRole } from '../services/authService'
-
 const contactFields = [
   { id: 'fullName', label: 'Full Name', type: 'text', placeholder: 'Your name' },
   { id: 'email', label: 'Email Address', type: 'email', placeholder: 'your@email.com' },
   { id: 'phone', label: 'Phone Number', type: 'tel', placeholder: '+91 9876543210' },
   { id: 'bio', label: 'About You (Optional)', type: 'textarea', placeholder: 'Tell us about yourself...' }
 ]
-
 export default function OnboardingPage() {
   const navigate = useNavigate()
   const { profile, updateProfile } = useAppContext()
@@ -21,10 +19,8 @@ export default function OnboardingPage() {
     city: profile.city || CITY_OPTIONS[0], userRole: profile.userRole || '', email: profile.email || '',
     phone: profile.phone || '', fullName: profile.fullName || '', bio: profile.bio || ''
   })
-
   const { city, userRole, email, phone, fullName, bio } = form
   const change = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
-
   const enableLocation = () => {
     if (!navigator.geolocation) return setGeo(g => ({ ...g, error: 'Geolocation is not supported in this browser.' }))
     setGeo(g => ({ ...g, loading: true, error: '' }))
@@ -34,7 +30,6 @@ export default function OnboardingPage() {
       { enableHighAccuracy: true, timeout: 10000 }
     )
   }
-
   const continueFlow = async () => {
     setAuth({ loading: true, error: '' })
     try {
@@ -49,7 +44,6 @@ export default function OnboardingPage() {
       setAuth({ loading: false, error: err.message || 'Sign-in failed. Please try again.' })
     }
   }
-
   return (
     <section className="onboarding">
       {step === 1 && (
@@ -73,7 +67,6 @@ export default function OnboardingPage() {
           <button className="button primary full" onClick={() => setStep(2)}>Next: Choose Your Role</button>
         </>
       )}
-
       {step === 2 && (
         <>
           <h1>Your Role</h1>
@@ -93,7 +86,6 @@ export default function OnboardingPage() {
           </div>
         </>
       )}
-
       {step === 3 && (
         <>
           <h1>Contact Information</h1>

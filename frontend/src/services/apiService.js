@@ -1,6 +1,5 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const REQUEST_TIMEOUT = 30000;
-
 async function request(path, options = {}) {
     const { token, timeout = REQUEST_TIMEOUT, ...otherOptions } = options;
     const headers = { 'Content-Type': 'application/json', ...(token && { Authorization: `Bearer ${token}` }), ...otherOptions.headers };
@@ -34,7 +33,6 @@ async function request(path, options = {}) {
         throw err;
     }
 }
-
 export async function checkBackendHealth() {
     try {
         const data = await request('/health', { timeout: 5000 });
@@ -43,7 +41,6 @@ export async function checkBackendHealth() {
         return { ok: false, error: err.message, status: 'Unreachable' };
     }
 }
-
 export const apiService = {
     login: (email, password) => request('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ username: email, password }).toString() }),
     register: (userData) => request('/auth/register', { method: 'POST', body: JSON.stringify(userData) }),
@@ -83,8 +80,13 @@ export const apiService = {
         return res.json();
     },
     verifyCampaignDocument: async (token, campaignId, file) => {
-        const fd = new FormData(); fd.append('file', file);
-        const res = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/verify`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
+        let body;
+        if (file) {
+            const fd = new FormData();
+            fd.append('file', file);
+            body = fd;
+        }
+        const res = await fetch(`${API_BASE_URL}/campaigns/${campaignId}/verify`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || data.detail || `Verification failed (${res.status})`);
         return data;

@@ -7,7 +7,6 @@ import Badge from '../components/ui/Badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import EmptyState from '../components/ui/EmptyState';
-
 const AdminUsers = () => {
   const { profile } = useAppContext();
   const [loading, setLoading] = useState(true);
@@ -16,13 +15,11 @@ const AdminUsers = () => {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [openDropdownUserId, setOpenDropdownUserId] = useState(null);
-
   useEffect(() => {
     const handle = e => !e.target.closest('.activity-dropdown-container') && setOpenDropdownUserId(null);
     document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
   }, []);
-
   const fetchUsers = async () => {
     if (!profile?.accessToken) return;
     setLoading(true);
@@ -36,9 +33,7 @@ const AdminUsers = () => {
     }
     setLoading(false);
   };
-
   useEffect(() => { fetchUsers(); }, [profile?.accessToken]);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter(u =>
@@ -46,14 +41,11 @@ const AdminUsers = () => {
       (roleFilter === 'all' || (u.role || u.userRole || '').toLowerCase() === roleFilter)
     );
   }, [users, query, roleFilter]);
-
   const getRoleBadge = u => {
     const r = (u.role || u.userRole || '').toLowerCase();
     return <Badge variant={r === 'admin' ? 'success' : ['creator', 'user'].includes(r) ? 'warning' : 'default'}>{r === 'admin' ? 'Admin' : r || 'Unknown'}</Badge>;
   };
-
   if (loading) return <LoadingSpinner fullPage text="Loading users..." />;
-
   if (error) return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <Card>
@@ -65,7 +57,6 @@ const AdminUsers = () => {
       </Card>
     </div>
   );
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -75,7 +66,6 @@ const AdminUsers = () => {
         </div>
         <Button variant="secondary" size="md" onClick={fetchUsers} icon={null}>Refresh</Button>
       </div>
-
       <div className="flex flex-col md:flex-row gap-4 md:items-center">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -93,7 +83,6 @@ const AdminUsers = () => {
           </select>
         </div>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -177,5 +166,4 @@ const AdminUsers = () => {
     </div>
   );
 };
-
 export default AdminUsers;

@@ -8,7 +8,6 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import EmptyState from '../components/ui/EmptyState';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
-
 const AdminCampaigns = () => {
   const { profile } = useAppContext();
   const navigate = useNavigate();
@@ -19,9 +18,7 @@ const AdminCampaigns = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedCreatorIds, setExpandedCreatorIds] = useState(new Set());
   const [selectedReportsCampaign, setSelectedReportsCampaign] = useState(null);
-
   const toggleCreator = (id) => setExpandedCreatorIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
-
   const fetchCampaigns = async () => {
     if (!profile?.accessToken) return;
     setLoading(true); setError(null);
@@ -29,34 +26,27 @@ const AdminCampaigns = () => {
     catch (err) { setError(err?.message || 'Failed to fetch campaigns'); setCampaigns([]); }
     finally { setLoading(false); }
   };
-
   useEffect(() => { fetchCampaigns(); }, [profile?.accessToken]);
-
   const handleVerify = async (id) => {
     try { await apiService.verifyCampaign(id, profile.accessToken, true); await fetchCampaigns(); }
     catch (err) { alert('Failed to verify campaign: ' + (err?.message || err)); }
   };
-
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to permanently delete this campaign? This action cannot be undone.')) return;
     try { await apiService.adminDeleteCampaign(id, profile.accessToken); setCampaigns(prev => prev.filter(c => c.id !== id)); }
     catch (err) { alert('Failed to delete campaign: ' + (err?.message || err)); }
   };
-
   const handleFlag = async (id) => {
     try { await apiService.flagCampaign(id, profile.accessToken, true); alert(`Campaign ${id} has been successfully flagged for moderation review.`); await fetchCampaigns(); }
     catch (err) { alert('Failed to flag campaign: ' + (err?.message || err)); }
   };
-
   const getStatusBadge = (c) => c?.verified ? <Badge variant="success">Verified</Badge>
     : (c?.status === 'pending' || !c?.verified) ? <Badge variant="warning">Pending</Badge>
     : <Badge variant="default">{c?.status || 'Unknown'}</Badge>;
-
   const filteredCampaigns = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
     return campaigns.filter(c => (!q || String(c?.title || '').toLowerCase().includes(q) || String(c?.creator?.name || '').toLowerCase().includes(q)) && (filterStatus === 'all' || (filterStatus === 'verified' && c?.verified) || (filterStatus === 'pending' && !c?.verified)));
   }, [campaigns, searchTerm, filterStatus]);
-
   const groupedCreators = useMemo(() => {
     const g = {};
     filteredCampaigns.forEach(c => {
@@ -65,9 +55,7 @@ const AdminCampaigns = () => {
     });
     return Object.values(g).sort((a, b) => a.id === 'unknown' ? 1 : b.id === 'unknown' ? -1 : a.name.localeCompare(b.name));
   }, [filteredCampaigns]);
-
   if (loading) return <LoadingSpinner fullPage text="Loading campaign database..." />;
-
   if (error) return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <Card>
@@ -76,7 +64,6 @@ const AdminCampaigns = () => {
       </Card>
     </div>
   );
-
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -86,7 +73,6 @@ const AdminCampaigns = () => {
         </div>
         <Button variant="secondary" size="md" onClick={fetchCampaigns}>Refresh</Button>
       </div>
-
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -100,7 +86,6 @@ const AdminCampaigns = () => {
           </select>
         </div>
       </div>
-
       <Card>
         <CardContent className="p-0">
           {groupedCreators.length > 0 ? (
@@ -217,12 +202,10 @@ const AdminCampaigns = () => {
               </div>
               <button onClick={() => setSelectedReportsCampaign(null)} className="text-slate-400 hover:text-slate-600 font-black text-2xl p-1">&times;</button>
             </div>
-            
             <div className="bg-slate-50 p-4 rounded-2xl mb-6">
               <h4 className="font-bold text-slate-900 text-sm uppercase tracking-tight">{selectedReportsCampaign.title}</h4>
               <p className="text-xs text-slate-500 font-medium mt-1">Creator: {selectedReportsCampaign.creator?.name || 'Unknown'} ({selectedReportsCampaign.creator?.email})</p>
             </div>
-
             <div className="overflow-y-auto space-y-4 flex-1 pr-1 custom-scrollbar">
               {selectedReportsCampaign.reports && selectedReportsCampaign.reports.length > 0 ? (
                 selectedReportsCampaign.reports.map((report, idx) => (
@@ -250,7 +233,6 @@ const AdminCampaigns = () => {
                 <p className="text-sm text-slate-500 text-center py-6">No reports found.</p>
               )}
             </div>
-            
             <div className="mt-6 flex gap-3">
               <Button variant="secondary" onClick={() => setSelectedReportsCampaign(null)} className="w-full font-bold">Close Details</Button>
             </div>
@@ -260,5 +242,4 @@ const AdminCampaigns = () => {
     </div>
   );
 };
-
 export default AdminCampaigns;

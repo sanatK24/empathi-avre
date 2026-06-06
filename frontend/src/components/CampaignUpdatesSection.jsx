@@ -9,7 +9,6 @@ import CommentsModal from './CommentsModal';
 import { handleImageError } from '../utils/imageUtils';
 import Button from './ui/Button';
 import { Card } from './ui/Card';
-
 const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
   const { profile } = useAppContext();
   const [updates, setUpdates] = useState([]);
@@ -17,18 +16,14 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedUpdateForComments, setSelectedUpdateForComments] = useState(null);
   const [pinnedUpdate, setPinnedUpdate] = useState(null);
-
   useEffect(() => {
     fetchUpdates();
   }, [campaignId]);
-
   const fetchUpdates = async () => {
     try {
       setLoading(true);
       const data = await apiService.getCampaignUpdates(profile.accessToken, campaignId);
       setUpdates(Array.isArray(data) ? data : []);
-      
-      // Get pinned update for stats display
       const pinned = data?.find(u => u.is_pinned);
       setPinnedUpdate(pinned);
     } catch (err) {
@@ -38,13 +33,11 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
       setLoading(false);
     }
   };
-
   const handleUpdateCreated = async (newUpdate) => {
     setShowForm(false);
     fetchUpdates();
     onUpdateCreated?.(newUpdate);
   };
-
   const handleLike = async (updateId, isLiked) => {
     try {
       if (isLiked) {
@@ -57,7 +50,6 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
       console.error('Failed to toggle like:', err);
     }
   };
-
   const handleDeleteUpdate = async (updateId) => {
     if (window.confirm('Are you sure you want to delete this update?')) {
       try {
@@ -68,7 +60,6 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
       }
     }
   };
-
   const handleTogglePin = async (updateId, isPinned) => {
     try {
       await apiService.togglePinUpdate(profile.accessToken, campaignId, updateId);
@@ -77,7 +68,6 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
       console.error('Failed to toggle pin:', err);
     }
   };
-
   if (loading) {
     return (
       <div className="py-8 text-center">
@@ -85,10 +75,9 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
-      {/* Pinned Update Preview for Stats */}
+      {}
       {pinnedUpdate && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -101,9 +90,9 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
           </div>
           <p className="text-slate-900 font-medium mb-2">{pinnedUpdate.content}</p>
           {pinnedUpdate.image_url && (
-            <img 
-              src={pinnedUpdate.image_url} 
-              alt="Pinned update" 
+            <img
+              src={pinnedUpdate.image_url}
+              alt="Pinned update"
               className="w-full h-40 object-cover rounded-lg mb-3"
               onError={handleImageError('default')}
             />
@@ -113,8 +102,7 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
           </p>
         </motion.div>
       )}
-
-      {/* Create Update Form (Creator Only) */}
+      {}
       {isCreator && profile.isAuthenticated && (
         <Card className="p-6">
           {!showForm ? (
@@ -133,13 +121,11 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
           )}
         </Card>
       )}
-
-      {/* Updates List */}
+      {}
       <div className="space-y-4">
         <h3 className="text-lg font-bold text-slate-900">
           Updates ({updates.length})
         </h3>
-        
         {updates.length === 0 ? (
           <Card className="p-8 text-center">
             <p className="text-slate-500">No updates yet</p>
@@ -168,8 +154,7 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
           </AnimatePresence>
         )}
       </div>
-
-      {/* Comments Modal */}
+      {}
       {selectedUpdateForComments && (
         <CommentsModal
           update={selectedUpdateForComments}
@@ -181,5 +166,4 @@ const CampaignUpdatesSection = ({ campaignId, isCreator, onUpdateCreated }) => {
     </div>
   );
 };
-
 export default CampaignUpdatesSection;

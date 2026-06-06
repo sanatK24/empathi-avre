@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
+import {
   Zap, Clock, CheckCircle2, AlertCircle, Plus,
   ArrowRight, Heart, Sparkles, Megaphone,
   ShieldCheck, Users, TrendingUp, Activity
@@ -16,16 +16,13 @@ import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import { Link, useNavigate } from 'react-router-dom';
 import { formatCurrency, formatNumber } from '../utils/formatNumber';
-
 const Dashboard = () => {
   const { profile } = useAppContext();
   const navigate = useNavigate();
   const role = profile?.userRole?.toLowerCase() || 'donor';
-  
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
   const [recentData, setRecentData] = useState([]);
-
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (!profile?.accessToken) return;
@@ -35,17 +32,11 @@ const Dashboard = () => {
           const adminStats = await apiService.getAdminStats(profile.accessToken).catch(() => ({}));
           setStats(adminStats || {});
         } else if (role === 'creator') {
-          // fetch creator stats
-          const creatorData = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/campaigns/my`, {
-            headers: { 'Authorization': `Bearer ${profile.accessToken}` }
-          }).then(res => res.ok ? res.json() : []);
+          const creatorData = await apiService.getMyCreatedCampaigns(profile.accessToken).catch(() => []);
           setRecentData(Array.isArray(creatorData) ? creatorData : []);
           setStats({ active_campaigns: Array.isArray(creatorData) ? creatorData.length : 0 });
         } else {
-          // fetch donor stats
-          const donationsData = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/v1/campaigns`, {
-            headers: { 'Authorization': `Bearer ${profile.accessToken}` }
-          }).then(res => res.ok ? res.json() : []);
+          const donationsData = await apiService.getCampaigns(profile.accessToken).catch(() => []);
           setRecentData(Array.isArray(donationsData) ? donationsData.slice(0, 5) : []);
           setStats({ campaigns_viewed: Array.isArray(donationsData) ? donationsData.length : 0 });
         }
@@ -57,7 +48,6 @@ const Dashboard = () => {
     };
     fetchDashboardData();
   }, [profile, role]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -65,7 +55,6 @@ const Dashboard = () => {
       </div>
     );
   }
-
   return (
     <div className="space-y-8 pb-12">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -81,7 +70,6 @@ const Dashboard = () => {
           </Button>
         )}
       </div>
-
       {role === 'admin' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="Total Users" value={stats.total_users || 0} icon={Users} trend="+12%" />
@@ -90,7 +78,6 @@ const Dashboard = () => {
           <StatCard title="Active Creators" value={stats.active_creators || 0} icon={ShieldCheck} />
         </div>
       )}
-
       {role === 'creator' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard title="Active Campaigns" value={stats.active_campaigns || 0} icon={Megaphone} />
@@ -98,7 +85,6 @@ const Dashboard = () => {
           <StatCard title="Total Supporters" value="0" icon={Users} />
         </div>
       )}
-
       {role === 'donor' && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard title="Donations Made" value={formatCurrency(0)} icon={Heart} />
@@ -106,8 +92,7 @@ const Dashboard = () => {
           <StatCard title="Impact Score" value="0" icon={Sparkles} />
         </div>
       )}
-
-      {/* Shared Section: Recent Activity / Discover */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle className="text-xl font-bold flex items-center gap-2">
@@ -117,7 +102,7 @@ const Dashboard = () => {
         </CardHeader>
         <CardContent>
           {recentData.length === 0 ? (
-            <EmptyState 
+            <EmptyState
               icon={role === 'creator' ? Megaphone : Sparkles}
               title={role === 'creator' ? "No campaigns yet" : "No recommendations right now"}
               description={role === 'creator' ? "Create your first campaign to start raising funds." : "Check back later for personalized recommendations."}
@@ -142,5 +127,4 @@ const Dashboard = () => {
     </div>
   );
 };
-
 export default Dashboard;

@@ -18,8 +18,9 @@ def get_public_profile(user_id: int, db: Session = Depends(get_db), current_user
     campaigns_created_count = db.query(func.count(Campaign.id)).filter(Campaign.created_by == user_id, Campaign.status == CampaignStatus.ACTIVE).scalar() or 0
     return PublicUserProfileResponse(
         id=user.id, name=user.name, avatar_url=user.avatar_url, bio=user.bio, city=user.city,
-        follower_count=follower_count,
-        following_count=following_count, campaigns_created_count=campaigns_created_count, is_following=is_following
+        role=user.role.value if user.role else 'USER', created_at=user.created_at,
+        followers_count=follower_count, following_count=following_count,
+        campaigns_count=campaigns_created_count, is_following=is_following
     )
 @router.post("/{user_id}/follow", response_model=FollowResponse)
 def follow_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_active_user)):

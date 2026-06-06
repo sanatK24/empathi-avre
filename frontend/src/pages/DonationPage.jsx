@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Heart, 
-  History, 
-  DollarSign, 
-  Download, 
+import {
+  Heart,
+  History,
+  DollarSign,
+  Download,
   ArrowUpRight,
   TrendingUp,
   CheckCircle2,
@@ -16,27 +16,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { formatNumber } from '../utils/formatNumber';
-
 const DonationPage = () => {
   const { profile } = useAppContext();
   const [loading, setLoading] = useState(false);
-  
   const [stats, setStats] = useState({
     totalDonated: 0,
     campaignsSupported: 0,
     impactScore: 0,
     rank: 'New Supporter'
   });
-
   const [donationHistory, setDonationHistory] = useState([]);
-
   useEffect(() => {
-    // Fetch real donation data
     const fetchDonations = async () => {
       try {
         setLoading(true);
-        // apiService.getMyDonations(profile.accessToken)
-        // For now, if no endpoint, we keep it as empty array
       } catch (err) {
         console.error("Donations fetch failed", err);
       } finally {
@@ -45,10 +38,9 @@ const DonationPage = () => {
     };
     if (profile.accessToken) fetchDonations();
   }, [profile.accessToken]);
-
   return (
     <div className="max-w-6xl mx-auto space-y-6 md:space-y-10 pb-12 px-4">
-      {/* Header */}
+      {}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-6">
         <div>
           <h1 className="text-2xl md:text-4xl font-display font-black text-slate-900 tracking-tight uppercase flex items-center gap-2 md:gap-3">
@@ -62,7 +54,6 @@ const DonationPage = () => {
           Browse Campaigns <ArrowUpRight className="w-4 h-4 ml-2" />
         </Button>
       </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         {[
@@ -94,7 +85,6 @@ const DonationPage = () => {
           </Card>
         ))}
       </div>
-
       {/* History Table */}
       <Card className="border-none ring-1 ring-slate-100 shadow-premium overflow-hidden">
         <CardHeader className="border-b border-slate-50 bg-slate-50/50 p-4 md:p-6">
@@ -154,15 +144,14 @@ const DonationPage = () => {
           )}
         </CardContent>
       </Card>
-
-      {/* Impact Section */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
          <Card className="bg-indigo-600 text-white border-none shadow-premium overflow-hidden relative">
             <div className="absolute bottom-0 right-0 w-24 md:w-32 h-24 md:h-32 bg-white/10 rounded-full blur-3xl -mb-12 md:-mb-16 -mr-12 md:-mr-16"></div>
             <CardContent className="p-5 md:p-8">
                <h3 className="text-base md:text-lg font-display font-black uppercase mb-3 md:mb-4">Cumulative Impact</h3>
                <p className="text-indigo-100 font-medium mb-4 md:mb-6 leading-relaxed text-sm md:text-base">
-                 {stats.totalDonated > 0 
+                 {stats.totalDonated > 0
                    ? `Your contributions have supported ${stats.campaignsSupported} critical initiatives across the network.`
                    : "You haven't supported any campaigns yet. Start your impact journey by browsing active initiatives."}
                </p>
@@ -171,7 +160,6 @@ const DonationPage = () => {
                </Button>
             </CardContent>
          </Card>
-         
          <Card className="border-none ring-1 ring-slate-100 shadow-soft">
             <CardContent className="p-8">
                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Transparency Report</h3>
@@ -194,5 +182,4 @@ const DonationPage = () => {
     </div>
   );
 };
-
 export default DonationPage;

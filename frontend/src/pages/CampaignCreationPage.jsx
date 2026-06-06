@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import Button from '../components/ui/Button';
-import { ArrowLeft, Upload, Loader2, AlertCircle, Brain, ShieldCheck, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, AlertCircle, ShieldCheck, RefreshCw } from 'lucide-react';
 const URGENCIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const XIcon = ({ className = "w-4 h-4" }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -28,7 +28,6 @@ function CampaignCreationPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        // Location is inferred by the backend from user profile
         return parsed;
       } catch (e) { console.error("Failed to parse saved campaign data", e); }
     }
@@ -104,7 +103,6 @@ function CampaignCreationPage() {
         setVerificationDocument(null);
         return;
       }
-      // Security: block path traversal
       if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
         setError("Invalid filename. Path traversal characters are not allowed.");
         setVerificationDocument(null);
@@ -117,7 +115,6 @@ function CampaignCreationPage() {
         setVerificationDocument(null);
         return;
       }
-      // Security: block double extensions (e.g., virus.jpg.exe → caught above, but also invoice.exe.jpg)
       const parts = file.name.split('.');
       if (parts.length > 2) {
         const dangerousExts = ['exe', 'bat', 'cmd', 'ps1', 'sh', 'vbs', 'js', 'msi', 'com', 'scr', 'zip'];
@@ -154,10 +151,10 @@ function CampaignCreationPage() {
       if (verificationDocument) {
         try {
           setVerifying(true);
-          await apiService.verifyCampaignDocument(profile.accessToken, newCampaign.id, verificationDocument); 
+          await apiService.verifyCampaignDocument(profile.accessToken, newCampaign.id, verificationDocument);
         }
-        catch (docErr) { 
-          console.warn("Document verification failed:", docErr); 
+        catch (docErr) {
+          console.warn("Document verification failed:", docErr);
           setError(`Document verification failed: ${docErr.message || 'Invalid document.'}`);
           try { await apiService.deleteCampaign(profile.accessToken, newCampaign.id); } catch(delErr) { console.warn("Delete fallback failed:", delErr); }
           setLoading(false);
@@ -203,7 +200,7 @@ function CampaignCreationPage() {
               <label className="block text-xs md:text-sm font-semibold text-slate-900">Description <span className="text-red-600">*</span></label>
               <div className="flex items-center gap-2">
                 <div className="text-xs flex items-center gap-1 text-primary-600 font-medium bg-primary-50 px-2 py-1 rounded-md transition-colors">
-                  {analyzing ? <><Loader2 className="w-3 h-3 animate-spin" /> AI is analyzing...</> : <><Brain className="w-3 h-3" /> Auto-Review Active</>}
+                  {analyzing ? <><Loader2 className="w-3 h-3 animate-spin" /> AI is analyzing...</> : <><ShieldCheck className="w-3 h-3" /> Auto-Review Active</>}
                 </div>
                 <button type="button" onClick={triggerAnalysis} disabled={analyzing} className="text-primary-600 hover:text-primary-700 bg-primary-50 hover:bg-primary-100 p-1 rounded-md transition-colors disabled:opacity-50" title="Refresh AI Analysis">
                   <RefreshCw className={`w-3 h-3 ${analyzing ? 'animate-spin' : ''}`} />
@@ -214,13 +211,13 @@ function CampaignCreationPage() {
             <div className="flex justify-between items-center mt-1">
               <p className="text-[10px] md:text-xs text-slate-500">{formData.description.length}/5000 characters</p>
               <button type="button" onClick={handleRefineDescription} disabled={refining || !formData.description.trim()} className="text-xs font-semibold text-primary-600 bg-primary-50 px-3 py-1.5 rounded-full hover:bg-primary-100 transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                {refining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
+                {refining ? <Loader2 className="w-3 h-3 animate-spin" /> : <ShieldCheck className="w-3 h-3" />}
                 {refining ? 'Refining...' : 'AI Rewrite & Refine'}
               </button>
             </div>
             {aiSuggestions && (
               <div className="mt-3 p-3 md:p-4 bg-indigo-50 border border-indigo-100 rounded-lg text-sm text-indigo-900 shadow-sm animate-fade-in">
-                <p className="font-bold mb-1.5 flex items-center gap-1.5"><Brain className="w-4 h-4"/> AI Suggestions:</p>
+                <p className="font-bold mb-1.5 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4"/> AI Suggestions:</p>
                 <p className="whitespace-pre-line leading-relaxed">{aiSuggestions}</p>
               </div>
             )}
@@ -285,7 +282,7 @@ function CampaignCreationPage() {
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {aiRules.map(rule => (
                       <div key={rule.id} className="flex items-start gap-2 bg-white border border-slate-100 p-2.5 rounded-md shadow-sm">
-                        <Brain className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" />
+                        <ShieldCheck className="w-4 h-4 text-primary-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-xs font-bold text-slate-700">{rule.capability}</p>
                           <p className="text-[10px] text-slate-500 capitalize leading-tight mt-0.5">{rule.description}</p>
@@ -322,7 +319,7 @@ function CampaignCreationPage() {
       <div className="hidden lg:block relative">
         <div className="sticky top-24 bg-slate-900 rounded-xl shadow-2xl border border-slate-700 overflow-hidden font-mono text-xs flex flex-col h-[calc(100vh-120px)] max-h-[800px]">
           <div className="bg-slate-800 px-4 py-3 border-b border-slate-700 flex items-center justify-between">
-            <div className="flex items-center gap-2"><Brain className="w-4 h-4 text-indigo-400" /><span className="text-slate-200 font-bold tracking-wider">hf_services.py live log</span></div>
+            <div className="flex items-center gap-2"><ShieldCheck className="w-4 h-4 text-indigo-400" /><span className="text-slate-200 font-bold tracking-wider">hf_services.py live log</span></div>
             <div className="flex gap-1.5">
               {['red', 'yellow', 'green'].map(c => <div key={c} className={`w-2.5 h-2.5 rounded-full bg-${c}-500`} />)}
             </div>

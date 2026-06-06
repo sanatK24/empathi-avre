@@ -3,7 +3,6 @@ import { Upload, X, Send } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import Button from './ui/Button';
-
 const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
   const { profile } = useAppContext();
   const [content, setContent] = useState('');
@@ -11,7 +10,6 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
   const [imagePreview, setImagePreview] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
-
   const handleImageSelect = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -24,7 +22,6 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
       reader.readAsDataURL(file);
     }
   };
-
   const handleRemoveImage = () => {
     setImageUrl(null);
     setImagePreview(null);
@@ -32,28 +29,23 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
       fileInputRef.current.value = '';
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!content.trim()) {
       alert('Please enter update content');
       return;
     }
-
     setIsSubmitting(true);
     try {
       const updateData = {
         content: content.trim(),
         image_url: imageUrl
       };
-
       const newUpdate = await apiService.createCampaignUpdate(
         profile.accessToken,
         campaignId,
         updateData
       );
-
       setContent('');
       setImageUrl(null);
       setImagePreview(null);
@@ -65,10 +57,9 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
       setIsSubmitting(false);
     }
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Text Input */}
+      {}
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
@@ -77,13 +68,11 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
         rows={4}
         maxLength={2000}
       />
-
-      {/* Character Count */}
+      {}
       <div className="text-xs text-slate-500 text-right">
         {content.length}/2000
       </div>
-
-      {/* Image Preview */}
+      {}
       {imagePreview && (
         <div className="relative rounded-xl overflow-hidden max-h-64 bg-slate-100">
           <img
@@ -100,8 +89,7 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
           </button>
         </div>
       )}
-
-      {/* Image Upload */}
+      {}
       {!imagePreview && (
         <button
           type="button"
@@ -113,7 +101,6 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
           <p className="text-xs text-slate-400">PNG, JPG, GIF up to 10MB</p>
         </button>
       )}
-
       <input
         ref={fileInputRef}
         type="file"
@@ -121,8 +108,7 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
         onChange={handleImageSelect}
         className="hidden"
       />
-
-      {/* Action Buttons */}
+      {}
       <div className="flex gap-3 pt-4">
         <Button
           type="button"
@@ -147,5 +133,4 @@ const UpdateForm = ({ campaignId, onSuccess, onCancel }) => {
     </form>
   );
 };
-
 export default UpdateForm;

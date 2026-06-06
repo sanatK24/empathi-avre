@@ -105,10 +105,10 @@ EmpathI features are fully implemented and verified via end-to-end integration t
 * Fully featured dashboards for platform-wide metrics: user count, campaign velocity, active categories ratios.
 * Document Verification: Review uploaded documents and manually toggle verification statuses.
 
-### 5. Multi-Stage Medical Document AI Verification
+### 5. AI-Driven Document Verification
 * **Integrated Upload & Forensics**: Creators can upload verification documents (.pdf, .jpg, .jpeg, .png) during campaign setup.
-* **Asynchronous AI Audit Pipeline**: Performs metadata inspection (EXIF software tampering), JPEG pixel recompression difference analysis (ELA), YOLOv8 layout box detection (signatures, logos, stamps), fuzzy billing cost sums calculations, hospital registry matching (Levenshtein distance), and LayoutLMv3 spatial token structural validation.
-* **XGBoost Classifier Fusion**: Fuses these 11-dimension scores into a composite fraud probability and assigns an AI Trust score. Displays a detailed expandable verification widget directly on the Campaign Detail Page.
+* **Asynchronous AI Audit Pipeline**: Performs metadata inspection (EXIF software tampering), JPEG pixel recompression difference analysis (ELA), and YOLOv8 layout box detection (signatures, logos, stamps). Extracted local features and Pytesseract OCR text are sent to the Qwen LLM for cognitive self-analysis, calculating billing totals, validating issuing institutions, and auditing campaign context alignment.
+* **Trust & Score Mapping**: Automatically flags fraud, assigns an AI Trust Score, and displays a detailed expandable verification widget directly on the Campaign Detail Page.
 
 ---
 
@@ -177,8 +177,7 @@ EmpathI utilizes state-of-the-art HuggingFace Transformers pipelines to automate
 | **Toxicity Moderation** | `unitary/toxic-bert` | Abuse and spam detection | Scans texts for toxicity/spam flags during campaign creation. Falls back to 0.0 safe rating. |
 | **Image Captioning** | `Salesforce/blip-image-captioning-base` | Image context verification | Local BLIP captioner parses campaign cover images to ensure they match fundraising categories (e.g. medical ward vs gaming setup). |
 | **Layout Detection** | `yolov8_medical` (Custom Weights) | Signature, logo, and stamp detection on invoices | Custom YOLOv8 layout auditor. Falls back to ground truth splits dataset checks or basic heuristic OCR layout verification. |
-| **Document Classification** | `layoutlm_medical` (Custom Weights) | Spatial layout structure classification | Fine-tuned LayoutLMv3 token classifier. Falls back to microsoft/layoutlmv3-base for inference-only checking. |
-| **XGBoost Document Classifier** | `fraud_detector` (XGBoost) | Final fraud probability classification | Stratified 5-Fold XGBoost classifier trained on 11-d pixel & semantic features. Falls back to weighted scoring. |
+| **Cognitive Audit & Alignment** | `Qwen/Qwen2.5-1.5B-Instruct` | Document authenticity, billing sum, and campaign alignment audit | Invokes Qwen LLM for layout-independent billing math verification, category context alignment, and zero-db institution verification. |
 
 ---
 
@@ -200,8 +199,8 @@ EmpathI/
 │   │       │   └── users.py           # Profiles & user activity timelines
 │   │       └── router.py              # Consolidated v1 routes registry
 │   ├── ai_verification/               # Multi-stage AI document verification engine
-│   │   ├── validation/                # 105 Indian hospitals CSV registry
-│   │   └── service.py                 # Forensics, OCR, YOLO, LayoutLMv3, and XGBoost service orchestrator
+│   │   ├── validation/                # Legacy validation scripts and templates
+│   │   └── service.py                 # Forensics, OCR, YOLO, and Qwen LLM service orchestrator
 │   ├── core/
 │   │   ├── exceptions.py              # Custom HTTP and Auth exceptions
 │   │   └── security.py                # BCrypt password hashing & JWT generators
@@ -249,7 +248,7 @@ EmpathI/
 │   │   └── main.jsx                   # React root launcher
 │   ├── package.json                   # Frontend dependencies
 │   └── vite.config.js                 # Vite compiler configurations
-├── training/                          # Neural net model training scripts (YOLO, LayoutLMv3, XGBoost)
+├── training/                          # Neural net model training scripts (YOLO, legacy LayoutLMv3/XGBoost templates)
 ├── evaluation/                        # Evaluation suites and research reports (confusion matrix, ROC, PR plots)
 ├── .env.example                       # Application environment variables setup template
 ```
@@ -279,7 +278,7 @@ EmpathI enforces stateless JWT bearer tokens for role-based endpoints.
 | `GET` | `/campaigns/taxonomy` | Public | Returns valid category trees, verification needs, and AI audit policies. | None | `List[CampaignCategoryResponse]` |
 | `GET` | `/campaigns/recommendations` | Logged In | Generates dynamic LightGBM personalized feeds with XGBoost filtering. | None | `List[CampaignRecommendation]` |
 | `POST` | `/campaigns/{id}/donate` | Logged In | Simulates a transaction. Updates the progress bar in real-time. | Query Param: `amount` | `DonationResponse` |
-| `POST` | `/campaigns/{id}/verify` | CREATOR (Owner) / ADMIN | Runs multi-stage AI document verification (ELA, EXIF, YOLO, LayoutLMv3, Tesseract OCR). | Multipart Form (`file`) | `CampaignVerifyResponse` |
+| `POST` | `/campaigns/{id}/verify` | CREATOR (Owner) / ADMIN | Runs multi-stage AI document verification (ELA, EXIF, YOLO, Tesseract OCR, and Qwen LLM). | Multipart Form (`file`) | `CampaignVerifyResponse` |
 | `POST` | `/campaigns/{id}/updates` | CREATOR (Owner) | Posts progress updates (medical receipts, announcements). | `CampaignUpdateCreate` | `CampaignUpdateResponse` |
 | `POST` | `/campaigns/{id}/updates/{uid}/like` | Logged In | Likes a campaign progress update announcement. | None | `{ "message": "Liked update" }` |
 
@@ -398,7 +397,7 @@ Open `http://localhost:5173` in your browser to view the application.
   - Auto-matched to taxonomy IDs for proper validation
 
 ### Medical Document AI Verification Engine (June 2026)
-* **Asynchronous Forensics Check**: Implemented multi-stage verification on campaigns' supporting documents, analyzing JPEG compression differences (Error Level Analysis), checking EXIF software edits, verifying logo/stamp layouts (YOLOv8), extracting OCR text (Tesseract), fuzzy-matching billing totals, and validating structure layouts (LayoutLMv3).
+* **Asynchronous Forensics Check**: Implemented multi-stage verification on campaigns' supporting documents, analyzing JPEG compression differences (Error Level Analysis), checking EXIF software edits, verifying logo/stamp layouts (YOLOv8), extracting OCR text (Tesseract), fuzzy-matching billing totals, and performing a Qwen LLM cognitive audit.
 * **Detailed AI Verification Report UI**: Integrated an expandable detailed pipeline widget inside the Campaign Detail Page showing pass/fail outcomes, YOLO detection metrics, EXIF software titles, OCR text snippets, billing cost sums, and fuzzy hospital matches.
 * **Automatic Verification Badges**: Verified campaigns automatically display a "Verified" badge and their trust score, while high-risk campaigns are flagged with a "Failed" badge.
 
@@ -439,13 +438,13 @@ Honest assessments of engineering compromises made in the EmpathI architecture:
   * **LLM Extraction**: Falls back to user-provided form fields.
 
 ### 3. AI Verification Engine System Dependency Fallbacks
-* **Why Chosen**: OCR (Tesseract), YOLO, and LayoutLMv3 demand specialized system libraries (Tesseract binaries, PyTorch CUDA DLLs, OpenCV) that can fail to load on lightweight local CPUs.
-* **Limitations**: Absence of local CUDA GPU or Tesseract installation could completely halt verification services.
+* **Why Chosen**: OCR (Tesseract) and YOLO demand system-level dependencies that can fail to load on lightweight local CPUs. 
+* **Limitations**: Absence of local CUDA GPU or Tesseract installation could halt layout or character detection.
 * **Fallback Design**: Every engine stage features a safe fallback to prevent server failure:
   - **Tesseract OCR**: Falls back to mock text extraction matching the campaign description.
   - **YOLOv8 Layout**: Scans local datasets splits split (`train`/`val`/`test`) for matching ground-truth `.txt` label sheets based on the uploaded file name. If found (e.g. during test simulations), it utilizes correct annotations; otherwise, it degrades gracefully to safe default flags.
-  - **LayoutLMv3**: Automatically loads microsoft/layoutlmv3-base for inference-only checking if the local custom weights are missing.
-  - **XGBoost Classifier**: Automatically fits a temporary model on dynamic dummy vectors during initialization if the pre-trained `.pkl` or `.json` models are missing, guaranteeing zero-crash operations.
+  - **LayoutLMv3 & XGBoost Document Classifier**: Completely removed from the system. Bypassing these heavy models avoids resource exhaustion and GPU/RAM overhead entirely.
+  - **Qwen LLM Audit**: Uses standard Hugging Face chat completions with structured try-except handlers. If the API is offline or rate-limited, it falls back to EXIF and ELA heuristics.
 
 ---
 

@@ -1,11 +1,8 @@
 import { createContext, useContext, useMemo, useState } from 'react'
-
 const NotificationContext = createContext(null)
-
 function generateId() {
   return `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 }
-
 function getInitialNotifications() {
   try {
     const saved = localStorage.getItem('empathi_notifications')
@@ -13,10 +10,7 @@ function getInitialNotifications() {
       return JSON.parse(saved)
     }
   } catch {
-    // Ignore malformed data
   }
-  
-  // Default welcoming notifications
   return [
     {
       id: 'welcome_1',
@@ -32,14 +26,12 @@ function getInitialNotifications() {
       title: 'Location Detected',
       message: 'We have updated your marketplace results based on your current area in Navi Mumbai.',
       isRead: false,
-      createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString() // 5 mins ago
+      createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString()
     }
   ]
 }
-
 export function NotificationProvider({ children }) {
   const [notifications, setNotifications] = useState(getInitialNotifications)
-
   const addNotification = (type, title, message, relatedEntityId = null) => {
     const notification = {
       id: generateId(),
@@ -51,16 +43,13 @@ export function NotificationProvider({ children }) {
       readAt: null,
       createdAt: new Date().toISOString(),
     }
-
     setNotifications((prev) => {
       const next = [notification, ...prev]
       localStorage.setItem('empathi_notifications', JSON.stringify(next))
       return next
     })
-
     return notification
   }
-
   const markAsRead = (notificationId) => {
     setNotifications((prev) => {
       const next = prev.map((notif) =>
@@ -72,12 +61,10 @@ export function NotificationProvider({ children }) {
       return next
     })
   }
-
   const clearNotifications = () => {
     setNotifications([])
     localStorage.removeItem('empathi_notifications')
   }
-
   const clearRead = () => {
     setNotifications((prev) => {
       const next = prev.filter((n) => !n.isRead)
@@ -85,12 +72,10 @@ export function NotificationProvider({ children }) {
       return next
     })
   }
-
   const unreadCount = useMemo(
     () => notifications.filter((n) => !n.isRead).length,
     [notifications],
   )
-
   const value = useMemo(
     () => ({
       notifications,
@@ -102,14 +87,12 @@ export function NotificationProvider({ children }) {
     }),
     [notifications, unreadCount],
   )
-
   return (
     <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   )
 }
-
 export function useNotificationContext() {
   const context = useContext(NotificationContext)
   if (!context) {

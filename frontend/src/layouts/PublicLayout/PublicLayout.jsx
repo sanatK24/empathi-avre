@@ -4,28 +4,24 @@ import Button from '../../components/ui/Button';
 import { Menu, X } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useAppContext } from '../../context/AppContext';
-
 const PublicLayout = () => {
   const { profile } = useAppContext();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isLoginPage = location.pathname === '/login';
   const isRegisterPage = location.pathname === '/register';
-
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Navbar */}
+      {}
       <nav className="sticky top-0 z-50 glass border-b border-slate-100">
         <div className="container mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center group">
             <img src="/assets/logo.png" alt="EmpathI Logo" className="h-14 object-contain group-hover:scale-105 transition-transform" />
           </Link>
-
           <div className="hidden md:flex items-center space-x-8 text-sm font-semibold text-slate-600">
             <a href="/#features" className="hover:text-primary-500 transition-colors">Features</a>
             <a href="/#how-it-works" className="hover:text-primary-500 transition-colors">How it Works</a>
             <Link to="/campaigns" className={cn("hover:text-primary-500 transition-colors", location.pathname === '/campaigns' && "text-primary-600")}>Campaigns</Link>
-            
             {profile.isAuthenticated ? (
               <div className="flex items-center space-x-6 pl-4 border-l border-slate-100">
                 <Link to={profile.userRole === 'admin' ? '/admin/users' : '/user/dashboard'}>
@@ -39,7 +35,6 @@ const PublicLayout = () => {
                   </div>
                 </Link>
               </div>
-
             ) : (
               <>
                 {!isLoginPage && (
@@ -51,10 +46,9 @@ const PublicLayout = () => {
               </>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
+          {}
           <div className="md:hidden flex items-center">
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
             >
@@ -62,15 +56,13 @@ const PublicLayout = () => {
             </button>
           </div>
         </div>
-
-        {/* Mobile Dropdown */}
+        {}
         {isMobileMenuOpen && (
           <div className="md:hidden absolute top-20 left-0 w-full bg-white border-b border-slate-100 shadow-lg z-40">
             <div className="px-6 py-4 flex flex-col space-y-4">
               <a href="/#features" className="text-slate-600 font-semibold hover:text-primary-500" onClick={() => setIsMobileMenuOpen(false)}>Features</a>
               <a href="/#how-it-works" className="text-slate-600 font-semibold hover:text-primary-500" onClick={() => setIsMobileMenuOpen(false)}>How it Works</a>
               <Link to="/campaigns" className={cn("text-slate-600 font-semibold hover:text-primary-500", location.pathname === '/campaigns' && "text-primary-600")} onClick={() => setIsMobileMenuOpen(false)}>Campaigns</Link>
-              
               <div className="pt-4 border-t border-slate-100 flex flex-col space-y-3">
                 {profile.isAuthenticated ? (
                   <>
@@ -79,7 +71,6 @@ const PublicLayout = () => {
                         Go to Dashboard
                       </Button>
                     </Link>
-
                   </>
                 ) : (
                   <>
@@ -96,12 +87,10 @@ const PublicLayout = () => {
           </div>
         )}
       </nav>
-
       <main className="flex-grow">
         <Outlet />
       </main>
     </div>
   );
 };
-
 export default PublicLayout;

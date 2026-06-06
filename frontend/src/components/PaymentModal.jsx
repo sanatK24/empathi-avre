@@ -4,7 +4,6 @@ import { X, Loader2, CheckCircle, AlertCircle, DollarSign } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import Button from './ui/Button';
-
 function PaymentModal({ campaign, amount, anonymous, message, onClose, onPaymentSuccess }) {
   const { profile } = useAppContext();
   const [loading, setLoading] = useState(false);
@@ -13,9 +12,8 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedMethod, setSelectedMethod] = useState('upi');
   const [transactionId, setTransactionId] = useState(null);
-  const [step, setStep] = useState('method'); // method, details, processing, success
+  const [step, setStep] = useState('method');
   const [processingStage, setProcessingStage] = useState(0);
-
   const stages = [
     "Initializing secure connection...",
     "Contacting payment gateway...",
@@ -23,7 +21,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
     "Securing funds transfer...",
     "Finalizing donation records..."
   ];
-
   const [paymentDetails, setPaymentDetails] = useState({
     upi_id: '',
     card_number: '',
@@ -34,11 +31,9 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
     full_name: profile?.fullName || '',
     email: profile?.email || ''
   });
-
   useEffect(() => {
     loadPaymentMethods();
   }, []);
-
   const loadPaymentMethods = async () => {
     const methods = [
       { id: 'upi', name: 'UPI', icon: '💳', description: 'GPay, PhonePe, Paytm' },
@@ -49,18 +44,17 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
     setPaymentMethods(methods);
     setSelectedMethod('upi');
   };
-
   const fillDummyDetails = () => {
     switch (selectedMethod) {
       case 'upi':
         setPaymentDetails({ ...paymentDetails, upi_id: 'empathi.user@okaxis' });
         break;
       case 'card':
-        setPaymentDetails({ 
-          ...paymentDetails, 
-          card_number: '4242 4242 4242 4242', 
-          expiry: '12/28', 
-          cvv: '123' 
+        setPaymentDetails({
+          ...paymentDetails,
+          card_number: '4242 4242 4242 4242',
+          expiry: '12/28',
+          cvv: '123'
         });
         break;
       case 'wallet':
@@ -71,7 +65,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
         break;
     }
   };
-
   const validatePaymentDetails = () => {
     switch (selectedMethod) {
       case 'upi':
@@ -89,38 +82,30 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
         return true;
     }
   };
-
   const handleProcessPayment = async () => {
     const validation = validatePaymentDetails();
     if (validation !== true) {
       setError(validation);
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
       setStep('processing');
-      
-      // Multi-stage simulation
       for (let i = 0; i < stages.length; i++) {
         setProcessingStage(i);
         await new Promise(resolve => setTimeout(resolve, 800));
       }
-
-      // Use the real donation endpoint
       const response = await apiService.donateToCampaign(
-        profile.accessToken, 
-        campaign.id, 
-        amount, 
+        profile.accessToken,
+        campaign.id,
+        amount,
         anonymous
       );
-
       if (response) {
         setTransactionId(`TXN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
         setStep('success');
         setSuccess(true);
-
         setTimeout(() => {
           onPaymentSuccess?.();
           onClose();
@@ -134,11 +119,9 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
       setLoading(false);
     }
   };
-
   const formatCardNumber = (value) => {
     return value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
   };
-
   if (success) {
     return (
       <AnimatePresence>
@@ -161,12 +144,10 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
             >
               <CheckCircle size={40} className="text-green-600" />
             </motion.div>
-            
             <h3 className="text-3xl font-display font-black text-slate-900 mb-2 uppercase tracking-tight">Success!</h3>
             <p className="text-slate-500 font-medium mb-6">
               Your contribution of <span className="text-slate-900 font-bold">₹{amount.toLocaleString()}</span> to "{campaign.title}" has been registered.
             </p>
-            
             <div className="bg-slate-50 rounded-2xl p-6 mb-8 border border-slate-100">
               <div className="flex justify-between text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
                 <span>Receipt No.</span>
@@ -177,7 +158,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
                 <span>{new Date().toLocaleDateString()}</span>
               </div>
             </div>
-
             <p className="text-xs text-slate-400 font-medium italic">
               Your donation has been added to your profile. Redirecting to dashboard...
             </p>
@@ -186,7 +166,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
       </AnimatePresence>
     );
   }
-
   return (
     <AnimatePresence>
       <motion.div
@@ -203,15 +182,14 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
           onClick={(e) => e.stopPropagation()}
           className="bg-white rounded-3xl shadow-premium max-w-md w-full overflow-hidden my-auto"
         >
-          {/* Header */}
+          {}
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <h2 className="text-xl font-display font-black text-slate-900 uppercase tracking-tight">Secure Checkout</h2>
             <button onClick={onClose} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
               <X size={20} className="text-slate-400" />
             </button>
           </div>
-
-          {/* Amount Summary */}
+          {}
           <div className="bg-primary-50 p-6 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-primary-600 uppercase tracking-widest mb-1">Total Donation</p>
@@ -222,7 +200,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
               <p className="text-sm font-bold text-slate-900 line-clamp-1">{campaign.title}</p>
             </div>
           </div>
-
           <div className="p-8">
             {step === 'method' && (
               <div className="space-y-4">
@@ -249,21 +226,19 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
                 </div>
               </div>
             )}
-
             {step === 'details' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
                     Enter {paymentMethods.find(m => m.id === selectedMethod)?.name} Details
                   </h3>
-                  <button 
+                  <button
                     onClick={fillDummyDetails}
                     className="text-[10px] font-black text-primary-600 uppercase tracking-widest hover:underline"
                   >
                     Use Dummy Data
                   </button>
                 </div>
-
                 <div className="space-y-4">
                   {selectedMethod === 'upi' && (
                     <div className="space-y-2">
@@ -277,7 +252,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
                       />
                     </div>
                   )}
-
                   {selectedMethod === 'card' && (
                     <div className="space-y-4">
                       <div className="space-y-2">
@@ -314,7 +288,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
                       </div>
                     </div>
                   )}
-
                   {selectedMethod === 'wallet' && (
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Phone Number</label>
@@ -327,7 +300,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
                       />
                     </div>
                   )}
-
                   {selectedMethod === 'bank' && (
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Account Number</label>
@@ -341,13 +313,11 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
                     </div>
                   )}
                 </div>
-
                 {error && (
                   <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold flex items-center gap-2">
                     <AlertCircle size={14} /> {error}
                   </div>
                 )}
-
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={() => setStep('method')}
@@ -364,12 +334,11 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
                 </div>
               </div>
             )}
-
             {step === 'processing' && (
               <div className="text-center py-10 space-y-6">
                 <div className="relative w-20 h-20 mx-auto">
                    <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-                   <motion.div 
+                   <motion.div
                      className="absolute inset-0 border-4 border-primary-500 rounded-full border-t-transparent"
                      animate={{ rotate: 360 }}
                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -383,8 +352,8 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
                 </div>
                 <div className="flex justify-center gap-1">
                   {stages.map((_, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       className={`h-1 rounded-full transition-all duration-300 ${
                         i <= processingStage ? 'w-6 bg-primary-500' : 'w-2 bg-slate-100'
                       }`}
@@ -394,7 +363,6 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
               </div>
             )}
           </div>
-
           <div className="p-4 bg-slate-50 text-center border-t border-slate-100">
              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                <span className="text-primary-500">🛡️</span> Secure 256-bit SSL encrypted transaction
@@ -405,5 +373,4 @@ function PaymentModal({ campaign, amount, anonymous, message, onClose, onPayment
     </AnimatePresence>
   );
 }
-
 export default PaymentModal;

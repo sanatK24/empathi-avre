@@ -10,21 +10,14 @@ import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { Card, CardContent } from '../components/ui/Card';
 import { handleImageError } from '../utils/imageUtils';
-
-// Unified UserProfile: handles both public viewing and private settings
-
 const UserProfile = () => {
   const { user_id } = useParams();
   const navigate = useNavigate();
   const { profile } = useAppContext();
-  
-  // Determine if viewing own profile
   const isOwnProfile = !user_id || user_id === profile?.id?.toString();
-
   const [userProfile, setUserProfile] = useState(null);
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
@@ -49,7 +42,6 @@ const UserProfile = () => {
     };
     fetchProfileData();
   }, [profile, user_id, isOwnProfile]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -60,7 +52,6 @@ const UserProfile = () => {
       </div>
     );
   }
-
   if (!userProfile) {
     return (
       <div className="text-center py-12">
@@ -70,7 +61,6 @@ const UserProfile = () => {
       </div>
     );
   }
-
   return (
     <div className="bg-slate-50 min-h-screen pb-12">
       <div className="bg-white border-b border-slate-200">
@@ -95,7 +85,6 @@ const UserProfile = () => {
                 </Badge>
               </div>
             </div>
-            
             <div className="flex gap-3">
               {isOwnProfile ? (
                 <Button icon={<Settings className="w-4 h-4" />} variant="secondary">
@@ -110,7 +99,6 @@ const UserProfile = () => {
           </div>
         </div>
       </div>
-
       <div className="max-w-4xl mx-auto px-6 py-12">
         <h2 className="text-xl font-bold mb-6">Campaigns ({campaigns.length})</h2>
         {campaigns.length > 0 ? (
@@ -139,5 +127,4 @@ const UserProfile = () => {
     </div>
   );
 };
-
 export default UserProfile;

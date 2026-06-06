@@ -82,7 +82,11 @@ const CampaignAnalyticsDashboard = () => {
                       : <div className="w-full h-full bg-primary-gradient flex items-center justify-center"><Megaphone className="w-16 h-16 text-white/20 animate-pulse" /></div>}
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-60" />
                     <div className="absolute top-6 left-6 flex gap-2">
-                      <Badge className="bg-white/95 backdrop-blur-md text-slate-900 border-none shadow-2xl font-black uppercase text-[10px] tracking-[0.15em] px-4 py-2 rounded-full">{camp.verified ? '✓ Verified' : 'Pending'}</Badge>
+                      {camp.is_flagged ? (
+                        <Badge className="bg-red-600 text-white border-none shadow-2xl font-black uppercase text-[10px] tracking-[0.15em] px-4 py-2 rounded-full">Flagged / Failed</Badge>
+                      ) : (
+                        <Badge className="bg-white/95 backdrop-blur-md text-slate-900 border-none shadow-2xl font-black uppercase text-[10px] tracking-[0.15em] px-4 py-2 rounded-full">{camp.verified ? '✓ Verified' : 'Pending'}</Badge>
+                      )}
                     </div>
                     <div className="absolute bottom-6 right-6">
                       <div className="bg-slate-900/90 backdrop-blur-md text-white px-5 py-3 rounded-2xl font-black text-lg shadow-2xl border border-white/10">
@@ -92,6 +96,17 @@ const CampaignAnalyticsDashboard = () => {
                   </div>
                   <div className="flex-1 p-5 md:p-6 flex flex-col justify-between bg-white relative">
                     <div className="space-y-3">
+                      {camp.is_flagged && (
+                        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-2xl flex items-start gap-3">
+                          <span className="text-lg mt-0.5">⚠️</span>
+                          <div>
+                            <p className="font-bold text-xs uppercase tracking-wider">Campaign Flagged / Verification Failed</p>
+                            <p className="text-xs text-red-600 font-medium mt-0.5">
+                              This campaign has been flagged by the AI Verification system or an Administrator due to a failed document check (Trust Score: {camp.trust_score}%). It is currently hidden from the public discover feed.
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       <div className="space-y-1.5">
                         <h3 className="text-xl md:text-2xl font-display font-black text-slate-900 group-hover:text-primary-600 transition-colors uppercase tracking-tight leading-[1.1] line-clamp-2">{camp.title}</h3>
                         <div className="flex items-center gap-5 text-slate-400">

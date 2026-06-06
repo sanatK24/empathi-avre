@@ -15,7 +15,6 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import { cn } from '../utils/cn';
-
 const BLOOD_GROUPS = ['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'];
 const CONTACT_CATEGORIES = ['Family', 'Friend', 'Doctor', 'Caregiver', 'Other'];
 const TABS = [
@@ -24,7 +23,6 @@ const TABS = [
   { id: 'activity', label: 'Activity', icon: TrendingUp },
   { id: 'saved_campaigns', label: 'Saved Campaigns', icon: Heart }
 ];
-
 const PROFILE_FIELDS = [
   ['fullName', 'fullName'], ['email', 'email'], ['phone', 'phone'],
   ['bio', 'bio'], ['city', 'city'],
@@ -33,9 +31,7 @@ const PROFILE_FIELDS = [
   ['countryCode', 'countryCode'], ['bloodGroup', 'bloodGroup'],
   ['preferredHospital', 'preferredHospital'], ['accessibilityNeeds', 'accessibilityNeeds']
 ];
-
 const formatINR = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
-
 const SharedProfileDashboard = () => {
   const { profile, updateProfile, logout } = useAppContext();
   const [searchParams] = useSearchParams();
@@ -50,7 +46,6 @@ const SharedProfileDashboard = () => {
   const [activitiesLoading, setActivitiesLoading] = useState(true);
   const [loadingGeo, setLoadingGeo] = useState(false);
   const [geoError, setGeoError] = useState('');
-
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '', bio: '', city: '',
     address: '', addressLine1: '', addressLine2: '', locality: '', stateProvince: '',
@@ -62,14 +57,12 @@ const SharedProfileDashboard = () => {
     notifications: { email: true, push: true, sms: false, urgencyAlerts: true },
     theme: 'light', privacy: 'public'
   });
-
   useEffect(() => {
     if (!profile?.accessToken) return;
     apiService.getSavedCampaigns(profile.accessToken)
       .then(data => setSavedCampaigns(Array.isArray(data) ? data : []))
       .catch(err => console.error('Failed to load saved campaigns:', err))
       .finally(() => setSavedLoading(false));
-
     setActivitiesLoading(true);
     apiService.getDonationHistory(profile.accessToken)
       .then(donationData => {
@@ -83,7 +76,6 @@ const SharedProfileDashboard = () => {
       }).catch(err => console.error('Failed to load activities:', err))
       .finally(() => setActivitiesLoading(false));
   }, [profile?.accessToken]);
-
   useEffect(() => {
     if (!profile) return;
     const updates = {};
@@ -95,7 +87,6 @@ const SharedProfileDashboard = () => {
     setFormData(prev => ({ ...prev, ...updates }));
     loadStats();
   }, [profile]);
-
   const loadStats = async () => {
     try {
       const data = profile.role === 'admin'
@@ -105,10 +96,8 @@ const SharedProfileDashboard = () => {
     } catch (err) { console.error('Failed to load role stats:', err); }
     finally { setLoading(false); }
   };
-
   const set = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
   const setNested = (parent, field, value) => setFormData(prev => ({ ...prev, [parent]: { ...prev[parent], [field]: value } }));
-
   const handleDetectLocation = () => {
     if (!navigator.geolocation) { setGeoError('Geolocation is not supported by your browser.'); return; }
     setLoadingGeo(true); setGeoError('');
@@ -142,7 +131,6 @@ const SharedProfileDashboard = () => {
       (err) => { console.error('Geolocation error', err); setGeoError('Location permission denied or lookup failed. Please enter manually.'); setLoadingGeo(false); }
     );
   };
-
   const handleAddContact = async () => {
     if (!formData.newContact.name || !formData.newContact.phone) return;
     setSaving(true);
@@ -153,21 +141,17 @@ const SharedProfileDashboard = () => {
     } catch { setStatus({ type: 'error', message: 'Failed to add contact.' }); }
     finally { setSaving(false); }
   };
-
   const handleDeleteContact = async (id) => {
     try {
       await apiService.deleteEmergencyContact(profile.accessToken, id);
       setFormData(prev => ({ ...prev, emergencyContacts: prev.emergencyContacts.filter(c => c.id !== id) }));
     } catch { setStatus({ type: 'error', message: 'Failed to delete contact.' }); }
   };
-
   const handleAddCategory = () => {
     if (!formData.newCategory || formData.personalCategories.includes(formData.newCategory)) return;
     setFormData(prev => ({ ...prev, personalCategories: [...prev.personalCategories, prev.newCategory], newCategory: '' }));
   };
-
   const handleRemoveCategory = (cat) => setFormData(prev => ({ ...prev, personalCategories: prev.personalCategories.filter(c => c !== cat) }));
-
   const handleSave = async (e) => {
     e?.preventDefault();
     setSaving(true); setStatus({ type: null, message: '' });
@@ -202,7 +186,6 @@ const SharedProfileDashboard = () => {
       setStatus({ type: 'error', message: error.message || 'Failed to update profile.' });
     } finally { setSaving(false); }
   };
-
   const locationFields = [
     ['Address Line 1', 'addressLine1', 'Building name, Flat/House number, Street', <Home className="w-4 h-4 text-slate-400" />],
     ['Address Line 2', 'addressLine2', 'Landmark, sector, or area', <Building2 className="w-4 h-4 text-slate-400" />]
@@ -215,7 +198,6 @@ const SharedProfileDashboard = () => {
     ['State / Province', 'stateProvince', 'State or region'],
     ['Postal Code (PIN/ZIP)', 'postalCode', 'e.g., 400703']
   ];
-
   const renderGeneralInfo = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <Card className="p-8">
@@ -230,7 +212,6 @@ const SharedProfileDashboard = () => {
           </div>
         </div>
       </Card>
-
       <Card className="p-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -276,7 +257,6 @@ const SharedProfileDashboard = () => {
           <input type="hidden" value={formData.address} />
         </div>
       </Card>
-
       <Card className="p-8 lg:col-span-2">
         <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
           <Building2 className="w-5 h-5 text-indigo-500" /> Bio & Personal Statement
@@ -292,7 +272,6 @@ const SharedProfileDashboard = () => {
       </Card>
     </div>
   );
-
   const renderMedicalProfile = () => (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <Card className="p-8">
@@ -311,7 +290,6 @@ const SharedProfileDashboard = () => {
           <Input label="Preferred Hospital" value={formData.preferredHospital} onChange={e => set('preferredHospital', e.target.value)} placeholder="Enter your preferred hospital" icon={<MapPin className="w-4 h-4" />} />
         </div>
       </Card>
-
       <Card className="p-8">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -349,7 +327,6 @@ const SharedProfileDashboard = () => {
           <Button onClick={handleAddContact} className="w-full" disabled={!formData.newContact.name || !formData.newContact.phone}>Add Contact</Button>
         </div>
       </Card>
-
       <Card className="p-8 lg:col-span-2">
         <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-primary-500" /> Personal Categories
@@ -379,7 +356,6 @@ const SharedProfileDashboard = () => {
       </Card>
     </div>
   );
-
   const renderActivitySummary = () => {
     const roleStats = {
       user: [
@@ -394,7 +370,6 @@ const SharedProfileDashboard = () => {
       ]
     };
     const currentStats = profile.role === 'admin' ? roleStats.admin : roleStats.user;
-
     return (
       <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -442,7 +417,6 @@ const SharedProfileDashboard = () => {
       </div>
     );
   };
-
   const renderSavedCampaigns = () => (
     <Card className="p-8">
       <h3 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
@@ -474,7 +448,6 @@ const SharedProfileDashboard = () => {
       )}
     </Card>
   );
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
@@ -483,10 +456,9 @@ const SharedProfileDashboard = () => {
       </div>
     );
   }
-
   return (
     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="max-w-6xl mx-auto px-4 pb-20">
-      {/* Header */}
+      {}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
         <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
           <div className="relative group shrink-0">
@@ -519,8 +491,7 @@ const SharedProfileDashboard = () => {
           <Button variant="primary" fullWidth className="md:w-auto h-12" icon={<Save className="w-4 h-4" />} loading={saving} onClick={handleSave}>Save Changes</Button>
         </div>
       </div>
-
-      {/* Tabs */}
+      {}
       <div className="flex items-center gap-1 bg-slate-100/50 p-1 rounded-2xl mb-8 overflow-x-auto no-scrollbar">
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}
@@ -530,8 +501,7 @@ const SharedProfileDashboard = () => {
           </button>
         ))}
       </div>
-
-      {/* Tab Content */}
+      {}
       <div className="min-h-[500px]">
         <AnimatePresence mode="wait">
           <motion.div key={activeTab} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} transition={{ duration: 0.2 }}>
@@ -542,12 +512,10 @@ const SharedProfileDashboard = () => {
           </motion.div>
         </AnimatePresence>
       </div>
-
       <div className="mt-12 flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-slate-200">
         <p className="text-xs font-bold text-slate-300 uppercase tracking-widest">EmpathI Profile Engine v1.2 • End-to-End Encrypted</p>
       </div>
-
-      {/* Status Toasts */}
+      {}
       <AnimatePresence>
         {status.message && (
           <motion.div initial={{ opacity: 0, y: 50, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
@@ -561,5 +529,4 @@ const SharedProfileDashboard = () => {
     </motion.div>
   );
 };
-
 export default SharedProfileDashboard;

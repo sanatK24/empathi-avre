@@ -4,27 +4,22 @@ import { ArrowRight, Shield, Target, Cpu, TrendingUp, CheckCircle2, Sparkles } f
 import Button from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
-
 const STATS = [
   { label: 'LightGBM Active Feed', val: '13 Features Ranked', color: 'text-white' },
   { label: 'XGBoost Creator Trust', val: '98% Success Prob', color: 'text-emerald-400' }
 ];
-
 const FEATURES = [
   { title: 'LightGBM Context Ranker', desc: 'Predicts target success using 13 contextual, engagement, and geographic features for tailored matches.', icon: Target, color: 'border-primary-500/20 text-primary-400' },
   { title: 'XGBoost Trust Engine', desc: 'Analyzes disposable hosts, rapid creation, and past completions to gauge creator risk profiles.', icon: Shield, color: 'border-emerald-500/20 text-emerald-400' },
   { title: 'Fairness Allocation', desc: 'Balances impression metrics to prevent monopolization, ensuring niche and new campaigns gain visibility.', icon: TrendingUp, color: 'border-indigo-500/20 text-indigo-400' },
   { title: 'Multi-Modal NLP Audits', desc: 'Semantic redundancy checking (BGE) and toxicity screening automate campaign verification.', icon: Cpu, color: 'border-amber-500/20 text-amber-400' }
 ];
-
 const STEPS = [
   { title: 'Launch & AI Audit', desc: 'Creators upload verification documents. EmpathI instantly extracts urgency values and audits for toxicity, spam risk, and semantic duplicates.' },
   { title: 'LightGBM Ranking', desc: 'The recommendation engine calculates customized donor match scores based on past giving behaviors, city proximity, and campaign momentum.' },
   { title: 'Fair Distribution', desc: 'The Fairness Engine adjusts raw scores dynamically against impression counts, bringing high-priority and under-funded campaigns to the discovery page.' }
 ];
-
 const TRUST_FACTORS = ['Fulfillment: 98%', 'Low Dispute Prob', 'Safe Domain Host', 'Age Verified'];
-
 const LandingPage = () => {
   return (
     <div className="overflow-hidden bg-slate-50 min-h-screen">
@@ -111,7 +106,6 @@ const LandingPage = () => {
           </motion.div>
         </div>
       </section>
-
       <section id="features" className="py-28 bg-slate-900 text-white relative">
         <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-primary-500 via-transparent to-transparent" />
         <div className="container mx-auto px-6 relative z-10">
@@ -137,7 +131,6 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-
       <section id="how-it-works" className="py-28 bg-white">
         <div className="container mx-auto px-6">
           <div className="flex flex-col lg:flex-row items-center gap-16">
@@ -192,7 +185,6 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-
       <section className="py-16 sm:py-28 px-4 sm:px-6">
         <div className="container mx-auto">
           <div className="bg-slate-900 rounded-[2.5rem] sm:rounded-[3.5rem] p-8 sm:p-16 md:p-24 text-center relative overflow-hidden shadow-2xl border border-white/5">
@@ -214,5 +206,4 @@ const LandingPage = () => {
     </div>
   );
 };
-
 export default LandingPage;

@@ -8,35 +8,29 @@ import { useAppContext } from '../context/AppContext';
 import { apiService } from '../services/apiService';
 import { Link } from 'react-router-dom';
 import { formatCurrency, formatNumber } from '../utils/formatNumber';
-
 const OVERVIEW_CONFIG = [
   { label: 'Active Campaigns', key: 'active_campaigns', Icon: TrendingUp, color: 'text-amber-500', bg: 'bg-amber-50', format: formatNumber },
   { label: 'Donations Made', key: 'donations_made', Icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50', format: formatCurrency },
   { label: 'Recommendations', key: 'recommendations_available', Icon: Sparkles, color: 'text-indigo-500', bg: 'bg-indigo-50', format: formatNumber },
 ];
-
 const QUICK_ACTIONS = [
   { label: 'Create Campaign', Icon: Megaphone, path: '/user/campaigns/create', color: 'bg-amber-500' },
   { label: 'Transactions', Icon: ReceiptText, path: '/profile?tab=activity', color: 'bg-slate-700' },
   { label: 'Community Feed', Icon: Sparkles, path: '/user/smart-feed', color: 'bg-indigo-500' },
 ];
-
 const ACTIVITY_MAP = {
   request: { bg: 'bg-blue-50 text-blue-500', Icon: ShoppingBag },
   donation: { bg: 'bg-emerald-50 text-emerald-500', Icon: Heart },
   match: { bg: 'bg-amber-50 text-amber-500', Icon: Users },
   emergency: { bg: 'bg-red-50 text-red-500', Icon: AlertCircle }
 };
-
 const BADGE_VARIANTS = { high: 'danger', medium: 'warning' };
-
 const UserDashboard = () => {
   const { profile, statsRefreshTrigger } = useAppContext();
   const [stats, setStats] = useState({ active_requests: 0, active_campaigns: 0, donations_made: 0, emergency_requests: 0, recommendations_available: 0 });
   const [activities, setActivities] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     const token = profile.accessToken;
     if (!token) return;
@@ -67,7 +61,6 @@ const UserDashboard = () => {
       }
     })();
   }, [profile.accessToken, statsRefreshTrigger]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -75,7 +68,6 @@ const UserDashboard = () => {
       </div>
     );
   }
-
   return (
     <div className="space-y-6 sm:space-y-10 max-w-7xl mx-auto pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
@@ -88,7 +80,6 @@ const UserDashboard = () => {
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 shrink-0"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /></div>
         </div>
       </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4">
         {OVERVIEW_CONFIG.map((card, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="h-full">
@@ -104,7 +95,6 @@ const UserDashboard = () => {
           </motion.div>
         ))}
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
         <div className="lg:col-span-8 space-y-6 sm:space-y-8">
           <section>
@@ -122,7 +112,6 @@ const UserDashboard = () => {
               ))}
             </div>
           </section>
-
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Clock className="w-4 h-4 text-primary-500" /> Recent Activity</h2>
@@ -162,7 +151,6 @@ const UserDashboard = () => {
             </Card>
           </section>
         </div>
-
         <div className="lg:col-span-4 space-y-6 sm:space-y-8">
           <Card className="bg-slate-900 text-white border-none shadow-premium overflow-hidden relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
@@ -204,7 +192,6 @@ const UserDashboard = () => {
               <Button onClick={() => window.location.href='/user/recommendations'} className="w-full bg-white text-slate-900 hover:bg-slate-100 shadow-none font-black text-[10px] uppercase tracking-widest py-4 rounded-xl">Explore Smart Feed</Button>
             </CardContent>
           </Card>
-
           <Card className="border-none ring-1 ring-slate-100 shadow-soft">
             <CardHeader><CardTitle className="text-sm font-black text-slate-400 uppercase tracking-widest">Your Impact</CardTitle></CardHeader>
             <CardContent className="pt-0">
@@ -230,5 +217,4 @@ const UserDashboard = () => {
     </div>
   );
 };
-
 export default UserDashboard;

@@ -8,8 +8,8 @@ class AuditRepo(BaseRepo[AuditLog]):
     def __init__(self):
         super().__init__(AuditLog)
 
-    def log(self, db: Session, action: str, user_id: Optional[int]=None, resource_type: Optional[str]=None, resource_id: Optional[int]=None, details: Optional[str]=None) -> AuditLog:
-        log_entry = AuditLog(user_id=user_id, action=action, resource_type=resource_type, resource_id=resource_id, details=details)
+    def log(self, db: Session, action: str, user_id: Optional[int]=None, resource_type: Optional[str]=None, resource_id: Optional[int]=None, details: Optional[str]=None, severity: str="info") -> AuditLog:
+        log_entry = AuditLog(user_id=user_id, action=action, resource_type=resource_type, resource_id=resource_id, details=details, severity=severity)
         db.add(log_entry)
         db.commit()
         db.refresh(log_entry)

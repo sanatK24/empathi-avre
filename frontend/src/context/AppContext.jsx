@@ -5,16 +5,12 @@ import {
   useMemo,
   useState,
 } from 'react'
-
-
 import {
   logout as logoutSession,
   mapBackendRoleToFrontendRole,
   restoreAuthSession,
 } from '../services/authService'
-
 const AppContext = createContext(null)
-
 const ROLE_PERMISSIONS = {
   donor: ['view_feed', 'donate', 'view_recommendations', 'track_donations'],
   creator: [
@@ -32,18 +28,14 @@ const ROLE_PERMISSIONS = {
     'view_users',
   ],
 }
-
 function getInitialProfile() {
   try {
     const saved = localStorage.getItem('empathi_profile')
-
     if (saved) {
       return JSON.parse(saved)
     }
   } catch {
-    // Ignore malformed localStorage values
   }
-
   return {
     userId: 1,
     city: '',
@@ -72,30 +64,23 @@ function getInitialProfile() {
     isAuthenticated: false,
   }
 }
-
 export function AppProvider({ children }) {
-
   const [profile, setProfile] = useState(getInitialProfile)
   const [authInitialized, setAuthInitialized] = useState(false)
   const [statsRefreshTrigger, setStatsRefreshTrigger] = useState(0)
-
   const updateProfile = (patch) => {
     setProfile((prev) => {
       const next = { ...prev, ...patch }
-
       localStorage.setItem(
         'empathi_profile',
         JSON.stringify(next)
       )
-
       return next
     })
   }
-
   const setUserRole = (role) => {
     updateProfile({ userRole: role })
   }
-
   const setVerified = (
     isVerified,
     verificationData = {}
@@ -105,13 +90,10 @@ export function AppProvider({ children }) {
       ...verificationData,
     })
   }
-
   const logout = () => {
     try {
       console.log('Logging out...')
-
       logoutSession()
-
       const next = {
         userId: 1,
         city: '',
@@ -141,39 +123,28 @@ export function AppProvider({ children }) {
         address: '',
         isAuthenticated: false,
       }
-
       setProfile(next)
-
       localStorage.setItem(
         'empathi_profile',
         JSON.stringify(next)
       )
-
       console.log('Profile cleared, redirecting...')
-
       window.location.pathname = '/login'
     } catch (error) {
       console.error('Logout error:', error)
-
       window.location.pathname = '/login'
     }
   }
-
   useEffect(() => {
     let active = true
-
     const hydrateSession = async () => {
       const session = await restoreAuthSession()
-
       if (!active) return
-
       if (session?.user) {
         const mappedRole = mapBackendRoleToFrontendRole(
           session.user.role
         )
-        
         let activeUserRole = mappedRole
-        
         const next = {
           accessToken: session.accessToken,
           backendUserId: session.user.id,
@@ -201,17 +172,12 @@ export function AppProvider({ children }) {
           address: session.user.address || '',
           isAuthenticated: true,
         }
-
         setProfile(next)
-
         localStorage.setItem(
           'empathi_profile',
           JSON.stringify(next)
         )
-
-        // Auto redirect authenticated users
         const path = window.location.pathname
-
         if (
           path === '/login' ||
           path === '/register' ||
@@ -224,29 +190,22 @@ export function AppProvider({ children }) {
               ? 'admin'
               : 'user'
           }/dashboard`
-
           window.location.pathname = dashboardPath
         }
       } else {
         localStorage.removeItem('empathi_profile')
       }
-
       setAuthInitialized(true)
     }
-
     hydrateSession()
-
     return () => {
       active = false
     }
   }, [])
-
   const permissions =
     ROLE_PERMISSIONS[profile.userRole] || []
-
   const switchRole = (newRole) => {
     updateProfile({ userRole: newRole })
-
     const dashboardPath = `/${
       newRole === 'donor'
         ? 'user'
@@ -254,78 +213,57 @@ export function AppProvider({ children }) {
         ? 'admin'
         : 'user'
     }/dashboard`
-
     window.location.pathname = dashboardPath
   }
-
   const triggerStatsRefresh = () => {
     setStatsRefreshTrigger(prev => prev + 1)
   }
-
   const value = useMemo(
     () => ({
       profile,
-
       onboardingDone: Boolean(
         profile.city && profile.userRole
       ),
-
       updateProfile,
-
       setUserRole,
-
       switchRole,
-
       setVerified,
-
       logout,
-
       triggerStatsRefresh,
-
       statsRefreshTrigger,
-
       detectLocation: async () => {
         if (!navigator.geolocation) {
           console.error(
             'Geolocation is not supported'
           )
-
           return
         }
-
         return new Promise((resolve) => {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
               const { latitude, longitude } =
                 position.coords
-
               try {
                 const response = await fetch(
                   `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
                 )
-
                 const data = await response.json()
-
                 const address = data.address
-
                 const city =
                   address.city ||
                   address.town ||
                   address.village ||
                   address.suburb ||
                   'Mumbai'
-
                 const area =
                   address.suburb ||
                   address.neighbourhood ||
                   address.residential ||
                   ''
-
                 const locality =
                   address.road ||
                   address.pedestrian ||
                   ''
-
                 updateProfile({
                   location: {
                     lat: latitude,
@@ -335,7 +273,6 @@ export function AppProvider({ children }) {
                   area,
                   locality,
                 })
-
                 resolve({
                   city,
                   area,
@@ -346,14 +283,12 @@ export function AppProvider({ children }) {
                   'Reverse geocoding failed',
                   err
                 )
-
                 updateProfile({
                   location: {
                     lat: latitude,
                     lng: longitude,
                   },
                 })
-
                 resolve({
                   lat: latitude,
                   lng: longitude,
@@ -365,17 +300,13 @@ export function AppProvider({ children }) {
                 'Geolocation error',
                 err
               )
-
               resolve(null)
             }
           )
         })
       },
-
       authInitialized,
-
       permissions,
-
       hasPermission: (permission) =>
         permissions.includes(permission),
     }),
@@ -386,22 +317,18 @@ export function AppProvider({ children }) {
       statsRefreshTrigger,
     ]
   )
-
   return (
     <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   )
 }
-
 export function useAppContext() {
   const context = useContext(AppContext)
-
   if (!context) {
     throw new Error(
       'useAppContext must be used inside AppProvider'
     )
   }
-
   return context
 }
