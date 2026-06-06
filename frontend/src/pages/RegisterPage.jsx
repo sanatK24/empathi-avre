@@ -25,7 +25,7 @@ const RegisterPage = () => {
         email: email,
         password: password,
         role: 'USER',
-        city: "Mumbai",
+        city: "Mumbai", // Default city
         is_active: true
       });
       alert('Registration successful! Please log in.');
@@ -58,6 +58,7 @@ const RegisterPage = () => {
               <Input label="First Name" name="firstName" placeholder="John" autoComplete="given-name" required />
               <Input label="Last Name" name="lastName" placeholder="Doe" autoComplete="family-name" required />
             </div>
+
             <Input
               label="Email Address"
               name="email"

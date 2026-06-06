@@ -19,6 +19,7 @@ export default function OnboardingPage() {
     city: profile.city || CITY_OPTIONS[0], userRole: profile.userRole || '', email: profile.email || '',
     phone: profile.phone || '', fullName: profile.fullName || '', bio: profile.bio || ''
   })
+
   const { city, userRole, email, phone, fullName, bio } = form
   const change = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
   const enableLocation = () => {

@@ -164,7 +164,7 @@ function CampaignDetailPage() {
           <>
             <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-soft grid grid-cols-2 sm:grid-cols-5 gap-6 items-center">
               <div><span className="text-[9px] font-black text-slate-400 uppercase block">Raised</span><span className="text-lg font-display font-black text-primary-500">{formatCurrency(campaign.raised_amount || 0)}</span></div>
-              <div><span className="text-[9px] font-black text-slate-400 uppercase block">Goal</span><span className="text-lg font-display font-black text-slate-900">{formatCurrency(campaign.goal_amount || 0)}</span></div>
+              <div><span className="text-lg font-display font-black text-slate-900">{formatCurrency(campaign.goal_amount || 0)}</span></div>
               <div className="col-span-2 sm:col-span-1"><span className="text-[9px] font-black text-slate-400 uppercase block">Progress ({Math.round(progress)}%)</span><ProgressBar value={Math.min(progress, 100)} color="bg-primary-gradient" className="w-full mt-1.5" height="h-2" /></div>
               <div><span className="text-[9px] font-black text-slate-400 uppercase block">Supporters</span><span className="text-lg font-display font-black text-slate-955">{stats?.unique_donors || 0}</span></div>
               <div><span className="text-[9px] font-black text-slate-400 uppercase block">Days Left</span><span className="text-lg font-display font-black text-slate-950">{daysLeft}</span></div>

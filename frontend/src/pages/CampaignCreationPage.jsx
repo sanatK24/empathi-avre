@@ -28,6 +28,7 @@ function CampaignCreationPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // Location is inferred by the backend from user profile
         return parsed;
       } catch (e) { console.error("Failed to parse saved campaign data", e); }
     }
@@ -103,6 +104,7 @@ function CampaignCreationPage() {
         setVerificationDocument(null);
         return;
       }
+      // Security: block path traversal
       if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
         setError("Invalid filename. Path traversal characters are not allowed.");
         setVerificationDocument(null);
@@ -115,6 +117,7 @@ function CampaignCreationPage() {
         setVerificationDocument(null);
         return;
       }
+      // Security: block double extensions (e.g., virus.jpg.exe → caught above, but also invoice.exe.jpg)
       const parts = file.name.split('.');
       if (parts.length > 2) {
         const dangerousExts = ['exe', 'bat', 'cmd', 'ps1', 'sh', 'vbs', 'js', 'msi', 'com', 'scr', 'zip'];

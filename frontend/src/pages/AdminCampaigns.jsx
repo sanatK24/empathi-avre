@@ -18,6 +18,7 @@ const AdminCampaigns = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedCreatorIds, setExpandedCreatorIds] = useState(new Set());
   const [selectedReportsCampaign, setSelectedReportsCampaign] = useState(null);
+
   const toggleCreator = (id) => setExpandedCreatorIds(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const fetchCampaigns = async () => {
     if (!profile?.accessToken) return;
@@ -202,10 +203,12 @@ const AdminCampaigns = () => {
               </div>
               <button onClick={() => setSelectedReportsCampaign(null)} className="text-slate-400 hover:text-slate-600 font-black text-2xl p-1">&times;</button>
             </div>
+
             <div className="bg-slate-50 p-4 rounded-2xl mb-6">
               <h4 className="font-bold text-slate-900 text-sm uppercase tracking-tight">{selectedReportsCampaign.title}</h4>
               <p className="text-xs text-slate-500 font-medium mt-1">Creator: {selectedReportsCampaign.creator?.name || 'Unknown'} ({selectedReportsCampaign.creator?.email})</p>
             </div>
+
             <div className="overflow-y-auto space-y-4 flex-1 pr-1 custom-scrollbar">
               {selectedReportsCampaign.reports && selectedReportsCampaign.reports.length > 0 ? (
                 selectedReportsCampaign.reports.map((report, idx) => (
@@ -233,6 +236,7 @@ const AdminCampaigns = () => {
                 <p className="text-sm text-slate-500 text-center py-6">No reports found.</p>
               )}
             </div>
+
             <div className="mt-6 flex gap-3">
               <Button variant="secondary" onClick={() => setSelectedReportsCampaign(null)} className="w-full font-bold">Close Details</Button>
             </div>
